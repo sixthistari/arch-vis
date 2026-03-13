@@ -1,0 +1,172 @@
+/**
+ * UML State diagram node.
+ *
+ * Supports:
+ * - Regular state: rounded rectangle with name compartment + optional activities
+ * - Initial state: filled black circle
+ * - Final state: bullseye (circle with inner filled circle)
+ * - Composite state: rounded rectangle containing sub-states (rendered as container)
+ * - Choice pseudo-state: diamond
+ * - Fork/join: thick horizontal or vertical bar
+ */
+import { memo } from 'react';
+import { Handle, Position, type NodeProps, type Node } from '@xyflow/react';
+
+export interface StateActivity {
+  trigger: 'entry' | 'exit' | 'do';
+  action: string;
+}
+
+export interface UmlStateNodeData {
+  label: string;
+  stateType: 'state' | 'initial' | 'final' | 'choice' | 'fork' | 'join' | 'composite';
+  activities?: StateActivity[];
+  isVertical?: boolean; // for fork/join orientation
+  theme?: 'dark' | 'light';
+  dimmed?: boolean;
+  [key: string]: unknown;
+}
+
+type UmlStateNodeType = Node<UmlStateNodeData, 'uml-state'>;
+
+const STATE_WIDTH = 140;
+const STATE_RADIUS = 10;
+const ROW_HEIGHT = 14;
+const HEADER_HEIGHT = 28;
+const PSEUDO_SIZE = 14;
+
+function UmlStateNodeComponent({ data, selected }: NodeProps<UmlStateNodeType>) {
+  const { label, stateType, activities = [], theme = 'dark', dimmed, isVertical } = data;
+  const isDark = theme === 'dark';
+  const stroke = selected ? '#F59E0B' : (isDark ? '#94A3B8' : '#475569');
+  const fill = isDark ? '#1E293B' : '#FFFFFF';
+  const textFill = isDark ? '#E5E7EB' : '#1F2937';
+  const opacity = dimmed ? 0.1 : 1;
+
+  // ── Initial state: filled circle ──
+  if (stateType === 'initial') {
+    return (
+      <div style={{ opacity }}>
+        <svg width={PSEUDO_SIZE} height={PSEUDO_SIZE} overflow="visible">
+          <circle cx={PSEUDO_SIZE / 2} cy={PSEUDO_SIZE / 2} r={PSEUDO_SIZE / 2 - 1} fill={stroke} stroke={stroke} strokeWidth={1} />
+        </svg>
+        <Handle type="source" position={Position.Bottom} style={{ visibility: 'hidden' }} />
+      </div>
+    );
+  }
+
+  // ── Final state: bullseye ──
+  if (stateType === 'final') {
+    const r = PSEUDO_SIZE / 2;
+    return (
+      <div style={{ opacity }}>
+        <svg width={PSEUDO_SIZE + 4} height={PSEUDO_SIZE + 4} overflow="visible">
+          <circle cx={r + 2} cy={r + 2} r={r} fill="none" stroke={stroke} strokeWidth={1.5} />
+          <circle cx={r + 2} cy={r + 2} r={r * 0.55} fill={stroke} />
+        </svg>
+        <Handle type="target" position={Position.Top} style={{ visibility: 'hidden' }} />
+      </div>
+    );
+  }
+
+  // ── Choice: diamond ──
+  if (stateType === 'choice') {
+    const s = 24;
+    const half = s / 2;
+    return (
+      <div style={{ opacity }}>
+        <svg width={s} height={s} overflow="visible">
+          <polygon
+            points={`${half},0 ${s},${half} ${half},${s} 0,${half}`}
+            stroke={stroke} fill={fill} strokeWidth={1.5}
+          />
+        </svg>
+        <Handle type="target" position={Position.Top} style={{ visibility: 'hidden' }} />
+        <Handle type="source" position={Position.Bottom} style={{ visibility: 'hidden' }} />
+        <Handle type="target" position={Position.Left} style={{ visibility: 'hidden' }} />
+        <Handle type="source" position={Position.Right} style={{ visibility: 'hidden' }} />
+      </div>
+    );
+  }
+
+  // ── Fork/Join: thick bar ──
+  if (stateType === 'fork' || stateType === 'join') {
+    const barW = isVertical ? 4 : 80;
+    const barH = isVertical ? 80 : 4;
+    return (
+      <div style={{ opacity }}>
+        <svg width={barW} height={barH} overflow="visible">
+          <rect x={0} y={0} width={barW} height={barH} fill={stroke} rx={2} />
+        </svg>
+        <Handle type="target" position={isVertical ? Position.Left : Position.Top} style={{ visibility: 'hidden' }} />
+        <Handle type="source" position={isVertical ? Position.Right : Position.Bottom} style={{ visibility: 'hidden' }} />
+      </div>
+    );
+  }
+
+  // ── Regular / composite state: rounded rectangle ──
+  const hasActivities = activities.length > 0;
+  const activitiesH = hasActivities ? activities.length * ROW_HEIGHT + 8 : 0;
+  const totalHeight = HEADER_HEIGHT + activitiesH + (hasActivities ? 0 : 6);
+  const width = stateType === 'composite' ? STATE_WIDTH * 1.4 : STATE_WIDTH;
+  const height = stateType === 'composite' ? totalHeight * 2 : totalHeight;
+
+  return (
+    <div style={{ opacity }}>
+      <svg width={width} height={height} overflow="visible">
+        {/* Body */}
+        <rect
+          x={0} y={0} width={width} height={height}
+          rx={STATE_RADIUS} ry={STATE_RADIUS}
+          stroke={stroke} fill={fill} strokeWidth={1.5}
+        />
+
+        {/* State name */}
+        <text
+          x={width / 2} y={HEADER_HEIGHT / 2 + 2}
+          textAnchor="middle" dominantBaseline="central"
+          fontSize={12} fontWeight={600} fill={textFill}
+          fontFamily="Inter, system-ui, sans-serif"
+          style={{ pointerEvents: 'none' }}
+        >
+          {label}
+        </text>
+
+        {/* Divider line (only if activities present) */}
+        {hasActivities && (
+          <line x1={0} y1={HEADER_HEIGHT} x2={width} y2={HEADER_HEIGHT} stroke={stroke} strokeWidth={0.8} />
+        )}
+
+        {/* Activities */}
+        {activities.map((act, i) => (
+          <text
+            key={i}
+            x={8} y={HEADER_HEIGHT + 8 + i * ROW_HEIGHT + ROW_HEIGHT * 0.7}
+            fontSize={10} fill={textFill}
+            fontFamily="'JetBrains Mono', monospace"
+            style={{ pointerEvents: 'none' }}
+          >
+            {act.trigger}/ {act.action}
+          </text>
+        ))}
+
+        {/* Composite indicator — dashed inner region */}
+        {stateType === 'composite' && (
+          <rect
+            x={8} y={HEADER_HEIGHT + 8}
+            width={width - 16} height={height - HEADER_HEIGHT - 16}
+            rx={6} ry={6}
+            stroke={stroke} fill="none" strokeWidth={0.8} strokeDasharray="4 2"
+          />
+        )}
+      </svg>
+
+      <Handle type="target" position={Position.Top} style={{ visibility: 'hidden' }} />
+      <Handle type="source" position={Position.Bottom} style={{ visibility: 'hidden' }} />
+      <Handle type="target" position={Position.Left} style={{ visibility: 'hidden' }} />
+      <Handle type="source" position={Position.Right} style={{ visibility: 'hidden' }} />
+    </div>
+  );
+}
+
+export const UmlStateNode = memo(UmlStateNodeComponent);
