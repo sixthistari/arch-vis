@@ -1,0 +1,102 @@
+# Sublayer Configuration — Default Element Positioning
+# Each layer has ordered sublayers. Each sublayer lists which archimate_types
+# (and specialisations) belong to it. Auto-layout uses sublayer order for
+# vertical positioning within a layer band.
+# Override per element per view via view_elements.sublayer_override.
+
+layers:
+  motivation:
+    label: "Motivation"
+    color_key: "motivation"
+    sublayers:
+      - name: stakeholders
+        element_types: [stakeholder]
+      - name: drivers_goals
+        element_types: [driver, goal, outcome, meaning, value]
+      - name: principles
+        element_types: [principle]
+        specialisations: [track-crossing-protocol]
+      - name: constraints_requirements
+        element_types: [constraint, requirement, assessment]
+        specialisations: [ai-guardrail, autonomy-level, human-in-the-loop-gate, explanation-requirement, safety-case, data-classification-policy]
+
+  strategy:
+    label: "Strategy"
+    color_key: "strategy"
+    sublayers:
+      - name: value_streams
+        element_types: [value-stream]
+      - name: capabilities
+        element_types: [capability, resource]
+        specialisations: [knowledge-capability, domain-boundary]
+      - name: courses_of_action
+        element_types: [course-of-action]
+        specialisations: [ai-use-case]
+
+  business_upper:
+    label: "Business — Functions & Processes"
+    color_key: "business"
+    sublayers:
+      - name: actors_roles
+        element_types: [business-actor, business-role]
+      - name: processes_functions
+        element_types: [business-process, business-function, business-event]
+      - name: controls
+        element_types: [contract]
+        specialisations: [authority-rule, scoring-profile, extraction-rule, chunking-strategy, review-cycle-policy]
+
+  business_lower:
+    label: "Business — Services & Information"
+    color_key: "business"
+    sublayers:
+      - name: services
+        element_types: [business-service]
+      - name: objects
+        element_types: [business-object, contract, representation]
+        specialisations: [domain-vocabulary, ground-truth-dataset, content-type-registry]
+
+  application:
+    label: "Application"
+    color_key: "application"
+    sublayers:
+      - name: services_interfaces
+        element_types: [application-service, application-interface]
+        specialisations: [query-router, knowledge-retrieval-service, entity-resolution-service]
+      - name: components
+        element_types: [application-component, application-collaboration]
+        specialisations: [domain-agent, orchestration-engine, context-engine, plan-execute-split]
+      - name: functions_processes
+        element_types: [application-function, application-process]
+        specialisations: [reasoning-trace, ingestion-pipeline, reflection-loop, compliance-assessment]
+
+  technology:
+    label: "Technology"
+    color_key: "technology"
+    sublayers:
+      - name: services
+        element_types: [technology-service]
+      - name: system_software
+        element_types: [system-software]
+        specialisations: [search-engine, graph-database, llm-gateway, embedding-service, document-intelligence, guardrail-engine, observability-platform, agent-framework]
+      - name: nodes_devices
+        element_types: [node, device, communication-network, path]
+
+  data:
+    label: "Data & Artifacts"
+    color_key: "data"
+    sublayers:
+      - name: objects
+        element_types: [data-object]
+        specialisations: [knowledge-store, core-ontology, ontology-extension, prompt-library, decision-trace-log, session-memory-store, model-catalogue]
+      - name: artifacts
+        element_types: [artifact]
+        specialisations: [vector-index, medallion-store, graph-instance, source-connector, fallback-path]
+
+  implementation:
+    label: "Implementation & Migration"
+    color_key: "implementation"
+    sublayers:
+      - name: work_packages
+        element_types: [work-package, deliverable, implementation-event]
+      - name: plateaus_gaps
+        element_types: [plateau, gap]
