@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.idea/
+
+# SQLite runtime files — db created from seed on first run
+data/arch-vis.db
+data/arch-vis.db-shm
+data/arch-vis.db-wal
+
+# OS
+.DS_Store
