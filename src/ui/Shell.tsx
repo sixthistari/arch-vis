@@ -216,7 +216,7 @@ export function Shell(): React.ReactElement {
       },
     },
       React.createElement('span', null, 'arch-vis — ArchiMate Architecture Visualiser'),
-      React.createElement('span', null, 'Shift+drag: box select  |  Shift+click: multi-select  |  Del: delete  |  Double-click: rename  |  Ctrl+Z: undo  |  Ctrl+Y: redo'),
+      React.createElement('span', null, 'Shift+drag: box select  |  Shift+click: multi-select  |  Del: delete  |  Double-click: rename  |  Arrow keys: nudge (Shift×10)  |  Ctrl+A: select all  |  Esc: deselect  |  Ctrl+Z: undo  |  Ctrl+Y: redo'),
     ),
   );
 }

@@ -35,7 +35,7 @@ import type { ArchimateEdgeData, LineType } from './edges/ArchimateEdge';
 import type { Element, Relationship, ViewElement, SublayerConfig } from '../../model/types';
 import { getLayerColours } from '../../notation/colors';
 import { getShapeDefinition } from '../../notation/registry';
-import { computeOrthogonalRoutes, type RouteEdge, type RouteElement, type PortSide } from '../../layout/edge-routing';
+import { computeOrthogonalRoutes, type RouteEdge, type RouteElement, type RoutedEdge, type PortSide } from '../../layout/edge-routing';
 import { assignPorts } from '../../layout/connection-points';
 import { WaypointUpdateContext } from './context';
 import React from 'react';
@@ -568,6 +568,72 @@ function RelationshipTypePicker({
   );
 }
 
+// ═══════════════════════════════════════
+// Alignment toolbar
+// ═══════════════════════════════════════
+
+type AlignAction = 'left' | 'centre-h' | 'right' | 'top' | 'centre-v' | 'bottom' | 'dist-h' | 'dist-v';
+
+const ALIGN_BTNS: { label: string; title: string; action: AlignAction; sep?: true }[] = [
+  { label: '⊢',  title: 'Align left edges',       action: 'left'     },
+  { label: '↔',  title: 'Centre horizontally',     action: 'centre-h' },
+  { label: '⊣',  title: 'Align right edges',       action: 'right',   sep: true },
+  { label: '⊤',  title: 'Align top edges',         action: 'top'      },
+  { label: '↕',  title: 'Centre vertically',       action: 'centre-v' },
+  { label: '⊥',  title: 'Align bottom edges',      action: 'bottom',  sep: true },
+  { label: '⇔',  title: 'Distribute horizontally', action: 'dist-h'   },
+  { label: '⇕',  title: 'Distribute vertically',   action: 'dist-v'   },
+];
+
+function AlignmentToolbar({
+  count, onAlign, theme,
+}: {
+  count: number;
+  onAlign: (action: AlignAction) => void;
+  theme: 'dark' | 'light';
+}) {
+  if (count < 2) return null;
+  const isDark = theme === 'dark';
+  const bg = isDark ? '#1E293B' : '#FFFFFF';
+  const border = isDark ? '#334155' : '#E2E8F0';
+  const text = isDark ? '#E5E7EB' : '#1F2937';
+  const hover = isDark ? '#334155' : '#E2E8F0';
+
+  return (
+    <div
+      style={{
+        position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)',
+        zIndex: 500, background: bg, border: `1px solid ${border}`, borderRadius: 6,
+        padding: '2px 6px', display: 'flex', alignItems: 'center', gap: 1,
+        boxShadow: '0 2px 8px rgba(0,0,0,0.3)', userSelect: 'none',
+        fontFamily: 'Inter, system-ui, sans-serif',
+      }}
+      onMouseDown={e => e.stopPropagation()}
+    >
+      {ALIGN_BTNS.map(btn => (
+        <React.Fragment key={btn.action}>
+          <button
+            title={btn.title}
+            onClick={() => onAlign(btn.action)}
+            style={{
+              background: 'transparent', border: 'none', color: text,
+              cursor: 'pointer', padding: '3px 7px', fontSize: 14,
+              borderRadius: 3, lineHeight: 1,
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = hover; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+          >
+            {btn.label}
+          </button>
+          {btn.sep && (
+            <div style={{ width: 1, height: 16, background: border, margin: '0 3px', flexShrink: 0 }} />
+          )}
+        </React.Fragment>
+      ))}
+    </div>
+  );
+}
+
 interface XYFlowCanvasProps {
   elements: Element[];
   relationships: Relationship[];
@@ -582,6 +648,7 @@ interface XYFlowCanvasProps {
   onRelationshipsDelete?: (relationshipIds: string[]) => void;
   onDropElement?: (archimateType: string, layer: string, x: number, y: number) => void;
   onCreateRelationship?: (sourceId: string, targetId: string, relType: string) => void;
+  onClearSelection?: () => void;
 }
 
 // ── Bridge: captures screenToFlowPosition inside the ReactFlow provider ───
@@ -663,6 +730,24 @@ function EdgeContextMenu({ menu, onSelect, onClose, theme }: EdgeContextMenuProp
   );
 }
 
+// ─── Pure routing helper — module level so it is not recreated on every render ─
+
+/** Detect which face of a node box a port coordinate sits on. */
+function detectPortSide(
+  px: number, py: number,
+  b: { x: number; y: number; w: number; h: number },
+): PortSide {
+  const dl = Math.abs(px - b.x);
+  const dr = Math.abs(px - (b.x + b.w));
+  const dt = Math.abs(py - b.y);
+  const db = Math.abs(py - (b.y + b.h));
+  const m = Math.min(dl, dr, dt, db);
+  if (m === dl) return 'left';
+  if (m === dr) return 'right';
+  if (m === dt) return 'top';
+  return 'bottom';
+}
+
 export function XYFlowCanvas({
   elements,
   relationships,
@@ -677,6 +762,7 @@ export function XYFlowCanvas({
   onRelationshipsDelete,
   onDropElement,
   onCreateRelationship,
+  onClearSelection,
 }: XYFlowCanvasProps) {
   // Derive layout order maps from sublayer config (or fallback to hardcoded)
   const { layerOrder, sublayerOrder, layerLabels } = React.useMemo(
@@ -705,6 +791,14 @@ export function XYFlowCanvas({
 
   // Selected node IDs for connected-edge highlighting
   const [selectedNodeIds, setSelectedNodeIds] = React.useState<Set<string>>(new Set());
+
+  // Stable callback refs — avoid stale closures in keyboard useEffect
+  const onPositionChangeRef = React.useRef(onPositionChange);
+  onPositionChangeRef.current = onPositionChange;
+  const onClearSelectionRef = React.useRef(onClearSelection);
+  onClearSelectionRef.current = onClearSelection;
+  // Timer ref for debouncing nudge position saves
+  const nudgeSaveTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Build position map from nodes for edge handle computation
   function buildPositionMap(nodes: Node[]): Map<string, { x: number; y: number; w: number }> {
@@ -754,6 +848,61 @@ export function XYFlowCanvas({
 
   const nodes = nodesRef.current;
   const edges = edgesRef.current;
+
+  // ── Memoised routing ───────────────────────────────────────────────────────
+  // Re-runs only when node positions or edge topology change — NOT on selection
+  // changes, theme changes, or other UI state updates.  This eliminates the
+  // main source of choppiness: full A* re-routing on every forceRender call.
+  const routedPaths = React.useMemo((): Map<string, RoutedEdge> => {
+    const empty = new Map<string, RoutedEdge>();
+
+    // Build element bounds map (archimate nodes only, not layer-band backgrounds)
+    const elementBoundsMap = new Map<string, { x: number; y: number; w: number; h: number }>();
+    for (const n of nodes) {
+      if (n.type === 'layer-band') continue;
+      elementBoundsMap.set(n.id, {
+        x: n.position.x, y: n.position.y,
+        w: n.width ?? 130, h: n.height ?? 50,
+      });
+    }
+    if (elementBoundsMap.size === 0 || edges.length === 0) return empty;
+
+    // Only route edges without manual waypoints
+    const edgesForRouting = edges.filter(e => {
+      const wp = e.data?.waypoints as unknown[];
+      return !wp || wp.length === 0;
+    });
+    if (edgesForRouting.length === 0) return empty;
+
+    const portAssignments = assignPorts(
+      edgesForRouting.map(e => ({ id: e.id, sourceId: e.source, targetId: e.target })),
+      elementBoundsMap,
+    );
+
+    const routeEdges: RouteEdge[] = edgesForRouting.reduce<RouteEdge[]>((acc, e) => {
+      const ep = portAssignments.get(e.id);
+      if (!ep) return acc;
+      const srcB = elementBoundsMap.get(e.source);
+      const tgtB = elementBoundsMap.get(e.target);
+      acc.push({
+        id: e.id,
+        sourceId: e.source,
+        targetId: e.target,
+        sx1: ep.sx1, sy1: ep.sy1,
+        sx2: ep.sx2, sy2: ep.sy2,
+        srcSide: srcB ? detectPortSide(ep.sx1, ep.sy1, srcB) : undefined,
+        tgtSide: tgtB ? detectPortSide(ep.sx2, ep.sy2, tgtB) : undefined,
+      });
+      return acc;
+    }, []);
+
+    const routeElements: RouteElement[] = [...elementBoundsMap.entries()].map(([id, box]) => ({
+      id, sx: box.x, sy: box.y, width: box.w, height: box.h, scale: 1,
+    }));
+
+    return computeOrthogonalRoutes(routeEdges, routeElements);
+  }, [nodes, edges]); // eslint-disable-line react-hooks/exhaustive-deps
+  // ───────────────────────────────────────────────────────────────────────────
 
   const onNodesChange: OnNodesChange = useCallback((changes) => {
     nodesRef.current = applyNodeChanges(changes, nodesRef.current);
@@ -862,6 +1011,152 @@ export function XYFlowCanvas({
     ));
   }, []);
 
+  // Keyboard shortcuts: arrow nudge, Escape deselect, Ctrl+A select all
+  React.useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      const target = e.target as HTMLElement;
+      // Don't intercept when focus is inside a text input
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
+
+      // Escape — clear selection
+      if (e.key === 'Escape') {
+        // Deselect all xyflow nodes
+        nodesRef.current = nodesRef.current.map(n =>
+          n.selected ? { ...n, selected: false } : n,
+        );
+        edgesRef.current = edgesRef.current.map(e =>
+          e.selected ? { ...e, selected: false } : e,
+        );
+        setSelectedNodeIds(new Set());
+        forceRender(n => n + 1);
+        onClearSelectionRef.current?.();
+        return;
+      }
+
+      // Ctrl+A — select all element nodes
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+        e.preventDefault();
+        nodesRef.current = nodesRef.current.map(n =>
+          n.type === 'archimate' ? { ...n, selected: true } : n,
+        );
+        setSelectedNodeIds(new Set(
+          nodesRef.current.filter(n => n.type === 'archimate').map(n => n.id),
+        ));
+        forceRender(n => n + 1);
+        return;
+      }
+
+      // Arrow keys — nudge selected nodes
+      const NUDGE = e.shiftKey ? 10 : 1;
+      let dx = 0, dy = 0;
+      if (e.key === 'ArrowLeft')  dx = -NUDGE;
+      if (e.key === 'ArrowRight') dx =  NUDGE;
+      if (e.key === 'ArrowUp')    dy = -NUDGE;
+      if (e.key === 'ArrowDown')  dy =  NUDGE;
+      if (dx === 0 && dy === 0) return;
+
+      e.preventDefault();
+      const movedPositions: { element_id: string; x: number; y: number }[] = [];
+      nodesRef.current = nodesRef.current.map(n => {
+        if (!n.selected || n.type !== 'archimate') return n;
+        const newPos = { x: n.position.x + dx, y: n.position.y + dy };
+        movedPositions.push({ element_id: n.id, ...newPos });
+        return { ...n, position: newPos };
+      });
+      nodesRef.current = recomputeBands(nodesRef.current, layerLabels, theme);
+      forceRender(n => n + 1);
+
+      // Debounce the position save so rapid key repeats don't flood the API
+      if (nudgeSaveTimerRef.current) clearTimeout(nudgeSaveTimerRef.current);
+      nudgeSaveTimerRef.current = setTimeout(() => {
+        if (movedPositions.length > 0) {
+          onPositionChangeRef.current?.(movedPositions);
+        }
+      }, 300);
+    }
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [layerLabels, theme]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Alignment — applies to all currently selected archimate nodes
+  const handleAlign = useCallback((action: AlignAction) => {
+    const selected = nodesRef.current.filter(n => n.selected && n.type === 'archimate');
+    if (selected.length < 2) return;
+
+    let updated: Node[];
+
+    if (action === 'dist-h' || action === 'dist-v') {
+      if (selected.length < 3) return;
+      if (action === 'dist-h') {
+        const sorted = [...selected].sort((a, b) => a.position.x - b.position.x);
+        const first = sorted[0]!.position.x;
+        const last = sorted[sorted.length - 1]!.position.x + (sorted[sorted.length - 1]!.width ?? 130);
+        const totalW = sorted.reduce((s, n) => s + (n.width ?? 130), 0);
+        const gap = (last - first - totalW) / (sorted.length - 1);
+        let curX = first;
+        const xMap = new Map<string, number>();
+        for (const n of sorted) {
+          xMap.set(n.id, curX);
+          curX += (n.width ?? 130) + gap;
+        }
+        updated = nodesRef.current.map(n =>
+          xMap.has(n.id) ? { ...n, position: { x: xMap.get(n.id)!, y: n.position.y } } : n,
+        );
+      } else {
+        const sorted = [...selected].sort((a, b) => a.position.y - b.position.y);
+        const first = sorted[0]!.position.y;
+        const last = sorted[sorted.length - 1]!.position.y + (sorted[sorted.length - 1]!.height ?? 50);
+        const totalH = sorted.reduce((s, n) => s + (n.height ?? 50), 0);
+        const gap = (last - first - totalH) / (sorted.length - 1);
+        let curY = first;
+        const yMap = new Map<string, number>();
+        for (const n of sorted) {
+          yMap.set(n.id, curY);
+          curY += (n.height ?? 50) + gap;
+        }
+        updated = nodesRef.current.map(n =>
+          yMap.has(n.id) ? { ...n, position: { x: n.position.x, y: yMap.get(n.id)! } } : n,
+        );
+      }
+    } else {
+      const xs = selected.map(n => n.position.x);
+      const ys = selected.map(n => n.position.y);
+      const rights = selected.map(n => n.position.x + (n.width ?? 130));
+      const bottoms = selected.map(n => n.position.y + (n.height ?? 50));
+      const minX = Math.min(...xs);
+      const maxRight = Math.max(...rights);
+      const minY = Math.min(...ys);
+      const maxBottom = Math.max(...bottoms);
+      const avgCx = (minX + maxRight) / 2;
+      const avgCy = (minY + maxBottom) / 2;
+
+      updated = nodesRef.current.map(n => {
+        if (!n.selected || n.type !== 'archimate') return n;
+        const w = n.width ?? 130;
+        const h = n.height ?? 50;
+        let x = n.position.x;
+        let y = n.position.y;
+        if (action === 'left')     x = minX;
+        if (action === 'right')    x = maxRight - w;
+        if (action === 'centre-h') x = avgCx - w / 2;
+        if (action === 'top')      y = minY;
+        if (action === 'bottom')   y = maxBottom - h;
+        if (action === 'centre-v') y = avgCy - h / 2;
+        return { ...n, position: { x, y } };
+      });
+    }
+
+    nodesRef.current = recomputeBands(updated, layerLabels, theme);
+    forceRender(n => n + 1);
+
+    // Persist all moved positions
+    const moved = nodesRef.current
+      .filter(n => n.selected && n.type === 'archimate')
+      .map(n => ({ element_id: n.id, x: n.position.x, y: n.position.y }));
+    onPositionChangeRef.current?.(moved);
+  }, [layerLabels, theme]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // User draws a connection by dragging from a connector handle to a target element
   const handleConnect = useCallback((connection: Connection) => {
     if (!connection.source || !connection.target) return;
@@ -935,66 +1230,10 @@ export function XYFlowCanvas({
     );
   }
 
-  // ── Obstacle-aware edge routing ──────────────────────────────────────────
-
-  // Detect which face of a node a port coordinate sits on
-  function detectPortSide(px: number, py: number, b: { x: number; y: number; w: number; h: number }): PortSide {
-    const dl = Math.abs(px - b.x);
-    const dr = Math.abs(px - (b.x + b.w));
-    const dt = Math.abs(py - b.y);
-    const db = Math.abs(py - (b.y + b.h));
-    const m = Math.min(dl, dr, dt, db);
-    if (m === dl) return 'left';
-    if (m === dr) return 'right';
-    if (m === dt) return 'top';
-    return 'bottom';
-  }
-
-  // Build element bounds map from current xyflow node state (includes dragged positions)
-  const elementBoundsMap = new Map<string, { x: number; y: number; w: number; h: number }>();
-  for (const n of nodes) {
-    if (n.type === 'layer-band') continue;
-    elementBoundsMap.set(n.id, { x: n.position.x, y: n.position.y, w: n.width ?? 130, h: n.height ?? 50 });
-  }
-
-  // Only compute routed paths for edges that don't have manual waypoints
-  let displayEdges = edges;
-  if (elementBoundsMap.size > 0 && edges.length > 0) {
-    const edgesForRouting = edges.filter(e => {
-      const wp = e.data?.waypoints as unknown[];
-      return !wp || wp.length === 0;
-    });
-
-    if (edgesForRouting.length > 0) {
-      const portAssignments = assignPorts(
-        edgesForRouting.map(e => ({ id: e.id, sourceId: e.source, targetId: e.target })),
-        elementBoundsMap,
-      );
-
-      const routeEdges: RouteEdge[] = edgesForRouting.reduce<RouteEdge[]>((acc, e) => {
-          const ep = portAssignments.get(e.id);
-          if (!ep) return acc;
-          const srcB = elementBoundsMap.get(e.source);
-          const tgtB = elementBoundsMap.get(e.target);
-          acc.push({
-            id: e.id,
-            sourceId: e.source,
-            targetId: e.target,
-            sx1: ep.sx1, sy1: ep.sy1,
-            sx2: ep.sx2, sy2: ep.sy2,
-            srcSide: srcB ? detectPortSide(ep.sx1, ep.sy1, srcB) : undefined,
-            tgtSide: tgtB ? detectPortSide(ep.sx2, ep.sy2, tgtB) : undefined,
-          });
-          return acc;
-        }, []);
-
-      const routeElements: RouteElement[] = [...elementBoundsMap.entries()].map(([id, box]) => ({
-        id, sx: box.x, sy: box.y, width: box.w, height: box.h, scale: 1,
-      }));
-
-      const routedPaths = computeOrthogonalRoutes(routeEdges, routeElements);
-
-      displayEdges = edges.map(e => {
+  // ── Apply memoised routes + connected-edge highlighting ──────────────────
+  // routedPaths was computed by useMemo([nodes, edges]) — not re-run here.
+  let displayEdges = routedPaths.size > 0
+    ? edges.map(e => {
         const routed = routedPaths.get(e.id);
         if (!routed) return e;
         const hasUserWps = ((e.data?.waypoints as unknown[]) ?? []).length > 0;
@@ -1006,9 +1245,9 @@ export function XYFlowCanvas({
             ...(!hasUserWps && { routedWaypoints: routed.pts.slice(1, -1) }),
           },
         };
-      });
-    }
-  }
+      })
+    : edges;
+
   // ── Connected-edge highlighting — mark edges attached to selected nodes ──
   if (selectedNodeIds.size > 0) {
     displayEdges = displayEdges.map(e => ({
@@ -1099,6 +1338,11 @@ export function XYFlowCanvas({
           theme={theme}
         />
       )}
+      <AlignmentToolbar
+        count={selectedNodeIds.size}
+        onAlign={handleAlign}
+        theme={theme}
+      />
       </WaypointUpdateContext.Provider>
     </div>
   );

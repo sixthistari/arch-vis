@@ -243,6 +243,7 @@ export function Canvas(): React.ReactElement {
             onRelationshipsDelete: handleRelationshipsDelete,
             onDropElement: handleDropElement,
             onCreateRelationship: handleCreateRelationship,
+            onClearSelection: clearSelection,
           }),
     ),
 
