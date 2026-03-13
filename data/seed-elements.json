@@ -1,0 +1,78 @@
+{
+  "domains": [
+    {"id": "dom-safety", "name": "Safety", "priority": 1, "maturity": "initial", "autonomy_ceiling": "L2", "track_default": "Track1", "owner_role": "Safety Manager"},
+    {"id": "dom-geology", "name": "Geology & Resource", "priority": 2, "maturity": "initial", "autonomy_ceiling": "L3", "track_default": "Track2", "owner_role": "Head of Geology"},
+    {"id": "dom-operations", "name": "Operations", "priority": 3, "maturity": "initial", "autonomy_ceiling": "L3", "track_default": "Track2", "owner_role": "General Manager Operations"},
+    {"id": "dom-maintenance", "name": "Maintenance & Reliability", "priority": 4, "maturity": "initial", "autonomy_ceiling": "L3", "track_default": "Track2", "owner_role": "Maintenance Manager"},
+    {"id": "dom-enterprise", "name": "Enterprise", "priority": 99, "maturity": "initial", "autonomy_ceiling": "L3", "track_default": "Track2", "owner_role": "Enterprise Architect"}
+  ],
+  "elements": [
+    {"id": "vs-mine-to-port", "name": "Mine-to-Port", "archimate_type": "value-stream", "layer": "strategy", "domain_id": "dom-operations", "status": "active", "description": "End-to-end value stream from extraction to port shipment", "properties": {"stages": ["Extract","Process","Transport","Ship"], "value_proposition": "Deliver coal to port specification on time"}},
+    {"id": "vs-exploration", "name": "Exploration & Tenement", "archimate_type": "value-stream", "layer": "strategy", "domain_id": "dom-geology", "status": "active"},
+
+    {"id": "cap-drill-blast", "name": "Drill & Blast", "archimate_type": "capability", "layer": "strategy", "domain_id": "dom-operations", "status": "active", "properties": {"maturity": "managed", "level": 2}},
+    {"id": "cap-material-move", "name": "Material Movement", "archimate_type": "capability", "layer": "strategy", "domain_id": "dom-operations", "status": "active", "properties": {"maturity": "managed", "level": 2}},
+    {"id": "cap-coal-processing", "name": "Coal Processing", "archimate_type": "capability", "layer": "strategy", "domain_id": "dom-operations", "status": "active", "properties": {"maturity": "initial", "level": 2}},
+    {"id": "cap-knowledge-mgt", "name": "Knowledge Layer Mgt & Enrichment", "archimate_type": "capability", "specialisation": "knowledge-capability", "layer": "strategy", "domain_id": "dom-enterprise", "status": "active", "properties": {"maturity_level": "initial", "domain_coverage": "safety,geology"}},
+
+    {"id": "fn-mine-ops", "name": "Mine Operations", "archimate_type": "business-function", "layer": "business", "sublayer": "processes_functions", "domain_id": "dom-operations", "status": "active"},
+    {"id": "fn-processing-plant", "name": "Processing Plant", "archimate_type": "business-function", "layer": "business", "sublayer": "processes_functions", "domain_id": "dom-operations", "status": "active"},
+    {"id": "fn-logistics", "name": "Logistics & Rail", "archimate_type": "business-function", "layer": "business", "sublayer": "processes_functions", "domain_id": "dom-operations", "status": "active"},
+
+    {"id": "bp-drill-blast", "name": "Drill & Blast", "archimate_type": "business-process", "layer": "business", "sublayer": "processes_functions", "domain_id": "dom-operations", "status": "active", "properties": {"track": "Track2", "governance_level": "standard"}},
+    {"id": "bp-haul-load", "name": "Haul & Load", "archimate_type": "business-process", "layer": "business", "sublayer": "processes_functions", "domain_id": "dom-operations", "status": "active", "properties": {"track": "Track2"}},
+    {"id": "bp-wash-sort", "name": "Wash & Sort", "archimate_type": "business-process", "layer": "business", "sublayer": "processes_functions", "domain_id": "dom-operations", "status": "active"},
+    {"id": "bp-rail-loadout", "name": "Rail Load-out", "archimate_type": "business-process", "layer": "business", "sublayer": "processes_functions", "domain_id": "dom-operations", "status": "active"},
+    {"id": "bp-incident-report", "name": "Incident Reporting", "archimate_type": "business-process", "layer": "business", "sublayer": "processes_functions", "domain_id": "dom-safety", "status": "active", "properties": {"track": "Track1", "governance_level": "governed"}},
+
+    {"id": "ba-pit-super", "name": "Pit Supervisor", "archimate_type": "business-actor", "layer": "business", "sublayer": "actors_roles", "domain_id": "dom-operations", "status": "active", "properties": {"actor_type": "person"}},
+    {"id": "ba-plant-op", "name": "Plant Operator", "archimate_type": "business-actor", "layer": "business", "sublayer": "actors_roles", "domain_id": "dom-operations", "status": "active", "properties": {"actor_type": "person"}},
+    {"id": "ba-safety-mgr", "name": "Safety Manager", "archimate_type": "business-actor", "layer": "business", "sublayer": "actors_roles", "domain_id": "dom-safety", "status": "active", "properties": {"actor_type": "person"}},
+
+    {"id": "br-safety-permit", "name": "Safety Permit to Work", "archimate_type": "contract", "layer": "business", "sublayer": "controls", "domain_id": "dom-safety", "status": "active"},
+    {"id": "br-authority-rule", "name": "Document Authority Scoring", "archimate_type": "contract", "specialisation": "authority-rule", "layer": "business", "sublayer": "controls", "domain_id": "dom-safety", "status": "active", "properties": {"authority_levels": {"Official": 100, "Draft": 50, "Superseded": 10}, "version_chain_policy": "latest-highest"}},
+
+    {"id": "bs-fleet-dispatch", "name": "Fleet Dispatch Service", "archimate_type": "business-service", "layer": "business", "sublayer": "services", "domain_id": "dom-operations", "status": "active"},
+    {"id": "bs-maintenance-svc", "name": "Maintenance Service", "archimate_type": "business-service", "layer": "business", "sublayer": "services", "domain_id": "dom-maintenance", "status": "active"},
+
+    {"id": "bo-blast-pattern", "name": "Blast Pattern", "archimate_type": "business-object", "layer": "business", "sublayer": "objects", "domain_id": "dom-operations", "status": "active"},
+    {"id": "bo-haul-cycle", "name": "Haul Cycle Record", "archimate_type": "business-object", "layer": "business", "sublayer": "objects", "domain_id": "dom-operations", "status": "active"},
+    {"id": "bo-product-spec", "name": "Product Specification Sheet", "archimate_type": "business-object", "layer": "business", "sublayer": "objects", "domain_id": "dom-operations", "status": "active"},
+
+    {"id": "app-wenco", "name": "Wenco FMS", "archimate_type": "application-component", "layer": "application", "sublayer": "components", "domain_id": "dom-operations", "status": "active", "properties": {"vendor": "Wenco", "tier": "strategic", "hosting": "on_prem"}},
+    {"id": "app-sap-pm", "name": "SAP PM", "archimate_type": "application-component", "layer": "application", "sublayer": "components", "domain_id": "dom-maintenance", "status": "active", "properties": {"vendor": "SAP", "tier": "strategic"}},
+    {"id": "app-pi-historian", "name": "PI Historian", "archimate_type": "application-component", "layer": "application", "sublayer": "components", "domain_id": "dom-operations", "status": "active", "properties": {"vendor": "OSIsoft", "tier": "strategic", "hosting": "on_prem"}},
+    {"id": "app-railcar-tracker", "name": "Railcar Tracker", "archimate_type": "application-component", "layer": "application", "sublayer": "components", "domain_id": "dom-operations", "status": "active"},
+
+    {"id": "agent-safety", "name": "Safety Compliance Agent", "archimate_type": "application-component", "specialisation": "domain-agent", "layer": "application", "sublayer": "components", "domain_id": "dom-safety", "status": "active", "properties": {"autonomy_level": "L2", "track": "Track1", "knowledge_store_refs": ["ks-safety"], "capabilities": ["search","summarise","classify"]}},
+    {"id": "agent-incident", "name": "Incident Classifier Agent", "archimate_type": "application-component", "specialisation": "domain-agent", "layer": "application", "sublayer": "components", "domain_id": "dom-safety", "status": "active", "properties": {"autonomy_level": "L2", "track": "Track1"}},
+    {"id": "agent-geology", "name": "Geology Knowledge Agent", "archimate_type": "application-component", "specialisation": "domain-agent", "layer": "application", "sublayer": "components", "domain_id": "dom-geology", "status": "active", "properties": {"autonomy_level": "L3", "track": "Track2"}},
+
+    {"id": "as-dispatch-api", "name": "Dispatch API", "archimate_type": "application-service", "layer": "application", "sublayer": "services_interfaces", "domain_id": "dom-operations", "status": "active"},
+    {"id": "as-krs-safety", "name": "Safety Knowledge Retrieval", "archimate_type": "application-service", "specialisation": "knowledge-retrieval-service", "layer": "application", "sublayer": "services_interfaces", "domain_id": "dom-safety", "status": "active", "properties": {"retrieval_type": "hybrid", "reranking_enabled": true, "authority_filter": true}},
+
+    {"id": "ap-safety-ingest", "name": "Safety Ingestion Pipeline", "archimate_type": "application-process", "specialisation": "ingestion-pipeline", "layer": "application", "sublayer": "functions_processes", "domain_id": "dom-safety", "status": "active", "properties": {"stages": ["extract","chunk","embed","index"], "schedule": "daily", "delta_sync_method": "graph-api-delta"}},
+
+    {"id": "con-autonomy-l2", "name": "Autonomy Level L2 — Safety", "archimate_type": "constraint", "specialisation": "autonomy-level", "layer": "motivation", "domain_id": "dom-safety", "status": "active", "properties": {"level": "L2", "track_ceiling": "Track1", "governance_required": true}},
+    {"id": "con-hitl-safety", "name": "HITL Gate — Safety Actions", "archimate_type": "requirement", "specialisation": "human-in-the-loop-gate", "layer": "motivation", "domain_id": "dom-safety", "status": "active", "properties": {"gate_type": "approval", "sla": "4h", "assignment_model": "Safety Manager"}},
+
+    {"id": "tech-azure-sql", "name": "Azure SQL Managed Instance", "archimate_type": "node", "layer": "technology", "sublayer": "nodes_devices", "domain_id": "dom-enterprise", "status": "active", "properties": {"provider": "Azure", "region": "Australia East"}},
+    {"id": "tech-iot-hub", "name": "Azure IoT Hub", "archimate_type": "node", "layer": "technology", "sublayer": "nodes_devices", "domain_id": "dom-enterprise", "status": "active"},
+    {"id": "tech-vsat", "name": "Site VSAT Link", "archimate_type": "path", "layer": "technology", "sublayer": "nodes_devices", "domain_id": "dom-enterprise", "status": "active"},
+    {"id": "tech-vmware", "name": "On-Prem VMware", "archimate_type": "node", "layer": "technology", "sublayer": "nodes_devices", "domain_id": "dom-enterprise", "status": "active"},
+
+    {"id": "sw-ai-search", "name": "Azure AI Search", "archimate_type": "system-software", "specialisation": "search-engine", "layer": "technology", "sublayer": "system_software", "domain_id": "dom-enterprise", "status": "active", "properties": {"search_type": "hybrid", "service_tier": "S1"}},
+    {"id": "sw-doc-intel", "name": "Azure Document Intelligence", "archimate_type": "system-software", "specialisation": "document-intelligence", "layer": "technology", "sublayer": "system_software", "domain_id": "dom-enterprise", "status": "active"},
+    {"id": "sw-llm-gateway", "name": "Azure OpenAI Gateway", "archimate_type": "system-software", "specialisation": "llm-gateway", "layer": "technology", "sublayer": "system_software", "domain_id": "dom-enterprise", "status": "active", "properties": {"models_available": ["gpt-4o","gpt-4o-mini","text-embedding-3-large"]}},
+    {"id": "sw-embedding", "name": "Embedding Service", "archimate_type": "system-software", "specialisation": "embedding-service", "layer": "technology", "sublayer": "system_software", "domain_id": "dom-enterprise", "status": "active", "properties": {"model_name": "text-embedding-3-large", "dimensions": 3072}},
+
+    {"id": "ks-safety", "name": "Safety Knowledge Store", "archimate_type": "data-object", "specialisation": "knowledge-store", "layer": "data", "sublayer": "objects", "domain_id": "dom-safety", "status": "active", "properties": {"content_types": ["pdf","docx"], "document_count": 450, "source_systems": ["SharePoint"]}},
+    {"id": "ks-geology", "name": "Geology Knowledge Store", "archimate_type": "data-object", "specialisation": "knowledge-store", "layer": "data", "sublayer": "objects", "domain_id": "dom-geology", "status": "active"},
+    {"id": "ont-core", "name": "Enterprise Core Ontology", "archimate_type": "data-object", "specialisation": "core-ontology", "layer": "data", "sublayer": "objects", "domain_id": "dom-enterprise", "status": "active", "properties": {"format": "OWL", "upper_ontology_ref": "BFO"}},
+    {"id": "ont-safety", "name": "Safety Ontology Extension", "archimate_type": "data-object", "specialisation": "ontology-extension", "layer": "data", "sublayer": "objects", "domain_id": "dom-safety", "status": "active", "properties": {"entity_types": ["Hazard","Control","Risk","IncidentType"], "extends_ref": "ont-core"}},
+
+    {"id": "vi-safety", "name": "Safety Vector Index", "archimate_type": "artifact", "specialisation": "vector-index", "layer": "data", "sublayer": "artifacts", "domain_id": "dom-safety", "status": "active", "properties": {"embedding_model": "text-embedding-3-large", "dimensions": 3072, "index_type": "HNSW"}},
+    {"id": "med-safety", "name": "Safety Medallion Store", "archimate_type": "artifact", "specialisation": "medallion-store", "layer": "data", "sublayer": "artifacts", "domain_id": "dom-safety", "status": "active", "properties": {"tier": "bronze-silver-gold", "storage_type": "OneLake"}},
+    {"id": "sc-sharepoint", "name": "SharePoint Connector — Safety", "archimate_type": "artifact", "specialisation": "source-connector", "layer": "data", "sublayer": "artifacts", "domain_id": "dom-safety", "status": "active", "properties": {"source_system": "SharePoint", "sync_method": "graph-api-delta", "sync_frequency": "daily"}}
+  ]
+}

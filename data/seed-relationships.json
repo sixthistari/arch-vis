@@ -1,0 +1,60 @@
+{
+  "relationships": [
+    {"id": "r-vs-cap1", "archimate_type": "composition", "source_id": "vs-mine-to-port", "target_id": "cap-drill-blast", "label": "requires"},
+    {"id": "r-vs-cap2", "archimate_type": "composition", "source_id": "vs-mine-to-port", "target_id": "cap-material-move", "label": "requires"},
+    {"id": "r-vs-cap3", "archimate_type": "composition", "source_id": "vs-mine-to-port", "target_id": "cap-coal-processing", "label": "requires"},
+
+    {"id": "r-cap-fn1", "archimate_type": "realisation", "source_id": "fn-mine-ops", "target_id": "cap-drill-blast"},
+    {"id": "r-cap-fn2", "archimate_type": "realisation", "source_id": "fn-processing-plant", "target_id": "cap-coal-processing"},
+    {"id": "r-cap-fn3", "archimate_type": "realisation", "source_id": "fn-logistics", "target_id": "cap-material-move"},
+
+    {"id": "r-fn-bp1", "archimate_type": "composition", "source_id": "fn-mine-ops", "target_id": "bp-drill-blast"},
+    {"id": "r-fn-bp2", "archimate_type": "composition", "source_id": "fn-mine-ops", "target_id": "bp-haul-load"},
+    {"id": "r-fn-bp3", "archimate_type": "composition", "source_id": "fn-processing-plant", "target_id": "bp-wash-sort"},
+    {"id": "r-fn-bp4", "archimate_type": "composition", "source_id": "fn-logistics", "target_id": "bp-rail-loadout"},
+
+    {"id": "r-bp-flow1", "archimate_type": "flow", "source_id": "bp-drill-blast", "target_id": "bp-haul-load", "label": "feeds"},
+    {"id": "r-bp-flow2", "archimate_type": "flow", "source_id": "bp-haul-load", "target_id": "bp-wash-sort", "label": "feeds"},
+    {"id": "r-bp-flow3", "archimate_type": "flow", "source_id": "bp-wash-sort", "target_id": "bp-rail-loadout", "label": "feeds"},
+
+    {"id": "r-act-bp1", "archimate_type": "assignment", "source_id": "ba-pit-super", "target_id": "bp-drill-blast"},
+    {"id": "r-act-bp2", "archimate_type": "assignment", "source_id": "ba-pit-super", "target_id": "bp-haul-load"},
+    {"id": "r-act-bp3", "archimate_type": "assignment", "source_id": "ba-plant-op", "target_id": "bp-wash-sort"},
+    {"id": "r-act-bp4", "archimate_type": "assignment", "source_id": "ba-safety-mgr", "target_id": "bp-incident-report"},
+
+    {"id": "r-ctl-bp1", "archimate_type": "association", "source_id": "br-safety-permit", "target_id": "bp-drill-blast", "label": "governs"},
+    {"id": "r-ctl-bp2", "archimate_type": "association", "source_id": "br-authority-rule", "target_id": "ks-safety", "label": "governs"},
+
+    {"id": "r-bp-bo1", "archimate_type": "access", "source_id": "bp-drill-blast", "target_id": "bo-blast-pattern", "label": "produces"},
+    {"id": "r-bp-bo2", "archimate_type": "access", "source_id": "bp-haul-load", "target_id": "bo-haul-cycle", "label": "produces"},
+    {"id": "r-bp-bo3", "archimate_type": "access", "source_id": "bp-wash-sort", "target_id": "bo-product-spec", "label": "produces"},
+
+    {"id": "r-bs-app1", "archimate_type": "realisation", "source_id": "app-wenco", "target_id": "bs-fleet-dispatch"},
+    {"id": "r-bs-app2", "archimate_type": "realisation", "source_id": "app-sap-pm", "target_id": "bs-maintenance-svc"},
+
+    {"id": "r-bp-app1", "archimate_type": "serving", "source_id": "app-wenco", "target_id": "bp-haul-load"},
+    {"id": "r-bp-app2", "archimate_type": "serving", "source_id": "app-pi-historian", "target_id": "bp-wash-sort"},
+
+    {"id": "r-app-tech1", "archimate_type": "serving", "source_id": "tech-azure-sql", "target_id": "app-sap-pm"},
+    {"id": "r-app-tech2", "archimate_type": "serving", "source_id": "tech-iot-hub", "target_id": "app-wenco"},
+    {"id": "r-app-tech3", "archimate_type": "serving", "source_id": "tech-vmware", "target_id": "app-pi-historian"},
+
+    {"id": "r-agent-grounded1", "archimate_type": "association", "specialisation": "grounded_in", "source_id": "agent-safety", "target_id": "ks-safety", "label": "grounded in"},
+    {"id": "r-agent-grounded2", "archimate_type": "association", "specialisation": "grounded_in", "source_id": "agent-geology", "target_id": "ks-geology", "label": "grounded in"},
+    {"id": "r-agent-gov1", "archimate_type": "association", "specialisation": "governed_by", "source_id": "agent-safety", "target_id": "con-autonomy-l2", "label": "governed by"},
+    {"id": "r-agent-gov2", "archimate_type": "association", "specialisation": "governed_by", "source_id": "agent-safety", "target_id": "con-hitl-safety", "label": "governed by"},
+
+    {"id": "r-agent-krs", "archimate_type": "serving", "source_id": "as-krs-safety", "target_id": "agent-safety"},
+    {"id": "r-ingest-ks", "archimate_type": "flow", "specialisation": "populates", "source_id": "ap-safety-ingest", "target_id": "ks-safety", "label": "populates"},
+    {"id": "r-sc-ingest", "archimate_type": "flow", "specialisation": "feeds", "source_id": "sc-sharepoint", "target_id": "ap-safety-ingest", "label": "feeds"},
+
+    {"id": "r-ks-vi", "archimate_type": "association", "source_id": "ks-safety", "target_id": "vi-safety", "label": "indexed by"},
+    {"id": "r-ks-med", "archimate_type": "association", "source_id": "ks-safety", "target_id": "med-safety", "label": "staged in"},
+    {"id": "r-ont-ext", "archimate_type": "specialisation", "source_id": "ont-safety", "target_id": "ont-core", "label": "extends"},
+
+    {"id": "r-krs-search", "archimate_type": "serving", "source_id": "sw-ai-search", "target_id": "as-krs-safety"},
+    {"id": "r-ingest-docintel", "archimate_type": "serving", "source_id": "sw-doc-intel", "target_id": "ap-safety-ingest"},
+    {"id": "r-agent-llm", "archimate_type": "serving", "source_id": "sw-llm-gateway", "target_id": "agent-safety"},
+    {"id": "r-ingest-embed", "archimate_type": "serving", "source_id": "sw-embedding", "target_id": "ap-safety-ingest"}
+  ]
+}

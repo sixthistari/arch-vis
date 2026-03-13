@@ -1,0 +1,55 @@
+{
+  "views": [
+    {
+      "id": "view-spatial-full",
+      "name": "Full Model (Spatial)",
+      "viewpoint_type": "layered",
+      "description": "All elements across all layers in spatial 3D view",
+      "render_mode": "spatial",
+      "rotation_default": {"y": -0.3, "x": 0.18},
+      "is_preset": 1
+    },
+    {
+      "id": "view-flat-layered",
+      "name": "Full Model (Flat)",
+      "viewpoint_type": "layered",
+      "description": "Traditional ArchiMate layered view",
+      "render_mode": "flat",
+      "is_preset": 1
+    },
+    {
+      "id": "view-strategy",
+      "name": "Strategy",
+      "viewpoint_type": "layered",
+      "description": "Value streams, capabilities, courses of action",
+      "render_mode": "flat",
+      "filter_layers": ["strategy"],
+      "is_preset": 1
+    },
+    {
+      "id": "view-safety-slice",
+      "name": "Safety Domain Slice",
+      "viewpoint_type": "domain_slice",
+      "description": "Complete vertical slice for Safety domain",
+      "render_mode": "spatial",
+      "filter_domain": "dom-safety",
+      "is_preset": 1
+    },
+    {
+      "id": "view-knowledge",
+      "name": "Knowledge & Cognition",
+      "viewpoint_type": "knowledge_cognition",
+      "description": "AI/Knowledge specialised elements across all layers",
+      "render_mode": "flat",
+      "is_preset": 1
+    },
+    {
+      "id": "view-governance",
+      "name": "Agent Governance Matrix",
+      "viewpoint_type": "governance_matrix",
+      "description": "Agents × grounding × governance × quality",
+      "render_mode": "flat",
+      "is_preset": 1
+    }
+  ]
+}
