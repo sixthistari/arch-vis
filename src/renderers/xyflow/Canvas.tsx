@@ -22,6 +22,7 @@ import {
   applyEdgeChanges,
   reconnectEdge,
   useReactFlow,
+  useViewport,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
@@ -32,12 +33,15 @@ import { UmlMarkerDefs } from './edges/uml/UmlMarkerDefs';
 import type { ArchimateNodeData } from './nodes';
 import type { LayerBandNodeData } from './nodes/LayerBandNode';
 import type { ArchimateEdgeData, LineType } from './edges/ArchimateEdge';
-import type { Element, Relationship, ViewElement, SublayerConfig } from '../../model/types';
+import type { Element, Relationship, ViewElement, SublayerConfig, ValidRelationship } from '../../model/types';
 import { getLayerColours } from '../../notation/colors';
 import { getShapeDefinition } from '../../notation/registry';
 import { computeOrthogonalRoutes, type RouteEdge, type RouteElement, type RoutedEdge, type PortSide } from '../../layout/edge-routing';
 import { assignPorts } from '../../layout/connection-points';
 import { WaypointUpdateContext } from './context';
+import { getNotation, getNodeType, getEdgeType } from '../../model/notation';
+import { useLayerVisibilityStore } from '../../store/layer-visibility';
+import { useDataOverlayStore } from '../../store/data-overlay';
 import React from 'react';
 
 // ═══════════════════════════════════════
@@ -101,9 +105,24 @@ function buildOrderMaps(config: SublayerConfig | null): {
   const layerLabels: Record<string, string> = {};
 
   let layerIdx = 0;
+  // Track the first config key for each base layer (e.g. business_upper → business)
+  const baseLayerSeen = new Map<string, number>();
   for (const [layerKey, layerConfig] of Object.entries(config.layers)) {
-    layerOrder[layerKey] = layerIdx++;
+    layerOrder[layerKey] = layerIdx;
     layerLabels[layerKey] = layerConfig.label;
+
+    // Also map the base layer name (strip _upper, _lower suffixes) for elements
+    // that use the base layer key in the database
+    const baseName = layerKey.replace(/_(upper|lower)$/, '');
+    if (!baseLayerSeen.has(baseName)) {
+      baseLayerSeen.set(baseName, layerIdx);
+      if (!(baseName in layerOrder)) {
+        layerOrder[baseName] = layerIdx;
+        layerLabels[baseName] = layerConfig.label.replace(/ — .*$/, '');
+      }
+    }
+
+    layerIdx++;
     layerConfig.sublayers.forEach((sublayer, sublayerIdx) => {
       const order = sublayerIdx * 10;
       for (const type of sublayer.element_types) {
@@ -116,6 +135,10 @@ function buildOrderMaps(config: SublayerConfig | null): {
   return { layerOrder, sublayerOrder, layerLabels };
 }
 
+/**
+ * Compute grid layout positions for elements without saved positions.
+ * Returns absolute positions (not relative to layer bands).
+ */
 function computeGridLayout(
   elements: Element[],
   layerOrder: Record<string, number>,
@@ -180,19 +203,31 @@ function computeGridLayout(
   return positions;
 }
 
-// Compute layer band boundaries for background rendering
+/** Padding inside a layer band around the child elements. */
+const BAND_PAD = { top: 30, bottom: 20, left: 15, right: 15 };
+/** Vertical gap between adjacent layer bands. */
+const BAND_GAP = 40;
+
+interface LayerBandInfo {
+  layer: string;
+  label: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * Compute layer band positions and sizes from element positions.
+ * Bands are positioned so they don't overlap — each has exclusive vertical space.
+ */
 function computeLayerBands(
   elements: Element[],
   positions: Map<string, { x: number; y: number }>,
   layerLabels: Record<string, string>,
-): {
-  layer: string;
-  label: string;
-  minY: number;
-  maxY: number;
-  maxX: number;
-}[] {
-  const byLayer = new Map<string, { minY: number; maxY: number; maxX: number }>();
+  layerOrder: Record<string, number>,
+): LayerBandInfo[] {
+  const byLayer = new Map<string, { minX: number; minY: number; maxY: number; maxX: number }>();
 
   const NODE_SCALE = 1.6; // must match ArchimateNode scale constant
   for (const el of elements) {
@@ -203,83 +238,127 @@ function computeLayerBands(
     const elH = Math.round(shapeDef.defaultHeight * NODE_SCALE);
     const existing = byLayer.get(el.layer);
     if (existing) {
+      existing.minX = Math.min(existing.minX, pos.x);
       existing.minY = Math.min(existing.minY, pos.y);
       existing.maxY = Math.max(existing.maxY, pos.y + elH);
       existing.maxX = Math.max(existing.maxX, pos.x + elW);
     } else {
-      byLayer.set(el.layer, { minY: pos.y, maxY: pos.y + elH, maxX: pos.x + elW });
+      byLayer.set(el.layer, { minX: pos.x, minY: pos.y, maxY: pos.y + elH, maxX: pos.x + elW });
     }
   }
 
-  // Compute uniform width — all bands use the widest layer's width
-  let globalMaxX = 0;
-  for (const bounds of byLayer.values()) {
-    globalMaxX = Math.max(globalMaxX, bounds.maxX + 30);
-  }
-  // Minimum band width
-  globalMaxX = Math.max(globalMaxX, 800);
+  if (byLayer.size === 0) return [];
 
-  return [...byLayer.entries()]
-    .map(([layer, bounds]) => ({
+  // Compute uniform width — all bands use the widest layer's width
+  let globalWidth = 800;
+  for (const bounds of byLayer.values()) {
+    globalWidth = Math.max(globalWidth, bounds.maxX - bounds.minX + BAND_PAD.left + BAND_PAD.right + 30);
+  }
+
+  // Sort layers by ArchiMate order for vertical stacking
+  const sorted = [...byLayer.entries()].sort(
+    ([a], [b]) => (layerOrder[a] ?? 99) - (layerOrder[b] ?? 99),
+  );
+
+  // Stack bands vertically with gaps — non-overlapping
+  const bands: LayerBandInfo[] = [];
+  let nextY = 0;
+  for (const [layer, bounds] of sorted) {
+    const contentH = bounds.maxY - bounds.minY;
+    const bandH = contentH + BAND_PAD.top + BAND_PAD.bottom;
+    bands.push({
       layer,
       label: layerLabels[layer] ?? layer,
-      minY: bounds.minY - 25,
-      maxY: bounds.maxY + 15,
-      maxX: globalMaxX,
-    }))
-    .sort((a, b) => a.minY - b.minY);
+      x: 0,
+      y: nextY,
+      width: globalWidth,
+      height: bandH,
+    });
+    nextY += bandH + BAND_GAP;
+  }
+
+  return bands;
 }
 
-// ── Live band resize: recomputes band node geometry from current node positions ──
-// Called after every node drag so bands stay tight around their elements.
+/**
+ * Live band resize: recomputes band node dimensions from child element positions.
+ * Child positions are RELATIVE to the band, so we just scan children.
+ * Does NOT move bands — only resizes them to fit their children.
+ */
 function recomputeBands(
   nodes: Node[],
   layerLabels: Record<string, string>,
   theme: 'dark' | 'light',
 ): Node[] {
-  const byLayer = new Map<string, { minY: number; maxY: number; maxX: number }>();
+  // Gather child bounds per band (positions are relative to band)
+  const byBand = new Map<string, { maxX: number; maxY: number }>();
 
   for (const n of nodes) {
-    if (n.type !== 'archimate') continue;
-    const layer = (n.data as { layer: string }).layer;
+    if (n.type === 'layer-band' || !n.parentId) continue;
     const x = n.position.x;
     const y = n.position.y;
     const w = n.width ?? 130;
     const h = n.height ?? 50;
-    const existing = byLayer.get(layer);
+    const existing = byBand.get(n.parentId);
     if (existing) {
-      existing.minY = Math.min(existing.minY, y);
-      existing.maxY = Math.max(existing.maxY, y + h);
       existing.maxX = Math.max(existing.maxX, x + w);
+      existing.maxY = Math.max(existing.maxY, y + h);
     } else {
-      byLayer.set(layer, { minY: y, maxY: y + h, maxX: x + w });
+      byBand.set(n.parentId, { maxX: x + w, maxY: y + h });
     }
   }
 
-  let globalMaxX = 800;
-  for (const b of byLayer.values()) {
-    globalMaxX = Math.max(globalMaxX, b.maxX + 30);
+  // Compute uniform width across all bands
+  let globalWidth = 800;
+  for (const b of byBand.values()) {
+    globalWidth = Math.max(globalWidth, b.maxX + BAND_PAD.left + BAND_PAD.right);
   }
 
   return nodes.map(n => {
     if (!n.id.startsWith('__band-')) return n;
     const layer = n.id.replace('__band-', '');
-    const b = byLayer.get(layer);
+    const b = byBand.get(n.id);
     if (!b) return n;
-    const minY = b.minY - 25;
-    const maxY = b.maxY + 15;
     return {
       ...n,
-      position: { x: n.position.x, y: minY },
+      width: globalWidth,
+      height: b.maxY + BAND_PAD.bottom,
       data: {
         ...n.data,
-        bandHeight: maxY - minY,
-        bandWidth: globalMaxX + 20,
+        bandHeight: b.maxY + BAND_PAD.bottom,
+        bandWidth: globalWidth,
         label: layerLabels[layer] ?? layer,
         theme,
       },
     };
   });
+}
+
+// ═══════════════════════════════════════
+// Data overlay colour maps
+// ═══════════════════════════════════════
+
+const STATUS_COLOURS: Record<string, string> = {
+  active: '#22C55E', draft: '#94A3B8', superseded: '#F59E0B',
+  deprecated: '#EF4444', retired: '#6B7280',
+};
+
+const MATURITY_COLOURS: Record<string, string> = {
+  initial: '#EF4444', defined: '#F59E0B', managed: '#3B82F6', optimised: '#22C55E',
+};
+
+const DOMAIN_PALETTE = ['#3B82F6', '#8B5CF6', '#EC4899', '#F97316', '#14B8A6', '#EAB308', '#6366F1', '#06B6D4'];
+
+function domainColour(domainId: string): string {
+  let hash = 0;
+  for (let i = 0; i < domainId.length; i++) hash = ((hash << 5) - hash + domainId.charCodeAt(i)) | 0;
+  return DOMAIN_PALETTE[Math.abs(hash) % DOMAIN_PALETTE.length]!;
+}
+
+interface OverlayConfig {
+  colourByProperty: string | null;
+  showStatusBadge: boolean;
+  displayFieldKeys: string[];
 }
 
 // ═══════════════════════════════════════
@@ -294,6 +373,7 @@ function elementsToNodes(
   sublayerOrder: Record<string, number> = FALLBACK_SUBLAYER_ORDER,
   layerLabels: Record<string, string> = {},
   onLabelChange?: (id: string, newLabel: string) => void,
+  overlay?: OverlayConfig,
 ): Node[] {
   const posMap = new Map(viewElements.map(ve => [ve.element_id, ve]));
 
@@ -323,46 +403,224 @@ function elementsToNodes(
     };
     allPositions.set(el.id, pos);
 
-    return {
-      id: el.id,
-      type: 'archimate' as const,
-      position: pos,
-      data: {
+    const nodeType = getNodeType(el.archimate_type);
+    const notation = getNotation(el.archimate_type);
+
+    // Build notation-appropriate data object
+    let data: Record<string, unknown>;
+    if (nodeType === 'uml-class') {
+      const props = (el.properties ?? {}) as Record<string, unknown>;
+      data = {
+        label: el.name,
+        classType: el.archimate_type.replace('uml-', '') as string,
+        attributes: (props.attributes as unknown[]) ?? [],
+        methods: (props.methods as unknown[]) ?? [],
+        theme,
+        onLabelChange,
+      };
+    } else if (nodeType === 'uml-component') {
+      const props = (el.properties ?? {}) as Record<string, unknown>;
+      data = {
+        label: el.name,
+        stereotype: (props.stereotype as string) ?? undefined,
+        ports: (props.ports as unknown[]) ?? [],
+        theme,
+        onLabelChange,
+      };
+    } else if (nodeType === 'uml-state') {
+      data = {
+        label: el.name,
+        theme,
+        onLabelChange,
+      };
+    } else if (notation === 'wireframe') {
+      const props = (el.properties ?? {}) as Record<string, unknown>;
+      if (nodeType === 'wf-page') {
+        data = { label: el.name, url: props.url, pageWidth: props.pageWidth, pageHeight: props.pageHeight, theme, onLabelChange };
+      } else if (nodeType === 'wf-section') {
+        data = { label: el.name, sectionType: props.sectionType ?? el.archimate_type.replace('wf-', ''), title: props.title, columns: props.columns, sectionWidth: props.sectionWidth, sectionHeight: props.sectionHeight, theme, onLabelChange };
+      } else if (nodeType === 'wf-nav') {
+        data = { label: el.name, items: props.items, orientation: props.orientation, theme, onLabelChange };
+      } else if (nodeType === 'wf-table') {
+        data = { label: el.name, columns: props.columns, rows: props.rows, theme, onLabelChange };
+      } else if (nodeType === 'wf-form') {
+        data = { label: el.name, fields: props.fields, theme, onLabelChange };
+      } else if (nodeType === 'wf-list') {
+        data = { label: el.name, items: props.items, listType: props.listType, theme, onLabelChange };
+      } else if (nodeType === 'wf-control') {
+        data = { label: el.name, controlType: props.controlType ?? el.archimate_type.replace('wf-', ''), variant: props.variant, placeholder: props.placeholder, value: props.value, theme, onLabelChange };
+      } else {
+        data = { label: el.name, theme, onLabelChange };
+      }
+    } else {
+      // ArchiMate (default) — compute overlay data
+      let colourOverride: { fill: string; stroke: string } | undefined;
+      if (overlay?.colourByProperty === 'status') {
+        const c = STATUS_COLOURS[el.status];
+        if (c) colourOverride = { fill: c + '33', stroke: c };
+      } else if (overlay?.colourByProperty === 'maturity') {
+        const props = (el.properties ?? {}) as Record<string, unknown>;
+        const maturity = (props.maturity as string) ?? undefined;
+        if (maturity) {
+          const c = MATURITY_COLOURS[maturity];
+          if (c) colourOverride = { fill: c + '33', stroke: c };
+        }
+      } else if (overlay?.colourByProperty === 'domain' && el.domain_id) {
+        const c = domainColour(el.domain_id);
+        colourOverride = { fill: c + '33', stroke: c };
+      }
+
+      const statusBadge = overlay?.showStatusBadge ? el.status : undefined;
+
+      const overlayDisplayFields = overlay?.displayFieldKeys && overlay.displayFieldKeys.length > 0
+        ? overlay.displayFieldKeys.map(k => {
+            if (k === 'status') return el.status;
+            if (k === 'layer') return el.layer;
+            if (k === 'domain_id') return el.domain_id ?? '';
+            if (k === 'sublayer') return el.sublayer ?? '';
+            return '';
+          }).filter(Boolean)
+        : undefined;
+
+      data = {
         label: el.name,
         archimateType: el.archimate_type,
         specialisation: el.specialisation,
         layer: el.layer,
         theme,
         onLabelChange,
-      },
-      // Use scaled dimensions to match ArchimateNode's rendered SVG size (scale=1.6)
-      width: ve?.width ?? Math.round(shapeDef.defaultWidth * 1.6),
-      height: ve?.height ?? Math.round(shapeDef.defaultHeight * 1.6),
+        colourOverride,
+        statusBadge,
+        displayFields: overlayDisplayFields,
+      };
+    }
+
+    // Compute dimensions — notation-aware defaults
+    let width: number;
+    let height: number;
+    if (notation === 'archimate') {
+      width = ve?.width ?? Math.round(shapeDef.defaultWidth * 1.6);
+      height = ve?.height ?? Math.round(shapeDef.defaultHeight * 1.6);
+    } else if (nodeType === 'uml-class') {
+      const props = (el.properties ?? {}) as Record<string, unknown>;
+      const attrCount = Array.isArray(props.attributes) ? props.attributes.length : 0;
+      const methCount = Array.isArray(props.methods) ? props.methods.length : 0;
+      width = ve?.width ?? 180;
+      height = ve?.height ?? Math.max(80, 40 + (attrCount + methCount) * 18);
+    } else if (notation === 'wireframe') {
+      width = ve?.width ?? 200;
+      height = ve?.height ?? 100;
+    } else {
+      width = ve?.width ?? 150;
+      height = ve?.height ?? 60;
+    }
+
+    return {
+      id: el.id,
+      type: nodeType,
+      position: pos,
+      data,
+      width,
+      height,
     };
   });
 
-  // Compute layer band background nodes
-  const bands = computeLayerBands(elements, allPositions, layerLabels);
+  // Compute layer band group nodes
+  const bands = computeLayerBands(elements, allPositions, layerLabels, layerOrder);
+
+  // Build a lookup: layer → band info (position/size)
+  const bandLookup = new Map<string, LayerBandInfo>();
+  for (const band of bands) bandLookup.set(band.layer, band);
+
+  // Also compute the original content minX/minY per layer so we can convert to relative
+  const layerContentOrigin = new Map<string, { minX: number; minY: number }>();
+  {
+    for (const el of elements) {
+      const pos = allPositions.get(el.id);
+      if (!pos) continue;
+      const existing = layerContentOrigin.get(el.layer);
+      if (existing) {
+        existing.minX = Math.min(existing.minX, pos.x);
+        existing.minY = Math.min(existing.minY, pos.y);
+      } else {
+        layerContentOrigin.set(el.layer, { minX: pos.x, minY: pos.y });
+      }
+    }
+  }
+
   const bandNodes: Node[] = bands.map((band) => ({
     id: `__band-${band.layer}`,
     type: 'layer-band' as const,
-    position: { x: band.minY === Infinity ? 0 : -10, y: band.minY },
+    position: { x: band.x, y: band.y },
     data: {
       layer: band.layer,
       label: band.label,
-      bandWidth: Math.max(band.maxX + 20, 800),
-      bandHeight: band.maxY - band.minY,
+      bandWidth: band.width,
+      bandHeight: band.height,
       theme,
     } as LayerBandNodeData,
-    selectable: false,
-    draggable: false,
+    selectable: true,
+    draggable: true,
     connectable: false,
+    width: band.width,
+    height: band.height,
     // Render behind element nodes
     zIndex: -1,
     style: { zIndex: -1 },
   }));
 
-  return [...bandNodes, ...elementNodes];
+  // Convert element positions from absolute to band-relative and set parentId
+  const nodeById = new Map(elementNodes.map(n => [n.id, n]));
+  const elById = new Map(elements.map(e => [e.id, e]));
+
+  for (const node of elementNodes) {
+    const el = elById.get(node.id);
+    if (!el) continue;
+
+    // First handle wireframe parent-child nesting
+    if (el.parent_id) {
+      const parentNode = nodeById.get(el.parent_id);
+      if (parentNode) {
+        node.position = {
+          x: Math.max(5, node.position.x - parentNode.position.x),
+          y: Math.max(30, node.position.y - parentNode.position.y),
+        };
+        node.parentId = el.parent_id;
+        node.extent = 'parent';
+        continue; // wireframe children are parented to their element, not a band
+      }
+    }
+
+    // Parent this element to its layer band
+    const bandId = `__band-${el.layer}`;
+    const band = bandLookup.get(el.layer);
+    const origin = layerContentOrigin.get(el.layer);
+    if (band && origin) {
+      // Convert absolute position to band-relative
+      node.position = {
+        x: BAND_PAD.left + (node.position.x - origin.minX),
+        y: BAND_PAD.top + (node.position.y - origin.minY),
+      };
+      node.parentId = bandId;
+      node.extent = 'parent' as const;
+    }
+  }
+
+  // Topological sort: xyflow requires parents before children in the array.
+  // Band nodes come first (depth -1), then elements sorted by nesting depth.
+  const depthCache = new Map<string, number>();
+  function getDepth(id: string): number {
+    const cached = depthCache.get(id);
+    if (cached !== undefined) return cached;
+    const el = elements.find(e => e.id === id);
+    if (!el?.parent_id) { depthCache.set(id, 0); return 0; }
+    const d = getDepth(el.parent_id) + 1;
+    depthCache.set(id, d);
+    return d;
+  }
+  const sortedElements = [...elementNodes].sort((a, b) => getDepth(a.id) - getDepth(b.id));
+
+  return [...bandNodes, ...sortedElements];
 }
 
 /**
@@ -379,18 +637,20 @@ function computeHandleSides(
   tgtPos: { x: number; y: number },
   srcW: number,
   tgtW: number,
+  srcH: number,
+  tgtH: number,
 ): { srcSide: string; tgtSide: string } {
   const srcCx = srcPos.x + srcW / 2;
-  const srcCy = srcPos.y + 20;
+  const srcCy = srcPos.y + srcH / 2;
   const tgtCx = tgtPos.x + tgtW / 2;
-  const tgtCy = tgtPos.y + 20;
+  const tgtCy = tgtPos.y + tgtH / 2;
 
   const dx = tgtCx - srcCx;
   const dy = tgtCy - srcCy;
   const absDy = Math.abs(dy);
 
   // Same row — use left/right
-  if (absDy < 40) {
+  if (absDy < Math.max(srcH, tgtH)) {
     return dx > 0
       ? { srcSide: 'r', tgtSide: 'l' }
       : { srcSide: 'l', tgtSide: 'r' };
@@ -420,7 +680,8 @@ const SIDE_HANDLES: Record<string, string[]> = {
  */
 function relationshipsToEdges(
   relationships: Relationship[],
-  nodePositions: Map<string, { x: number; y: number; w: number }>,
+  nodePositions: Map<string, { x: number; y: number; w: number; h: number }>,
+  theme: 'dark' | 'light' = 'dark',
 ): Edge<ArchimateEdgeData>[] {
   // Track how many edges are using each handle on each node
   // Key: "nodeId:handleSide" → next available slot index (0, 1, 2)
@@ -450,7 +711,7 @@ function relationshipsToEdges(
     let stepOffset = 20;
 
     if (srcPos && tgtPos) {
-      const { srcSide, tgtSide } = computeHandleSides(srcPos, tgtPos, srcPos.w, tgtPos.w);
+      const { srcSide, tgtSide } = computeHandleSides(srcPos, tgtPos, srcPos.w, tgtPos.w, srcPos.h, tgtPos.h);
       const srcResult = nextHandle(rel.source_id, srcSide);
       sourceHandle = srcResult.handleId;
       const tgtResult = nextHandle(rel.target_id, tgtSide);
@@ -459,9 +720,11 @@ function relationshipsToEdges(
       stepOffset = SLOT_OFFSETS[srcResult.slotIndex % SLOT_OFFSETS.length]!;
     }
 
+    const edgeType = getEdgeType(rel.archimate_type);
+
     return {
       id: rel.id,
-      type: 'archimate' as const,
+      type: edgeType,
       source: rel.source_id,
       target: rel.target_id,
       sourceHandle,
@@ -472,6 +735,8 @@ function relationshipsToEdges(
         label: rel.label ?? undefined,
         specialisation: rel.specialisation,
         stepOffset,
+        theme,
+        ...(edgeType === 'uml-edge' ? { edgeType: rel.archimate_type } : {}),
       },
     };
   });
@@ -499,6 +764,21 @@ const ARCHIMATE_REL_TYPES = [
   { value: 'specialisation', label: 'Specialisation' },
 ];
 
+const UML_REL_TYPES = [
+  { value: 'uml-inheritance',   label: 'Inheritance' },
+  { value: 'uml-realisation',   label: 'Realisation' },
+  { value: 'uml-composition',   label: 'Composition' },
+  { value: 'uml-aggregation',   label: 'Aggregation' },
+  { value: 'uml-association',   label: 'Association' },
+  { value: 'uml-dependency',    label: 'Dependency' },
+];
+
+const WF_REL_TYPES = [
+  { value: 'wf-contains',      label: 'Contains' },
+  { value: 'wf-navigates-to',  label: 'Navigates To' },
+  { value: 'wf-binds-to',      label: 'Binds To' },
+];
+
 interface PendingConnection {
   sourceId: string;
   targetId: string;
@@ -507,21 +787,56 @@ interface PendingConnection {
 }
 
 function RelationshipTypePicker({
-  conn, onSelect, onCancel, theme,
+  conn, onSelect, onCancel, theme, sourceType, targetType, validRelationships, sourceNotation,
 }: {
   conn: PendingConnection;
   onSelect: (type: string) => void;
   onCancel: () => void;
   theme: 'dark' | 'light';
+  sourceType: string;
+  targetType: string;
+  validRelationships: ValidRelationship[];
+  sourceNotation?: 'archimate' | 'uml' | 'wireframe';
 }) {
   const isDark = theme === 'dark';
   const bg = isDark ? '#1E293B' : '#FFFFFF';
   const border = isDark ? '#334155' : '#E2E8F0';
   const textColour = isDark ? '#E5E7EB' : '#1F2937';
+  const invalidColour = isDark ? '#4B5563' : '#CBD5E1';
   const hoverBg = isDark ? '#334155' : '#F1F5F9';
 
+  // Select relationship type list based on source notation
+  const relTypes = sourceNotation === 'uml' ? UML_REL_TYPES
+    : sourceNotation === 'wireframe' ? WF_REL_TYPES
+    : ARCHIMATE_REL_TYPES;
+
+  // Build a set of valid relationship types for this source→target pair
+  const validSet = React.useMemo(() => {
+    const set = new Set<string>();
+    // Association is universally valid
+    set.add('association');
+    // Specialisation is valid between same-type elements
+    if (sourceType === targetType) {
+      set.add('specialisation');
+    }
+    // Check the valid_relationships table
+    for (const vr of validRelationships) {
+      if (vr.source_archimate_type === sourceType && vr.target_archimate_type === targetType) {
+        set.add(vr.relationship_type);
+      }
+    }
+    return set;
+  }, [sourceType, targetType, validRelationships]);
+
+  // Sort: valid types first, then invalid
+  const sortedTypes = React.useMemo(() => {
+    const valid = relTypes.filter(rt => validSet.has(rt.value));
+    const invalid = relTypes.filter(rt => !validSet.has(rt.value));
+    return { valid, invalid };
+  }, [validSet, relTypes]);
+
   // Keep picker inside the canvas bounds
-  const pickerW = 160;
+  const pickerW = 200;
   const clampedX = Math.min(conn.x, window.innerWidth - pickerW - 20);
 
   return (
@@ -538,13 +853,15 @@ function RelationshipTypePicker({
         boxShadow: '0 4px 16px rgba(0,0,0,0.45)',
         minWidth: pickerW,
         fontFamily: 'Inter, system-ui, sans-serif',
+        maxHeight: '80vh',
+        overflowY: 'auto',
       }}
       onMouseDown={e => e.stopPropagation()}
     >
       <div style={{ padding: '4px 12px 6px', fontSize: 10, color: isDark ? '#6B7280' : '#9CA3AF', fontWeight: 600, letterSpacing: 0.5, textTransform: 'uppercase' }}>
         Relationship type
       </div>
-      {ARCHIMATE_REL_TYPES.map(rt => (
+      {sortedTypes.valid.map(rt => (
         <div
           key={rt.value}
           onClick={() => onSelect(rt.value)}
@@ -555,6 +872,26 @@ function RelationshipTypePicker({
           {rt.label}
         </div>
       ))}
+      {sortedTypes.invalid.length > 0 && (
+        <>
+          <div style={{ borderTop: `1px solid ${border}`, margin: '4px 0' }} />
+          <div style={{ padding: '2px 12px 4px', fontSize: 9, color: isDark ? '#4B5563' : '#9CA3AF', fontWeight: 600, letterSpacing: 0.5, textTransform: 'uppercase' }}>
+            Not valid for this pair
+          </div>
+          {sortedTypes.invalid.map(rt => (
+            <div
+              key={rt.value}
+              onClick={() => onSelect(rt.value)}
+              title="Not valid per ArchiMate 3.2 metamodel for this element pair"
+              style={{ padding: '5px 12px', cursor: 'pointer', fontSize: 11, color: invalidColour, opacity: 0.6 }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = hoverBg; (e.currentTarget as HTMLElement).style.opacity = '0.8'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.opacity = '0.6'; }}
+            >
+              {rt.label}
+            </div>
+          ))}
+        </>
+      )}
       <div style={{ borderTop: `1px solid ${border}`, margin: '4px 0' }} />
       <div
         onClick={onCancel}
@@ -634,6 +971,61 @@ function AlignmentToolbar({
   );
 }
 
+/* ---------- Alignment snapline overlay (rendered inside ReactFlow) ---------- */
+
+function SnaplineOverlay({ lines }: { lines: { x?: number; y?: number }[] }) {
+  const { x: vx, y: vy, zoom } = useViewport();
+  if (lines.length === 0) return null;
+
+  return (
+    <svg
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        pointerEvents: 'none',
+        zIndex: 1000,
+      }}
+    >
+      {lines.map((line, i) => {
+        if (line.x !== undefined) {
+          const sx = line.x * zoom + vx;
+          return (
+            <line
+              key={`snap-x-${i}`}
+              x1={sx}
+              y1={0}
+              x2={sx}
+              y2="100%"
+              stroke="#F97316"
+              strokeWidth={1}
+              strokeDasharray="4 2"
+            />
+          );
+        }
+        if (line.y !== undefined) {
+          const sy = line.y * zoom + vy;
+          return (
+            <line
+              key={`snap-y-${i}`}
+              x1={0}
+              y1={sy}
+              x2="100%"
+              y2={sy}
+              stroke="#F97316"
+              strokeWidth={1}
+              strokeDasharray="4 2"
+            />
+          );
+        }
+        return null;
+      })}
+    </svg>
+  );
+}
+
 interface XYFlowCanvasProps {
   elements: Element[];
   relationships: Relationship[];
@@ -647,18 +1039,24 @@ interface XYFlowCanvasProps {
   onElementsDelete?: (elementIds: string[]) => void;
   onRelationshipsDelete?: (relationshipIds: string[]) => void;
   onDropElement?: (archimateType: string, layer: string, x: number, y: number) => void;
+  onDropTreeElement?: (elementId: string, x: number, y: number) => void;
   onCreateRelationship?: (sourceId: string, targetId: string, relType: string) => void;
   onClearSelection?: () => void;
+  onNodeContextMenu?: (elementId: string, x: number, y: number) => void;
+  validRelationships?: ValidRelationship[];
 }
 
 // ── Bridge: captures screenToFlowPosition inside the ReactFlow provider ───
 function ScreenToFlowBridge({
   bridgeRef,
+  fitViewRef,
 }: {
   bridgeRef: React.MutableRefObject<((pos: { x: number; y: number }) => { x: number; y: number }) | null>;
+  fitViewRef: React.MutableRefObject<(() => void) | null>;
 }) {
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, fitView } = useReactFlow();
   bridgeRef.current = screenToFlowPosition;
+  fitViewRef.current = () => fitView({ padding: 0.15 });
   return null;
 }
 
@@ -761,8 +1159,11 @@ export function XYFlowCanvas({
   onElementsDelete,
   onRelationshipsDelete,
   onDropElement,
+  onDropTreeElement,
   onCreateRelationship,
   onClearSelection,
+  onNodeContextMenu,
+  validRelationships = [],
 }: XYFlowCanvasProps) {
   // Derive layout order maps from sublayer config (or fallback to hardcoded)
   const { layerOrder, sublayerOrder, layerLabels } = React.useMemo(
@@ -777,8 +1178,9 @@ export function XYFlowCanvas({
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [, forceRender] = React.useState(0);
 
-  // screenToFlowPosition captured from inside the ReactFlow provider via ScreenToFlowBridge
+  // screenToFlowPosition + fitView captured from inside the ReactFlow provider via ScreenToFlowBridge
   const screenToFlowRef = React.useRef<((pos: { x: number; y: number }) => { x: number; y: number }) | null>(null);
+  const fitViewRef = React.useRef<(() => void) | null>(null);
 
   // Mouse position in canvas-local coordinates (used to position relationship picker)
   const containerMouseRef = React.useRef({ x: 0, y: 0 });
@@ -786,11 +1188,30 @@ export function XYFlowCanvas({
   const pendingConnRef = React.useRef<{ sourceId: string; targetId: string } | null>(null);
   const [pendingConnection, setPendingConnection] = React.useState<PendingConnection | null>(null);
 
+  // Layer visibility / lock controls
+  const hiddenLayers = useLayerVisibilityStore(s => s.hiddenLayers);
+  const lockedLayers = useLayerVisibilityStore(s => s.lockedLayers);
+  const layerOpacityMap = useLayerVisibilityStore(s => s.layerOpacity);
+  const showRelationships = useLayerVisibilityStore(s => s.showRelationships);
+
+  // Data overlay controls
+  const colourByProperty = useDataOverlayStore(s => s.colourByProperty);
+  const showStatusBadge = useDataOverlayStore(s => s.showStatusBadge);
+  const displayFieldKeys = useDataOverlayStore(s => s.displayFields);
+  const overlayConfig: OverlayConfig = React.useMemo(() => ({
+    colourByProperty,
+    showStatusBadge,
+    displayFieldKeys,
+  }), [colourByProperty, showStatusBadge, displayFieldKeys]);
+
   // Edge context menu state
   const [edgeMenu, setEdgeMenu] = React.useState<EdgeContextMenuState | null>(null);
 
   // Selected node IDs for connected-edge highlighting
   const [selectedNodeIds, setSelectedNodeIds] = React.useState<Set<string>>(new Set());
+
+  // Alignment snaplines shown during node drag
+  const [snaplines, setSnaplines] = React.useState<{ x?: number; y?: number }[]>([]);
 
   // Stable callback refs — avoid stale closures in keyboard useEffect
   const onPositionChangeRef = React.useRef(onPositionChange);
@@ -800,12 +1221,25 @@ export function XYFlowCanvas({
   // Timer ref for debouncing nudge position saves
   const nudgeSaveTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Build position map from nodes for edge handle computation
-  function buildPositionMap(nodes: Node[]): Map<string, { x: number; y: number; w: number }> {
-    const map = new Map<string, { x: number; y: number; w: number }>();
+  // Build position map with ABSOLUTE positions for edge handle computation.
+  // Child nodes have positions relative to their parent — we resolve to absolute.
+  function buildPositionMap(nodes: Node[]): Map<string, { x: number; y: number; w: number; h: number }> {
+    const nodeMap = new Map<string, Node>();
+    for (const n of nodes) nodeMap.set(n.id, n);
+
+    function absolutePos(n: Node): { x: number; y: number } {
+      if (!n.parentId) return { x: n.position.x, y: n.position.y };
+      const parent = nodeMap.get(n.parentId);
+      if (!parent) return { x: n.position.x, y: n.position.y };
+      const pp = absolutePos(parent);
+      return { x: pp.x + n.position.x, y: pp.y + n.position.y };
+    }
+
+    const map = new Map<string, { x: number; y: number; w: number; h: number }>();
     for (const n of nodes) {
       if (n.type !== 'layer-band') {
-        map.set(n.id, { x: n.position.x, y: n.position.y, w: n.width ?? 130 });
+        const abs = absolutePos(n);
+        map.set(n.id, { x: abs.x, y: abs.y, w: n.width ?? 130, h: n.height ?? 80 });
       }
     }
     return map;
@@ -815,14 +1249,14 @@ export function XYFlowCanvas({
   const viewChanged = currentViewRef.current !== viewId;
   if (viewChanged) {
     currentViewRef.current = viewId;
-    nodesRef.current = elementsToNodes(elements, viewElements, theme, layerOrder, sublayerOrder, layerLabels, onLabelChange);
-    edgesRef.current = relationshipsToEdges(relationships, buildPositionMap(nodesRef.current));
+    nodesRef.current = elementsToNodes(elements, viewElements, theme, layerOrder, sublayerOrder, layerLabels, onLabelChange, overlayConfig);
+    edgesRef.current = relationshipsToEdges(relationships, buildPositionMap(nodesRef.current), theme);
   }
 
   // Initial load — if ref is empty, compute
   if (nodesRef.current.length === 0 && elements.length > 0) {
-    nodesRef.current = elementsToNodes(elements, viewElements, theme, layerOrder, sublayerOrder, layerLabels, onLabelChange);
-    edgesRef.current = relationshipsToEdges(relationships, buildPositionMap(nodesRef.current));
+    nodesRef.current = elementsToNodes(elements, viewElements, theme, layerOrder, sublayerOrder, layerLabels, onLabelChange, overlayConfig);
+    edgesRef.current = relationshipsToEdges(relationships, buildPositionMap(nodesRef.current), theme);
   }
 
   // Position-preserving rebuild whenever elements change (rename, create, external delete).
@@ -830,21 +1264,18 @@ export function XYFlowCanvas({
   React.useEffect(() => {
     if (nodesRef.current.length === 0) return; // initial load handles itself
 
-    // Snapshot positions that may have been dragged by the user
-    const draggedPos = new Map<string, { x: number; y: number }>();
-    for (const n of nodesRef.current) {
-      if (n.type === 'archimate') draggedPos.set(n.id, n.position);
-    }
+    // Snapshot ABSOLUTE positions of elements (resolving parent-child nesting)
+    const absPositions = buildPositionMap(nodesRef.current);
     // Merge dragged positions into viewElements so elementsToNodes respects them
     const liveVE = viewElements.map(ve => {
-      const p = draggedPos.get(ve.element_id);
+      const p = absPositions.get(ve.element_id);
       return p ? { ...ve, x: p.x, y: p.y } : ve;
     });
 
-    nodesRef.current = elementsToNodes(elements, liveVE, theme, layerOrder, sublayerOrder, layerLabels, onLabelChange);
-    edgesRef.current = relationshipsToEdges(relationships, buildPositionMap(nodesRef.current));
+    nodesRef.current = elementsToNodes(elements, liveVE, theme, layerOrder, sublayerOrder, layerLabels, onLabelChange, overlayConfig);
+    edgesRef.current = relationshipsToEdges(relationships, buildPositionMap(nodesRef.current), theme);
     forceRender(n => n + 1);
-  }, [elements]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [elements, overlayConfig]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const nodes = nodesRef.current;
   const edges = edgesRef.current;
@@ -856,14 +1287,11 @@ export function XYFlowCanvas({
   const routedPaths = React.useMemo((): Map<string, RoutedEdge> => {
     const empty = new Map<string, RoutedEdge>();
 
-    // Build element bounds map (archimate nodes only, not layer-band backgrounds)
+    // Build element bounds map with ABSOLUTE positions (resolving parent-child nesting)
+    const absMap = buildPositionMap(nodes);
     const elementBoundsMap = new Map<string, { x: number; y: number; w: number; h: number }>();
-    for (const n of nodes) {
-      if (n.type === 'layer-band') continue;
-      elementBoundsMap.set(n.id, {
-        x: n.position.x, y: n.position.y,
-        w: n.width ?? 130, h: n.height ?? 50,
-      });
+    for (const [id, pos] of absMap) {
+      elementBoundsMap.set(id, pos);
     }
     if (elementBoundsMap.size === 0 || edges.length === 0) return empty;
 
@@ -918,29 +1346,124 @@ export function XYFlowCanvas({
     onNodeClick?.(node.id);
   }, [onNodeClick]);
 
+  /** Resolve a node's absolute position (handles parent-child nesting). */
+  function resolveAbsolutePos(nodeId: string): { x: number; y: number } {
+    const nodeMap = new Map<string, Node>();
+    for (const n of nodesRef.current) nodeMap.set(n.id, n);
+
+    function abs(n: Node): { x: number; y: number } {
+      if (!n.parentId) return { x: n.position.x, y: n.position.y };
+      const parent = nodeMap.get(n.parentId);
+      if (!parent) return { x: n.position.x, y: n.position.y };
+      const pp = abs(parent);
+      return { x: pp.x + n.position.x, y: pp.y + n.position.y };
+    }
+
+    const node = nodeMap.get(nodeId);
+    if (!node) return { x: 0, y: 0 };
+    return abs(node);
+  }
+
   const handleNodeDragStop: NodeMouseHandler = useCallback((_event, node) => {
-    // Refit layer bands around new element positions
-    nodesRef.current = recomputeBands(nodesRef.current, layerLabels, theme);
-    forceRender(n => n + 1);
-    if (onPositionChange) {
-      onPositionChange([{
-        element_id: node.id,
-        x: node.position.x,
-        y: node.position.y,
-      }]);
+    setSnaplines([]);
+
+    if (node.type === 'layer-band') {
+      // Layer band dragged — all children moved with it, save their absolute positions
+      forceRender(n => n + 1);
+      if (onPositionChange) {
+        const children = nodesRef.current.filter(
+          n => n.parentId === node.id && n.type !== 'layer-band',
+        );
+        const positions = children.map(n => {
+          const abs = resolveAbsolutePos(n.id);
+          return { element_id: n.id, x: abs.x, y: abs.y };
+        });
+        if (positions.length > 0) onPositionChange(positions);
+      }
+    } else {
+      // Element node dragged — refit the parent band, save element position
+      nodesRef.current = recomputeBands(nodesRef.current, layerLabels, theme);
+      forceRender(n => n + 1);
+      if (onPositionChange) {
+        const abs = resolveAbsolutePos(node.id);
+        onPositionChange([{ element_id: node.id, x: abs.x, y: abs.y }]);
+      }
     }
   }, [onPositionChange, layerLabels, theme]);
 
-  // Multi-select drag stop — same band refit + save all moved positions
+  // Alignment snaplines during drag — show guides when near other nodes' edges/centres
+  const handleNodeDrag: NodeMouseHandler = useCallback((_event, draggedNode) => {
+    if (draggedNode.type === 'layer-band') return;
+    const SNAP_THRESHOLD = 5;
+    const lines: { x?: number; y?: number }[] = [];
+
+    const dw = draggedNode.width ?? 130;
+    const dh = draggedNode.height ?? 50;
+    const dLeft = draggedNode.position.x;
+    const dRight = dLeft + dw;
+    const dCx = dLeft + dw / 2;
+    const dTop = draggedNode.position.y;
+    const dBottom = dTop + dh;
+    const dCy = dTop + dh / 2;
+
+    const seenX = new Set<number>();
+    const seenY = new Set<number>();
+
+    for (const n of nodesRef.current) {
+      if (n.id === draggedNode.id || n.type === 'layer-band') continue;
+      const nw = n.width ?? 130;
+      const nh = n.height ?? 50;
+      const nLeft = n.position.x;
+      const nRight = nLeft + nw;
+      const nCx = nLeft + nw / 2;
+      const nTop = n.position.y;
+      const nBottom = nTop + nh;
+      const nCy = nTop + nh / 2;
+
+      // Vertical guide lines (x-axis alignment)
+      for (const nx of [nLeft, nRight, nCx]) {
+        for (const dx of [dLeft, dRight, dCx]) {
+          if (Math.abs(dx - nx) <= SNAP_THRESHOLD && !seenX.has(nx)) {
+            seenX.add(nx);
+            lines.push({ x: nx });
+          }
+        }
+      }
+
+      // Horizontal guide lines (y-axis alignment)
+      for (const ny of [nTop, nBottom, nCy]) {
+        for (const dy of [dTop, dBottom, dCy]) {
+          if (Math.abs(dy - ny) <= SNAP_THRESHOLD && !seenY.has(ny)) {
+            seenY.add(ny);
+            lines.push({ y: ny });
+          }
+        }
+      }
+    }
+
+    setSnaplines(lines);
+  }, []);
+
+  // Multi-select drag stop — save absolute positions
   const handleSelectionDragStop = useCallback((_event: React.MouseEvent, movedNodes: Node[]) => {
     nodesRef.current = recomputeBands(nodesRef.current, layerLabels, theme);
     forceRender(n => n + 1);
     if (onPositionChange) {
-      onPositionChange(
-        movedNodes
-          .filter(n => n.type === 'archimate')
-          .map(n => ({ element_id: n.id, x: n.position.x, y: n.position.y })),
-      );
+      const elementNodes = movedNodes.filter(n => n.type !== 'layer-band');
+      // If a layer band was in the selection, also include its children
+      const bandIds = new Set(movedNodes.filter(n => n.type === 'layer-band').map(n => n.id));
+      if (bandIds.size > 0) {
+        for (const n of nodesRef.current) {
+          if (n.parentId && bandIds.has(n.parentId) && n.type !== 'layer-band') {
+            if (!elementNodes.find(en => en.id === n.id)) elementNodes.push(n);
+          }
+        }
+      }
+      const positions = elementNodes.map(n => {
+        const abs = resolveAbsolutePos(n.id);
+        return { element_id: n.id, x: abs.x, y: abs.y };
+      });
+      if (positions.length > 0) onPositionChange(positions);
     }
   }, [onPositionChange, layerLabels, theme]);
 
@@ -963,6 +1486,15 @@ export function XYFlowCanvas({
   }, [onRelationshipsDelete]);
 
   // Edge right-click context menu
+  const handleNodeContextMenu = useCallback((event: React.MouseEvent, node: Node) => {
+    event.preventDefault();
+    if (node.type === 'layerBand') return;
+    const data = node.data as ArchimateNodeData;
+    if (onNodeContextMenu) {
+      onNodeContextMenu(data.elementId as string, event.clientX, event.clientY);
+    }
+  }, [onNodeContextMenu]);
+
   const handleEdgeContextMenu = useCallback((event: React.MouseEvent, edge: Edge) => {
     event.preventDefault();
     // Position relative to the canvas container, not the viewport
@@ -1037,10 +1569,10 @@ export function XYFlowCanvas({
       if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
         e.preventDefault();
         nodesRef.current = nodesRef.current.map(n =>
-          n.type === 'archimate' ? { ...n, selected: true } : n,
+          n.type !== 'layer-band' ? { ...n, selected: true } : n,
         );
         setSelectedNodeIds(new Set(
-          nodesRef.current.filter(n => n.type === 'archimate').map(n => n.id),
+          nodesRef.current.filter(n => n.type !== 'layer-band').map(n => n.id),
         ));
         forceRender(n => n + 1);
         return;
@@ -1056,15 +1588,31 @@ export function XYFlowCanvas({
       if (dx === 0 && dy === 0) return;
 
       e.preventDefault();
-      const movedPositions: { element_id: string; x: number; y: number }[] = [];
+      // Nudge selected nodes (including layer bands — children move with them)
       nodesRef.current = nodesRef.current.map(n => {
-        if (!n.selected || n.type !== 'archimate') return n;
-        const newPos = { x: n.position.x + dx, y: n.position.y + dy };
-        movedPositions.push({ element_id: n.id, ...newPos });
-        return { ...n, position: newPos };
+        if (!n.selected) return n;
+        return { ...n, position: { x: n.position.x + dx, y: n.position.y + dy } };
       });
       nodesRef.current = recomputeBands(nodesRef.current, layerLabels, theme);
       forceRender(n => n + 1);
+
+      // Collect absolute positions of all affected element nodes for save
+      const movedIds = new Set<string>();
+      for (const n of nodesRef.current) {
+        if (!n.selected) continue;
+        if (n.type === 'layer-band') {
+          // Layer band selected — all its children moved
+          for (const c of nodesRef.current) {
+            if (c.parentId === n.id && c.type !== 'layer-band') movedIds.add(c.id);
+          }
+        } else {
+          movedIds.add(n.id);
+        }
+      }
+      const movedPositions = [...movedIds].map(id => {
+        const abs = resolveAbsolutePos(id);
+        return { element_id: id, x: abs.x, y: abs.y };
+      });
 
       // Debounce the position save so rapid key repeats don't flood the API
       if (nudgeSaveTimerRef.current) clearTimeout(nudgeSaveTimerRef.current);
@@ -1081,7 +1629,7 @@ export function XYFlowCanvas({
 
   // Alignment — applies to all currently selected archimate nodes
   const handleAlign = useCallback((action: AlignAction) => {
-    const selected = nodesRef.current.filter(n => n.selected && n.type === 'archimate');
+    const selected = nodesRef.current.filter(n => n.selected && n.type !== 'layer-band');
     if (selected.length < 2) return;
 
     let updated: Node[];
@@ -1132,7 +1680,7 @@ export function XYFlowCanvas({
       const avgCy = (minY + maxBottom) / 2;
 
       updated = nodesRef.current.map(n => {
-        if (!n.selected || n.type !== 'archimate') return n;
+        if (!n.selected || n.type === 'layer-band') return n;
         const w = n.width ?? 130;
         const h = n.height ?? 50;
         let x = n.position.x;
@@ -1150,10 +1698,13 @@ export function XYFlowCanvas({
     nodesRef.current = recomputeBands(updated, layerLabels, theme);
     forceRender(n => n + 1);
 
-    // Persist all moved positions
+    // Persist all moved positions (as absolute coordinates)
     const moved = nodesRef.current
-      .filter(n => n.selected && n.type === 'archimate')
-      .map(n => ({ element_id: n.id, x: n.position.x, y: n.position.y }));
+      .filter(n => n.selected && n.type !== 'layer-band')
+      .map(n => {
+        const abs = resolveAbsolutePos(n.id);
+        return { element_id: n.id, x: abs.x, y: abs.y };
+      });
     onPositionChangeRef.current?.(moved);
   }, [layerLabels, theme]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -1191,6 +1742,17 @@ export function XYFlowCanvas({
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     try {
+      // Check for model tree drag first
+      const treeRaw = e.dataTransfer.getData('application/archvis-tree');
+      if (treeRaw) {
+        const treeData = JSON.parse(treeRaw) as { elementId: string; archimateType: string; layer: string };
+        const pos = screenToFlowRef.current?.({ x: e.clientX, y: e.clientY });
+        if (pos && onDropTreeElement) {
+          onDropTreeElement(treeData.elementId, pos.x, pos.y);
+        }
+        return;
+      }
+      // Palette drag-to-create
       const raw = e.dataTransfer.getData('application/json');
       if (!raw) return;
       const data = JSON.parse(raw) as { archimate_type: string; layer: string };
@@ -1201,7 +1763,7 @@ export function XYFlowCanvas({
     } catch {
       // ignore malformed drop data
     }
-  }, [onDropElement]);
+  }, [onDropElement, onDropTreeElement]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -1260,6 +1822,46 @@ export function XYFlowCanvas({
   }
   // ────────────────────────────────────────────────────────────────────────
 
+  // ── Layer visibility, lock, and opacity filtering ─────────────────────
+  const hasLayerFilters = hiddenLayers.size > 0 || lockedLayers.size > 0
+    || Object.keys(layerOpacityMap).length > 0;
+
+  const displayNodes = hasLayerFilters
+    ? nodes.map(n => {
+        if (n.type === 'layer-band') {
+          const bandLayer = n.id.replace('__band-', '');
+          if (hiddenLayers.has(bandLayer)) return { ...n, hidden: true };
+          return n;
+        }
+        const nodeLayer = (n.data as Record<string, unknown>)?.layer as string | undefined;
+        if (!nodeLayer) return n;
+        if (hiddenLayers.has(nodeLayer)) return { ...n, hidden: true };
+        let result = n;
+        if (lockedLayers.has(nodeLayer)) {
+          result = { ...result, draggable: false, selectable: false };
+        }
+        const opacity = layerOpacityMap[nodeLayer];
+        if (opacity !== undefined && opacity < 1) {
+          result = { ...result, style: { ...result.style, opacity } };
+        }
+        return result;
+      })
+    : nodes;
+
+  const filteredEdges = !showRelationships
+    ? displayEdges.map(e => ({ ...e, hidden: true }))
+    : hiddenLayers.size > 0
+      ? displayEdges.map(e => {
+          const srcNode = displayNodes.find(n => n.id === e.source);
+          const tgtNode = displayNodes.find(n => n.id === e.target);
+          if (srcNode?.hidden === true || tgtNode?.hidden === true) {
+            return { ...e, hidden: true };
+          }
+          return e;
+        })
+      : displayEdges;
+  // ────────────────────────────────────────────────────────────────────────
+
   return (
     <div
       ref={containerRef}
@@ -1276,15 +1878,17 @@ export function XYFlowCanvas({
       <UmlMarkerDefs />
       <WaypointUpdateContext.Provider value={updateWaypoints}>
       <ReactFlow
-        nodes={nodes}
-        edges={displayEdges}
+        nodes={displayNodes}
+        edges={filteredEdges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodeClick={handleNodeClick}
+        onNodeDrag={handleNodeDrag}
         onNodeDragStop={handleNodeDragStop}
         onSelectionDragStop={handleSelectionDragStop}
         onReconnect={handleReconnect}
         onEdgeContextMenu={handleEdgeContextMenu}
+        onNodeContextMenu={handleNodeContextMenu}
         onPaneClick={handlePaneClick}
         onSelectionChange={handleSelectionChange}
         onNodesDelete={handleNodesDelete}
@@ -1309,9 +1913,44 @@ export function XYFlowCanvas({
         proOptions={{ hideAttribution: true }}
         style={{ background: bgColour }}
       >
-        <ScreenToFlowBridge bridgeRef={screenToFlowRef} />
+        <SnaplineOverlay lines={snaplines} />
+        <ScreenToFlowBridge bridgeRef={screenToFlowRef} fitViewRef={fitViewRef} />
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color={gridColour} />
-        <Controls position="bottom-right" />
+        <Controls position="bottom-right">
+          <button
+            onClick={() => {
+              // Force auto-layout: zero all saved positions so elementsToNodes uses grid layout
+              const resetVE = viewElements.map(ve => ({ ...ve, x: 0, y: 0 }));
+              nodesRef.current = elementsToNodes(elements, resetVE, theme, layerOrder, sublayerOrder, layerLabels, onLabelChange, overlayConfig);
+              edgesRef.current = relationshipsToEdges(relationships, buildPositionMap(nodesRef.current), theme);
+              forceRender(n => n + 1);
+              // Save the new absolute positions
+              if (onPositionChange) {
+                const posMap = buildPositionMap(nodesRef.current);
+                const positions = [...posMap.entries()].map(([id, p]) => ({
+                  element_id: id, x: p.x, y: p.y,
+                }));
+                if (positions.length > 0) onPositionChange(positions);
+              }
+              // Fit view after layout
+              setTimeout(() => fitViewRef.current?.(), 50);
+            }}
+            title="Auto-layout: reset all positions to grid layout"
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '4px 6px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: isDark ? '#94A3B8' : '#475569',
+              fontSize: 14,
+            }}
+          >
+            ⊞
+          </button>
+        </Controls>
         <MiniMap
           nodeColor={(node) => {
             const data = node.data as ArchimateNodeData;
@@ -1330,14 +1969,22 @@ export function XYFlowCanvas({
           theme={theme}
         />
       )}
-      {pendingConnection && (
-        <RelationshipTypePicker
-          conn={pendingConnection}
-          onSelect={handleRelTypeSelect}
-          onCancel={handleRelTypeCancel}
-          theme={theme}
-        />
-      )}
+      {pendingConnection && (() => {
+        const srcEl = elements.find(e => e.id === pendingConnection.sourceId);
+        const tgtEl = elements.find(e => e.id === pendingConnection.targetId);
+        return (
+          <RelationshipTypePicker
+            conn={pendingConnection}
+            onSelect={handleRelTypeSelect}
+            onCancel={handleRelTypeCancel}
+            theme={theme}
+            sourceType={srcEl?.archimate_type ?? ''}
+            targetType={tgtEl?.archimate_type ?? ''}
+            validRelationships={validRelationships}
+            sourceNotation={srcEl ? getNotation(srcEl.archimate_type) : undefined}
+          />
+        );
+      })()}
       <AlignmentToolbar
         count={selectedNodeIds.size}
         onAlign={handleAlign}

@@ -33,6 +33,7 @@ export interface ArchimateEdgeData {
   stepOffset?: number;
   highlighted?: boolean;
   dimmed?: boolean;
+  theme?: 'dark' | 'light';
   routedWaypoints?: { x: number; y: number }[];
   [key: string]: unknown;
 }
@@ -183,9 +184,10 @@ function ArchimateEdgeComponent(props: EdgeProps<ArchimateEdgeType>) {
   if (midPt) { labelX = midPt.x; labelY = midPt.y; }
 
   // ── Visual style ──────────────────────────────────────────────────────
-  const strokeColour = selected || highlighted ? '#F59E0B' : '#6B728090';
+  const isDark = (data?.theme ?? 'dark') === 'dark';
+  const strokeColour = selected || highlighted ? '#F59E0B' : (isDark ? '#94A3B8' : '#475569');
   const strokeWidth = highlighted && !selected ? edgeStyle.width * 2.0 : edgeStyle.width;
-  const opacity = dimmed ? 0.04 : (highlighted ? 1.0 : 0.6);
+  const opacity = dimmed ? 0.04 : 1;
 
   // ── Segment slide drag ────────────────────────────────────────────────
   const segDragRef = useRef<{

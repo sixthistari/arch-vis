@@ -1,9 +1,9 @@
 /**
- * Layer band background node — renders a coloured band with layer label.
- * Non-interactive, sits behind element nodes.
+ * Layer band group node — interactive container for ArchiMate layer elements.
+ * Draggable, selectable, resizable. Children (elements) move with the layer.
  */
 import { memo } from 'react';
-import type { NodeProps, Node } from '@xyflow/react';
+import { NodeResizer, type NodeProps, type Node } from '@xyflow/react';
 import { getLayerColours } from '../../../notation/colors';
 
 export interface LayerBandNodeData {
@@ -17,7 +17,7 @@ export interface LayerBandNodeData {
 
 type LayerBandNodeType = Node<LayerBandNodeData, 'layer-band'>;
 
-function LayerBandNodeComponent({ data }: NodeProps<LayerBandNodeType>) {
+function LayerBandNodeComponent({ data, selected }: NodeProps<LayerBandNodeType>) {
   const { layer, label, bandWidth, bandHeight, theme } = data;
   const colours = getLayerColours(layer, theme);
   const isDark = theme === 'dark';
@@ -28,12 +28,23 @@ function LayerBandNodeComponent({ data }: NodeProps<LayerBandNodeType>) {
         width: bandWidth,
         height: bandHeight,
         borderRadius: 6,
-        border: `1px solid ${colours.stroke}40`,
+        border: `1px solid ${selected ? colours.stroke : colours.stroke + '40'}`,
         background: isDark ? `${colours.stroke}08` : `${colours.stroke}12`,
-        pointerEvents: 'none',
         position: 'relative',
       }}
     >
+      <NodeResizer
+        isVisible={selected}
+        minWidth={400}
+        minHeight={100}
+        lineStyle={{ stroke: colours.stroke, strokeWidth: 1 }}
+        handleStyle={{
+          width: 8, height: 8,
+          background: colours.stroke,
+          border: `1px solid ${isDark ? '#fff' : '#000'}`,
+          borderRadius: 2,
+        }}
+      />
       <div
         style={{
           position: 'absolute',
@@ -46,6 +57,7 @@ function LayerBandNodeComponent({ data }: NodeProps<LayerBandNodeType>) {
           fontFamily: 'Inter, system-ui, sans-serif',
           letterSpacing: 0.5,
           textTransform: 'uppercase',
+          cursor: 'grab',
         }}
       >
         {label}
