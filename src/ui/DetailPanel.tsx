@@ -12,7 +12,22 @@ interface DetailPanelProps {
   onDelete: (elementId: string) => void;
 }
 
-type Tab = 'properties' | 'relationships';
+type Tab = 'properties' | 'relationships' | 'provenance';
+
+const UML_CLASS_TYPES = ['uml-class', 'uml-abstract-class', 'uml-interface', 'uml-enum'];
+
+interface DraftMember {
+  name: string;
+  type: string;
+  visibility: string;
+}
+
+const VISIBILITY_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: '+', label: '+ public' },
+  { value: '-', label: '- private' },
+  { value: '#', label: '# protected' },
+  { value: '~', label: '~ package' },
+];
 
 export function DetailPanel({ element, relationships, elements, onClose, onNavigate, onDelete }: DetailPanelProps): React.ReactElement {
   const [tab, setTab] = useState<Tab>('properties');
@@ -24,8 +39,13 @@ export function DetailPanel({ element, relationships, elements, onClose, onNavig
     layer: element.layer,
     sublayer: element.sublayer ?? '',
   });
+  const [draftAttributes, setDraftAttributes] = useState<DraftMember[]>([]);
+  const [draftMethods, setDraftMethods] = useState<DraftMember[]>([]);
   const [saving, setSaving] = useState(false);
   const updateElement = useModelStore(s => s.updateElement);
+
+  const isUmlClass = UML_CLASS_TYPES.includes(element.archimate_type);
+  const isUmlEnum = element.archimate_type === 'uml-enum';
 
   // Reset draft when element changes
   useEffect(() => {
@@ -39,23 +59,60 @@ export function DetailPanel({ element, relationships, elements, onClose, onNavig
     setEditing(false);
   }, [element.id, element.name, element.description, element.status, element.layer, element.sublayer]);
 
+  // Initialise UML member drafts from element properties
+  useEffect(() => {
+    if (isUmlClass) {
+      const props = (element.properties ?? {}) as Record<string, unknown>;
+      const attrs = (props.attributes as Array<Record<string, unknown>>) ?? [];
+      const meths = (props.methods as Array<Record<string, unknown>>) ?? [];
+      setDraftAttributes(attrs.map(a => ({
+        name: String(a.name ?? ''),
+        type: String(a.type ?? ''),
+        visibility: String(a.visibility ?? '+'),
+      })));
+      setDraftMethods(meths.map(m => ({
+        name: String(m.name ?? ''),
+        type: String(m.returnType ?? ''),
+        visibility: String(m.visibility ?? '+'),
+      })));
+    }
+  }, [element.id, element.properties, isUmlClass]);
+
   const handleSave = useCallback(async () => {
     setSaving(true);
     try {
-      await updateElement(element.id, {
+      const updateData: Record<string, unknown> = {
         name: draft.name,
         description: draft.description || null,
         status: draft.status,
         layer: draft.layer,
         sublayer: draft.sublayer || null,
-      });
+      };
+      if (isUmlClass) {
+        const existingProps = (element.properties as Record<string, unknown>) ?? {};
+        if (isUmlEnum) {
+          // For enums, methods list holds enum values (name only)
+          updateData.properties = {
+            ...existingProps,
+            attributes: draftAttributes.map(a => ({ name: a.name, type: a.type || undefined, visibility: a.visibility })),
+            methods: draftMethods.map(m => ({ name: m.name })),
+          };
+        } else {
+          updateData.properties = {
+            ...existingProps,
+            attributes: draftAttributes.map(a => ({ name: a.name, type: a.type || undefined, visibility: a.visibility })),
+            methods: draftMethods.map(m => ({ name: m.name, returnType: m.type || undefined, visibility: m.visibility })),
+          };
+        }
+      }
+      await updateElement(element.id, updateData);
       setEditing(false);
     } catch (err) {
       console.error('Failed to save element:', err);
     } finally {
       setSaving(false);
     }
-  }, [element.id, draft, updateElement]);
+  }, [element.id, draft, updateElement, isUmlClass, isUmlEnum, draftAttributes, draftMethods, element.properties]);
 
   const handleCancel = useCallback(() => {
     setDraft({
@@ -112,16 +169,11 @@ export function DetailPanel({ element, relationships, elements, onClose, onNavig
 
   return React.createElement('div', {
     style: {
-      position: 'absolute',
-      right: 0,
-      top: 0,
-      bottom: 0,
-      width: 320,
+      width: '100%',
+      height: '100%',
       background: 'var(--panel-bg)',
-      borderLeft: '1px solid var(--panel-border)',
       display: 'flex',
       flexDirection: 'column',
-      zIndex: 50,
       overflow: 'hidden',
     },
   },
@@ -173,6 +225,7 @@ export function DetailPanel({ element, relationships, elements, onClose, onNavig
     },
       React.createElement('button', { onClick: () => setTab('properties'), style: tabStyle(tab === 'properties') }, 'Properties'),
       React.createElement('button', { onClick: () => setTab('relationships'), style: tabStyle(tab === 'relationships') }, `Relationships (${incoming.length + outgoing.length})`),
+      React.createElement('button', { onClick: () => setTab('provenance'), style: tabStyle(tab === 'provenance') }, 'Provenance'),
     ),
 
     // Content
@@ -181,9 +234,19 @@ export function DetailPanel({ element, relationships, elements, onClose, onNavig
     },
       tab === 'properties'
         ? (editing
-          ? renderEditForm(draft, setDraft, inputStyle)
-          : renderProperties(element))
-        : renderRelationships(incoming, outgoing, elementMap, onNavigate),
+          ? React.createElement(React.Fragment, null,
+              renderEditForm(draft, setDraft, inputStyle),
+              isUmlClass ? renderUmlMemberEditor(
+                isUmlEnum, draftAttributes, setDraftAttributes, draftMethods, setDraftMethods, inputStyle,
+              ) : null,
+            )
+          : React.createElement(React.Fragment, null,
+              renderProperties(element),
+              isUmlClass ? renderUmlMembers(element, isUmlEnum) : null,
+            ))
+        : tab === 'relationships'
+          ? renderRelationships(incoming, outgoing, elementMap, onNavigate)
+          : renderProvenance(element),
     ),
 
     // Footer actions
@@ -306,6 +369,194 @@ function renderEditForm(
         style: { ...inputStyle, minHeight: 60, resize: 'vertical' as const },
         placeholder: '\u2014',
       }),
+    ),
+  );
+}
+
+function renderUmlMembers(element: Element, isEnum: boolean): React.ReactElement {
+  const props = (element.properties ?? {}) as Record<string, unknown>;
+  const attributes = (props.attributes as Array<Record<string, unknown>>) ?? [];
+  const methods = (props.methods as Array<Record<string, unknown>>) ?? [];
+
+  const sectionHeader = (text: string) =>
+    React.createElement('div', {
+      style: { color: 'var(--text-muted)', fontSize: 9, textTransform: 'uppercase', marginBottom: 4, marginTop: 12 },
+    }, text);
+
+  const memberLine = (m: Record<string, unknown>, isMeth: boolean) => {
+    const vis = String(m.visibility ?? '+');
+    const name = String(m.name ?? '');
+    if (isEnum && isMeth) {
+      return React.createElement('div', {
+        key: name,
+        style: { color: 'var(--text-primary)', fontSize: 11, paddingLeft: 8, marginBottom: 2 },
+      }, name);
+    }
+    const typeStr = isMeth ? String(m.returnType ?? '') : String(m.type ?? '');
+    const display = `${vis} ${name}${isMeth ? '()' : ''}${typeStr ? ': ' + typeStr : ''}`;
+    return React.createElement('div', {
+      key: name + vis + typeStr,
+      style: {
+        color: 'var(--text-primary)',
+        fontSize: 11,
+        fontFamily: 'monospace',
+        paddingLeft: 8,
+        marginBottom: 2,
+      },
+    }, display);
+  };
+
+  return React.createElement('div', { style: { marginTop: 8 } },
+    attributes.length > 0 ? React.createElement(React.Fragment, null,
+      sectionHeader('Attributes'),
+      ...attributes.map(a => memberLine(a, false)),
+    ) : null,
+    isEnum
+      ? (methods.length > 0 ? React.createElement(React.Fragment, null,
+          sectionHeader('Values'),
+          ...methods.map(m => memberLine(m, true)),
+        ) : null)
+      : (methods.length > 0 ? React.createElement(React.Fragment, null,
+          sectionHeader('Methods'),
+          ...methods.map(m => memberLine(m, true)),
+        ) : null),
+  );
+}
+
+function renderUmlMemberEditor(
+  isEnum: boolean,
+  attributes: DraftMember[],
+  setAttributes: React.Dispatch<React.SetStateAction<DraftMember[]>>,
+  methods: DraftMember[],
+  setMethods: React.Dispatch<React.SetStateAction<DraftMember[]>>,
+  inputStyle: React.CSSProperties,
+): React.ReactElement {
+  const smallBtn: React.CSSProperties = {
+    padding: '2px 6px',
+    fontSize: 10,
+    borderRadius: 3,
+    border: '1px solid var(--border-primary)',
+    cursor: 'pointer',
+    background: 'var(--button-bg, #333)',
+    color: 'var(--button-fg, #ccc)',
+    flexShrink: 0,
+  };
+
+  const sectionHeader = (text: string, onAdd: () => void) =>
+    React.createElement('div', {
+      style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, marginBottom: 4 },
+    },
+      React.createElement('div', {
+        style: { color: 'var(--text-muted)', fontSize: 9, textTransform: 'uppercase' },
+      }, text),
+      React.createElement('button', { onClick: onAdd, style: smallBtn }, '+ Add'),
+    );
+
+  const memberRow = (
+    items: DraftMember[],
+    setItems: React.Dispatch<React.SetStateAction<DraftMember[]>>,
+    index: number,
+    showVisibility: boolean,
+    typeLabel: string,
+  ) => {
+    const item = items[index]!;
+    const update = (field: keyof DraftMember, value: string) => {
+      setItems(prev => prev.map((m, i) => i === index ? { ...m, [field]: value } : m));
+    };
+    const remove = () => {
+      setItems(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const children: React.ReactElement[] = [];
+
+    if (showVisibility) {
+      children.push(React.createElement('select', {
+        key: 'vis',
+        value: item.visibility,
+        onChange: (e: React.ChangeEvent<HTMLSelectElement>) => update('visibility', e.target.value),
+        style: { ...inputStyle, width: 52, flexShrink: 0, appearance: 'auto' as React.CSSProperties['appearance'] },
+      },
+        ...VISIBILITY_OPTIONS.map(o =>
+          React.createElement('option', { key: o.value, value: o.value }, o.value),
+        ),
+      ));
+    }
+
+    children.push(React.createElement('input', {
+      key: 'name',
+      value: item.name,
+      placeholder: 'Name',
+      onChange: (e: React.ChangeEvent<HTMLInputElement>) => update('name', e.target.value),
+      style: { ...inputStyle, flex: 1 },
+    }));
+
+    if (typeLabel) {
+      children.push(React.createElement('input', {
+        key: 'type',
+        value: item.type,
+        placeholder: typeLabel,
+        onChange: (e: React.ChangeEvent<HTMLInputElement>) => update('type', e.target.value),
+        style: { ...inputStyle, width: 70, flexShrink: 0 },
+      }));
+    }
+
+    children.push(React.createElement('button', {
+      key: 'del',
+      onClick: remove,
+      style: { ...smallBtn, color: '#e05252', borderColor: '#e0525244', padding: '2px 5px' },
+    }, '\u00D7'));
+
+    return React.createElement('div', {
+      key: index,
+      style: { display: 'flex', gap: 4, marginBottom: 4, alignItems: 'center' },
+    }, ...children);
+  };
+
+  const addAttribute = () => setAttributes(prev => [...prev, { name: '', type: '', visibility: '+' }]);
+  const addMethod = () => setMethods(prev => [...prev, { name: '', type: '', visibility: '+' }]);
+  const addEnumValue = () => setMethods(prev => [...prev, { name: '', type: '', visibility: '+' }]);
+
+  return React.createElement('div', null,
+    sectionHeader('Attributes', addAttribute),
+    ...attributes.map((_, i) => memberRow(attributes, setAttributes, i, true, 'Type')),
+    attributes.length === 0 ? React.createElement('div', {
+      style: { color: 'var(--text-muted)', fontSize: 10, fontStyle: 'italic', paddingLeft: 8 },
+    }, 'No attributes') : null,
+
+    isEnum
+      ? React.createElement(React.Fragment, null,
+          sectionHeader('Values', addEnumValue),
+          ...methods.map((_, i) => memberRow(methods, setMethods, i, false, '')),
+          methods.length === 0 ? React.createElement('div', {
+            style: { color: 'var(--text-muted)', fontSize: 10, fontStyle: 'italic', paddingLeft: 8 },
+          }, 'No values') : null,
+        )
+      : React.createElement(React.Fragment, null,
+          sectionHeader('Methods', addMethod),
+          ...methods.map((_, i) => memberRow(methods, setMethods, i, true, 'Return type')),
+          methods.length === 0 ? React.createElement('div', {
+            style: { color: 'var(--text-muted)', fontSize: 10, fontStyle: 'italic', paddingLeft: 8 },
+          }, 'No methods') : null,
+        ),
+  );
+}
+
+function renderProvenance(element: Element): React.ReactElement {
+  const rows: Array<[string, string]> = [
+    ['Created By', (element as Record<string, unknown>).created_by as string ?? '\u2014'],
+    ['Created At', element.created_at ?? '\u2014'],
+    ['Updated At', element.updated_at ?? '\u2014'],
+    ['Source', (element as Record<string, unknown>).source as string ?? '\u2014'],
+    ['Source Session', element.source_session_id ?? '\u2014'],
+    ['Confidence', element.confidence != null ? String(element.confidence) : '\u2014'],
+  ];
+
+  return React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: 8 } },
+    ...rows.map(([label, value]) =>
+      React.createElement('div', { key: label },
+        React.createElement('div', { style: { color: 'var(--text-muted)', fontSize: 9, textTransform: 'uppercase' } }, label),
+        React.createElement('div', { style: { color: 'var(--text-primary)', wordBreak: 'break-word' } }, value),
+      ),
     ),
   );
 }

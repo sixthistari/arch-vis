@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { toPng, toSvg } from 'html-to-image';
+import { exportArchimateXml, exportCsv } from '../api/client';
 
 export function ExportMenu(): React.ReactElement {
   const [open, setOpen] = useState(false);
@@ -38,6 +39,41 @@ export function ExportMenu(): React.ReactElement {
     setOpen(false);
   }, []);
 
+  const exportXml = useCallback(async () => {
+    try {
+      const xml = await exportArchimateXml();
+      const blob = new Blob([xml], { type: 'application/xml' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'architecture-model.xml';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('ArchiMate XML export failed:', err);
+    }
+    setOpen(false);
+  }, []);
+
+  const exportCsvFiles = useCallback(async () => {
+    try {
+      const data = await exportCsv();
+      // Download each CSV as a separate file
+      for (const [name, content] of Object.entries(data)) {
+        const blob = new Blob([content], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${name}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch (err) {
+      console.error('CSV export failed:', err);
+    }
+    setOpen(false);
+  }, []);
+
   return (
     <div style={{ position: 'relative' }}>
       <button
@@ -72,6 +108,9 @@ export function ExportMenu(): React.ReactElement {
         >
           <button onClick={exportSVG} style={menuItemStyle()}>Export SVG</button>
           <button onClick={exportPNG} style={menuItemStyle()}>Export PNG</button>
+          <div style={{ borderTop: '1px solid var(--border-primary)' }} />
+          <button onClick={exportXml} style={menuItemStyle()}>Export ArchiMate XML</button>
+          <button onClick={exportCsvFiles} style={menuItemStyle()}>Export CSV (Archi)</button>
         </div>
       )}
     </div>

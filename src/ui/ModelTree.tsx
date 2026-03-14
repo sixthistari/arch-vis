@@ -1,8 +1,9 @@
 /**
- * ModelTree — hierarchical tree of all elements grouped by ArchiMate layer.
+ * ModelTree — hierarchical tree of all elements grouped by notation, then by
+ * sub-category (ArchiMate layer, UML diagram type, wireframe category).
  *
  * Provides: click-to-select, search filtering, orphan detection (elements not
- * in the current view are shown in italic).
+ * in the current view are shown in italic), drag-to-canvas.
  */
 import { useState, useMemo, useCallback } from 'react';
 import { useModelStore } from '../store/model';
@@ -10,6 +11,10 @@ import { useViewStore } from '../store/view';
 import { useInteractionStore } from '../store/interaction';
 import { useThemeStore } from '../store/theme';
 import type { Element } from '../model/types';
+
+// ═══════════════════════════════════════
+// ArchiMate layer grouping (existing)
+// ═══════════════════════════════════════
 
 const LAYER_ORDER = [
   'motivation', 'strategy', 'business', 'business_upper', 'business_lower',
@@ -28,6 +33,48 @@ const LAYER_LABELS: Record<string, string> = {
   implementation: 'Implementation',
 };
 
+// ═══════════════════════════════════════
+// UML sub-grouping
+// ═══════════════════════════════════════
+
+const UML_GROUPS: Record<string, string[]> = {
+  'Classes': ['uml-class', 'uml-abstract-class', 'uml-interface', 'uml-enum', 'uml-package'],
+  'Components': ['uml-component'],
+  'Behavioural': ['uml-actor', 'uml-use-case', 'uml-state', 'uml-activity', 'uml-note'],
+  'Sequence': ['uml-lifeline', 'uml-activation', 'uml-fragment'],
+};
+
+const UML_GROUP_ORDER = ['Classes', 'Components', 'Behavioural', 'Sequence'];
+
+// Build a reverse lookup: type → group label
+const UML_TYPE_TO_GROUP = new Map<string, string>();
+for (const [group, types] of Object.entries(UML_GROUPS)) {
+  for (const t of types) UML_TYPE_TO_GROUP.set(t, group);
+}
+
+// ═══════════════════════════════════════
+// Wireframe sub-grouping
+// ═══════════════════════════════════════
+
+const WF_GROUPS: Record<string, string[]> = {
+  'Layout': ['wf-page', 'wf-section', 'wf-card', 'wf-modal', 'wf-header'],
+  'Controls': ['wf-button', 'wf-input', 'wf-textarea', 'wf-select', 'wf-checkbox', 'wf-radio'],
+  'Data': ['wf-table', 'wf-list', 'wf-form'],
+  'Navigation': ['wf-nav', 'wf-link', 'wf-tab-group'],
+  'Content': ['wf-text', 'wf-image', 'wf-icon', 'wf-placeholder'],
+};
+
+const WF_GROUP_ORDER = ['Layout', 'Controls', 'Data', 'Navigation', 'Content'];
+
+const WF_TYPE_TO_GROUP = new Map<string, string>();
+for (const [group, types] of Object.entries(WF_GROUPS)) {
+  for (const t of types) WF_TYPE_TO_GROUP.set(t, group);
+}
+
+// ═══════════════════════════════════════
+// Shared components
+// ═══════════════════════════════════════
+
 interface TreeNodeProps {
   element: Element;
   isOrphan: boolean;
@@ -45,11 +92,20 @@ function TreeNode({ element, isOrphan, isSelected, theme, onSelect }: TreeNodePr
 
   return (
     <div
+      draggable
       onClick={() => onSelect(element.id)}
+      onDragStart={(e: React.DragEvent) => {
+        e.dataTransfer.setData('application/archvis-tree', JSON.stringify({
+          elementId: element.id,
+          archimateType: element.archimate_type,
+          layer: element.layer,
+        }));
+        e.dataTransfer.effectAllowed = 'copy';
+      }}
       title={element.description ?? element.name}
       style={{
         padding: '3px 8px 3px 16px',
-        cursor: 'pointer',
+        cursor: 'grab',
         background: bg,
         color: textColour,
         fontSize: 11,
@@ -67,8 +123,12 @@ function TreeNode({ element, isOrphan, isSelected, theme, onSelect }: TreeNodePr
   );
 }
 
-interface LayerGroupProps {
-  layer: string;
+// ═══════════════════════════════════════
+// Sub-group component (used by all notations)
+// ═══════════════════════════════════════
+
+interface SubGroupProps {
+  label: string;
   elements: Element[];
   orphanIds: Set<string>;
   selectedId: string | null;
@@ -76,10 +136,9 @@ interface LayerGroupProps {
   onSelect: (id: string) => void;
 }
 
-function LayerGroup({ layer, elements, orphanIds, selectedId, theme, onSelect }: LayerGroupProps) {
+function SubGroup({ label, elements, orphanIds, selectedId, theme, onSelect }: SubGroupProps) {
   const [expanded, setExpanded] = useState(true);
   const isDark = theme === 'dark';
-  const label = LAYER_LABELS[layer] ?? layer;
   const headerColour = isDark ? '#94A3B8' : '#64748B';
   const borderColour = isDark ? '#1E293B' : '#E2E8F0';
 
@@ -120,6 +179,86 @@ function LayerGroup({ layer, elements, orphanIds, selectedId, theme, onSelect }:
   );
 }
 
+// LayerGroup kept as an alias for ArchiMate layers
+function LayerGroup({ layer, elements, orphanIds, selectedId, theme, onSelect }: {
+  layer: string;
+  elements: Element[];
+  orphanIds: Set<string>;
+  selectedId: string | null;
+  theme: 'dark' | 'light';
+  onSelect: (id: string) => void;
+}) {
+  const label = LAYER_LABELS[layer] ?? layer;
+  return (
+    <SubGroup
+      label={label}
+      elements={elements}
+      orphanIds={orphanIds}
+      selectedId={selectedId}
+      theme={theme}
+      onSelect={onSelect}
+    />
+  );
+}
+
+// ═══════════════════════════════════════
+// Top-level notation section
+// ═══════════════════════════════════════
+
+interface NotationSectionProps {
+  title: string;
+  count: number;
+  borderColour: string;
+  theme: 'dark' | 'light';
+  children: React.ReactNode;
+}
+
+function NotationSection({ title, count, borderColour, theme, children }: NotationSectionProps) {
+  const [expanded, setExpanded] = useState(true);
+  const isDark = theme === 'dark';
+  const textColour = isDark ? '#E5E7EB' : '#111827';
+  const bgColour = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)';
+
+  return (
+    <div style={{ borderLeft: `3px solid ${borderColour}`, marginBottom: 2 }}>
+      <div
+        onClick={() => setExpanded(e => !e)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          padding: '5px 8px',
+          cursor: 'pointer',
+          fontSize: 11,
+          fontWeight: 700,
+          color: textColour,
+          background: bgColour,
+          userSelect: 'none',
+        }}
+      >
+        <span>{expanded ? '▾' : '▸'}</span>
+        <span>{title}</span>
+        <span style={{
+          marginLeft: 'auto',
+          fontSize: 9,
+          fontWeight: 500,
+          background: borderColour,
+          color: '#FFFFFF',
+          borderRadius: 8,
+          padding: '1px 6px',
+          minWidth: 16,
+          textAlign: 'center',
+        }}>{count}</span>
+      </div>
+      {expanded && children}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════
+// ModelTree (main export)
+// ═══════════════════════════════════════
+
 interface ModelTreeProps {
   onClose?: () => void;
 }
@@ -151,31 +290,91 @@ export function ModelTree({ onClose }: ModelTreeProps) {
     return q ? elements.filter(el => el.name.toLowerCase().includes(q)) : elements;
   }, [elements, search]);
 
-  // Group by layer preserving canonical order
-  const byLayer = useMemo(() => {
-    const map = new Map<string, Element[]>();
+  // Partition into three notation buckets
+  const { archimateEls, umlEls, wfEls } = useMemo(() => {
+    const archimateEls: Element[] = [];
+    const umlEls: Element[] = [];
+    const wfEls: Element[] = [];
     for (const el of filtered) {
+      if (el.archimate_type.startsWith('uml-')) {
+        umlEls.push(el);
+      } else if (el.archimate_type.startsWith('wf-')) {
+        wfEls.push(el);
+      } else {
+        archimateEls.push(el);
+      }
+    }
+    return { archimateEls, umlEls, wfEls };
+  }, [filtered]);
+
+  // ArchiMate: group by layer preserving canonical order
+  const { byLayer, orderedLayers } = useMemo(() => {
+    const map = new Map<string, Element[]>();
+    for (const el of archimateEls) {
       const g = map.get(el.layer) ?? [];
       g.push(el);
       map.set(el.layer, g);
     }
-    // Sort each group by name
     for (const g of map.values()) g.sort((a, b) => a.name.localeCompare(b.name));
-    return map;
-  }, [filtered]);
 
-  const orderedLayers = useMemo(() => {
     const seen = new Set<string>();
     const result: string[] = [];
     for (const l of LAYER_ORDER) {
-      if (byLayer.has(l)) { result.push(l); seen.add(l); }
+      if (map.has(l)) { result.push(l); seen.add(l); }
     }
-    // Any layers not in canonical order go at end
-    for (const l of byLayer.keys()) {
+    for (const l of map.keys()) {
       if (!seen.has(l)) result.push(l);
     }
+    return { byLayer: map, orderedLayers: result };
+  }, [archimateEls]);
+
+  // UML: group by sub-category
+  const umlGrouped = useMemo(() => {
+    const map = new Map<string, Element[]>();
+    for (const el of umlEls) {
+      const group = UML_TYPE_TO_GROUP.get(el.archimate_type) ?? 'Other';
+      const g = map.get(group) ?? [];
+      g.push(el);
+      map.set(group, g);
+    }
+    for (const g of map.values()) g.sort((a, b) => a.name.localeCompare(b.name));
+    return map;
+  }, [umlEls]);
+
+  const umlGroupKeys = useMemo(() => {
+    const result: string[] = [];
+    for (const k of UML_GROUP_ORDER) {
+      if (umlGrouped.has(k)) result.push(k);
+    }
+    for (const k of umlGrouped.keys()) {
+      if (!result.includes(k)) result.push(k);
+    }
     return result;
-  }, [byLayer]);
+  }, [umlGrouped]);
+
+  // Wireframe: group by sub-category
+  const wfGrouped = useMemo(() => {
+    const map = new Map<string, Element[]>();
+    for (const el of wfEls) {
+      const group = WF_TYPE_TO_GROUP.get(el.archimate_type) ?? 'Other';
+      const g = map.get(group) ?? [];
+      g.push(el);
+      map.set(group, g);
+    }
+    for (const g of map.values()) g.sort((a, b) => a.name.localeCompare(b.name));
+    return map;
+  }, [wfEls]);
+
+  const wfGroupKeys = useMemo(() => {
+    const result: string[] = [];
+    for (const k of WF_GROUP_ORDER) {
+      if (wfGrouped.has(k)) result.push(k);
+    }
+    for (const k of wfGrouped.keys()) {
+      if (!result.includes(k)) result.push(k);
+    }
+    return result;
+  }, [wfGrouped]);
 
   // Elements not in current view (orphans)
   const orphanIds = useMemo(
@@ -248,17 +447,72 @@ export function ModelTree({ onClose }: ModelTreeProps) {
 
       {/* Tree */}
       <div style={{ flex: 1, overflow: 'auto' }}>
-        {orderedLayers.map(layer => (
-          <LayerGroup
-            key={layer}
-            layer={layer}
-            elements={byLayer.get(layer) ?? []}
-            orphanIds={orphanIds}
-            selectedId={selectedId}
+        {/* ArchiMate section */}
+        {archimateEls.length > 0 && (
+          <NotationSection
+            title="ArchiMate"
+            count={archimateEls.length}
+            borderColour="#F59E0B"
             theme={theme}
-            onSelect={handleSelect}
-          />
-        ))}
+          >
+            {orderedLayers.map(layer => (
+              <LayerGroup
+                key={layer}
+                layer={layer}
+                elements={byLayer.get(layer) ?? []}
+                orphanIds={orphanIds}
+                selectedId={selectedId}
+                theme={theme}
+                onSelect={handleSelect}
+              />
+            ))}
+          </NotationSection>
+        )}
+
+        {/* UML section */}
+        {umlEls.length > 0 && (
+          <NotationSection
+            title="UML"
+            count={umlEls.length}
+            borderColour="#4A90D9"
+            theme={theme}
+          >
+            {umlGroupKeys.map(group => (
+              <SubGroup
+                key={group}
+                label={group}
+                elements={umlGrouped.get(group) ?? []}
+                orphanIds={orphanIds}
+                selectedId={selectedId}
+                theme={theme}
+                onSelect={handleSelect}
+              />
+            ))}
+          </NotationSection>
+        )}
+
+        {/* Wireframe section */}
+        {wfEls.length > 0 && (
+          <NotationSection
+            title="Wireframe"
+            count={wfEls.length}
+            borderColour="#8E8E93"
+            theme={theme}
+          >
+            {wfGroupKeys.map(group => (
+              <SubGroup
+                key={group}
+                label={group}
+                elements={wfGrouped.get(group) ?? []}
+                orphanIds={orphanIds}
+                selectedId={selectedId}
+                theme={theme}
+                onSelect={handleSelect}
+              />
+            ))}
+          </NotationSection>
+        )}
+
         {filtered.length === 0 && (
           <div style={{ padding: 12, fontSize: 11, color: mutedColour, textAlign: 'center' }}>
             No elements found

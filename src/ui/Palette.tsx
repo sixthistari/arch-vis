@@ -3,6 +3,7 @@ import { getLayerColours } from '../notation/colors';
 import { getShapeDefinition } from '../notation/registry';
 import { useThemeStore } from '../store/theme';
 import { useModelStore } from '../store/model';
+import { useViewStore } from '../store/view';
 import type { ArchimateType } from '../model/types';
 import { archimateTypeValues } from '../model/types';
 
@@ -234,9 +235,37 @@ function renderMiniIcon(iconType: string, ix: number, iy: number, stroke: string
   }
 }
 
+// ── UML palette groups ──────────────────────────────────────────
+
+interface SimpleGroup {
+  key: string;
+  label: string;
+  types: string[];
+}
+
+const UML_CLASS_GROUPS: SimpleGroup[] = [
+  { key: 'classes', label: 'Classes', types: ['uml-class', 'uml-abstract-class', 'uml-interface', 'uml-enum', 'uml-package'] },
+  { key: 'components', label: 'Components', types: ['uml-component'] },
+  { key: 'other-uml', label: 'Other', types: ['uml-actor', 'uml-use-case', 'uml-note', 'uml-state', 'uml-activity'] },
+];
+
+const UML_SEQUENCE_GROUPS: SimpleGroup[] = [
+  { key: 'seq-elements', label: 'Elements', types: ['uml-lifeline', 'uml-activation', 'uml-fragment'] },
+];
+
+const WIREFRAME_GROUPS: SimpleGroup[] = [
+  { key: 'layout', label: 'Layout', types: ['wf-page', 'wf-section', 'wf-card', 'wf-modal', 'wf-header'] },
+  { key: 'controls', label: 'Controls', types: ['wf-button', 'wf-input', 'wf-textarea', 'wf-select', 'wf-checkbox', 'wf-radio'] },
+  { key: 'data', label: 'Data', types: ['wf-table', 'wf-list', 'wf-form'] },
+  { key: 'navigation', label: 'Navigation', types: ['wf-nav', 'wf-link', 'wf-tab-group'] },
+  { key: 'content', label: 'Content', types: ['wf-text', 'wf-image', 'wf-icon', 'wf-placeholder'] },
+];
+
 export function Palette(): React.ReactElement {
   const theme = useThemeStore(s => s.theme);
   const sublayerConfig = useModelStore(s => s.sublayerConfig);
+  const currentView = useViewStore(s => s.currentView);
+  const viewpointType = currentView?.viewpoint_type ?? 'layered';
   const [collapsed, setCollapsed] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
@@ -255,6 +284,89 @@ export function Palette(): React.ReactElement {
     e.dataTransfer.setData('application/json', JSON.stringify({ archimate_type: archimateType, layer }));
     e.dataTransfer.effectAllowed = 'copy';
   }, []);
+
+  // Determine palette mode from viewpoint
+  const isUmlSequence = viewpointType === 'uml_sequence';
+  const isUml = !isUmlSequence && (viewpointType === 'uml_class' || viewpointType === 'uml_component');
+  const isWireframe = viewpointType === 'wireframe';
+
+  const paletteTitle = isUmlSequence ? 'Sequence Elements' : isUml ? 'UML Elements' : isWireframe ? 'Wireframe Elements' : 'Elements';
+
+  // Render a simple (non-ArchiMate) group for UML / wireframe palettes
+  const renderSimpleGroup = (group: SimpleGroup, borderColour: string, chipBg: string, dropLayer: string) => {
+    const isExpanded = expandedGroups.has(group.key);
+    return React.createElement('div', {
+      key: group.key,
+      style: {
+        marginBottom: 4,
+        borderLeft: `3px solid ${borderColour}`,
+        borderRadius: 2,
+      },
+    },
+      // Group header
+      React.createElement('div', {
+        onClick: () => toggleGroup(group.key),
+        style: {
+          padding: '3px 6px',
+          cursor: 'pointer',
+          fontSize: 10,
+          fontWeight: 500,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          userSelect: 'none' as const,
+          background: `${borderColour}18`,
+          borderRadius: '0 2px 2px 0',
+        },
+      },
+        group.label,
+        React.createElement('span', {
+          style: { fontSize: 7, opacity: 0.5 },
+        }, isExpanded ? '\u25BC' : '\u25B6'),
+      ),
+      // Type chips (text-only, no ArchiMate mini shapes)
+      isExpanded && React.createElement('div', {
+        style: {
+          padding: '3px 4px',
+          display: 'flex',
+          flexDirection: 'column' as const,
+          gap: 2,
+        },
+      },
+        ...group.types.map(type =>
+          React.createElement('div', {
+            key: type,
+            draggable: true,
+            onDragStart: (e: React.DragEvent) => handleDragStart(e, type, dropLayer),
+            style: {
+              padding: '2px 6px',
+              fontSize: 9,
+              cursor: 'grab',
+              borderRadius: 3,
+              border: `1px solid ${borderColour}44`,
+              background: chipBg,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              maxWidth: 160,
+              height: 20,
+              userSelect: 'none' as const,
+            },
+            title: formatTypeName(type),
+          },
+            React.createElement('span', {
+              style: {
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap' as const,
+                lineHeight: '14px',
+              },
+            }, formatTypeName(type)),
+          ),
+        ),
+      ),
+    );
+  };
 
   return React.createElement('div', {
     style: {
@@ -278,14 +390,35 @@ export function Palette(): React.ReactElement {
         userSelect: 'none' as const,
       },
     },
-      'Elements',
+      paletteTitle,
       React.createElement('span', {
         style: { fontSize: 8, opacity: 0.6 },
       }, collapsed ? '\u25B6' : '\u25BC'),
     ),
 
-    // Body
-    !collapsed && React.createElement('div', {
+    // Body — UML Sequence palette
+    !collapsed && isUmlSequence && React.createElement('div', {
+      style: { padding: '0 6px 6px' },
+    },
+      ...UML_SEQUENCE_GROUPS.map(g => renderSimpleGroup(g, '#4A90D9', 'rgba(74,144,217,0.08)', 'application')),
+    ),
+
+    // Body — UML palette
+    !collapsed && isUml && React.createElement('div', {
+      style: { padding: '0 6px 6px' },
+    },
+      ...UML_CLASS_GROUPS.map(g => renderSimpleGroup(g, '#4A90D9', 'rgba(74,144,217,0.08)', 'application')),
+    ),
+
+    // Body — Wireframe palette
+    !collapsed && isWireframe && React.createElement('div', {
+      style: { padding: '0 6px 6px' },
+    },
+      ...WIREFRAME_GROUPS.map(g => renderSimpleGroup(g, '#8E8E93', 'rgba(142,142,147,0.08)', 'implementation')),
+    ),
+
+    // Body — ArchiMate palette (default)
+    !collapsed && !isUml && !isUmlSequence && !isWireframe && React.createElement('div', {
       style: { padding: '0 6px 6px' },
     },
       ...layerGroups.map(group => {

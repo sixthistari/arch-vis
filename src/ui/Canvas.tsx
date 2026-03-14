@@ -10,7 +10,7 @@ import { useViewStore } from '../store/view';
 import { useInteractionStore } from '../store/interaction';
 import { useThemeStore } from '../store/theme';
 import { XYFlowCanvas } from '../renderers/xyflow/Canvas';
-import { DetailPanel } from './DetailPanel';
+// DetailPanel moved to Shell.tsx bottom panel
 import * as api from '../api/client';
 import type { ViewElement } from '../model/types';
 import type { Element } from '../model/types';
@@ -25,15 +25,15 @@ const LegacySpatialCanvas = React.lazy(() =>
 export function Canvas(): React.ReactElement {
   const elements = useModelStore(s => s.elements);
   const relationships = useModelStore(s => s.relationships);
-  const deleteElement = useModelStore(s => s.deleteElement);
   const sublayerConfig = useModelStore(s => s.sublayerConfig);
+  const validRelationships = useModelStore(s => s.validRelationships);
   const loadAll = useModelStore(s => s.loadAll);
   const currentView = useViewStore(s => s.currentView);
   const viewElements = useViewStore(s => s.viewElements);
   const savePositions = useViewStore(s => s.savePositions);
-  const selectedId = useInteractionStore(s => s.selectedId);
   const select = useInteractionStore(s => s.select);
   const clearSelection = useInteractionStore(s => s.clearSelection);
+  const showContextMenu = useInteractionStore(s => s.showContextMenu);
   const theme = useThemeStore(s => s.theme);
   const run = useUndoRedoStore(s => s.run);
 
@@ -57,21 +57,7 @@ export function Canvas(): React.ReactElement {
     [relationships, viewElementIds],
   );
 
-  // Selected element for detail panel
-  const selectedElement = useMemo(
-    () => selectedId ? elements.find(el => el.id === selectedId) : undefined,
-    [selectedId, elements],
-  );
-
-  // Relationships for selected element
-  const selectedRelationships = useMemo(
-    () => selectedId
-      ? relationships.filter(r => r.source_id === selectedId || r.target_id === selectedId)
-      : [],
-    [selectedId, relationships],
-  );
-
-  // Handle node click → select and show detail panel
+  // Handle node click → select
   const handleNodeClick = useCallback((elementId: string) => {
     select(elementId);
   }, [select]);
@@ -94,17 +80,6 @@ export function Canvas(): React.ReactElement {
     });
     savePositions(currentView.id, updates);
   }, [currentView, viewElements, savePositions]);
-
-  // Navigate to element from detail panel
-  const handleNavigate = useCallback((elementId: string) => {
-    select(elementId);
-  }, [select]);
-
-  // Delete element
-  const handleDelete = useCallback(async (elementId: string) => {
-    await deleteElement(elementId);
-    clearSelection();
-  }, [deleteElement, clearSelection]);
 
   // Bulk delete elements (from xyflow Delete key) — routed through undo-redo
   const handleElementsDelete = useCallback(async (elementIds: string[]) => {
@@ -186,10 +161,21 @@ export function Canvas(): React.ReactElement {
     await loadAll();
   }, [currentView, loadAll]);
 
-  // Close detail panel
-  const handleCloseDetail = useCallback(() => {
-    clearSelection();
-  }, [clearSelection]);
+  // Model tree drag-to-canvas: add an existing element to the current view
+  const handleDropTreeElement = useCallback(async (elementId: string, x: number, y: number) => {
+    if (!currentView) return;
+    await api.updateViewElements(currentView.id, [{
+      view_id: currentView.id,
+      element_id: elementId,
+      x,
+      y,
+      width: null,
+      height: null,
+      sublayer_override: null,
+      style_overrides: null,
+    }]);
+    await loadAll();
+  }, [currentView, loadAll]);
 
   // Determine render mode
   const renderMode = currentView?.render_mode ?? 'flat';
@@ -211,61 +197,37 @@ export function Canvas(): React.ReactElement {
   return React.createElement('div', {
     ref: containerRef,
     style: {
-      display: 'flex',
       width: '100%',
       height: '100%',
       position: 'relative',
     },
   },
-    // Canvas area
-    React.createElement('div', {
-      style: { flex: 1, position: 'relative', overflow: 'hidden' },
-    },
-      isSpatial
-        ? React.createElement(React.Suspense, {
-            fallback: React.createElement('div', {
-              style: { display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)', fontSize: 12 },
-            }, 'Loading spatial renderer…'),
-          },
-            React.createElement(LegacySpatialCanvas, null),
-          )
-        : React.createElement(XYFlowCanvas, {
-            elements: visibleElements,
-            relationships: visibleRelationships,
-            viewElements,
-            viewId: currentView.id,
-            theme,
-            sublayerConfig,
-            onNodeClick: handleNodeClick,
-            onPositionChange: handlePositionChange,
-            onLabelChange: handleLabelChange,
-            onElementsDelete: handleElementsDelete,
-            onRelationshipsDelete: handleRelationshipsDelete,
-            onDropElement: handleDropElement,
-            onCreateRelationship: handleCreateRelationship,
-            onClearSelection: clearSelection,
-          }),
-    ),
-
-    // Detail panel (right drawer)
-    selectedElement && React.createElement('div', {
-      style: {
-        width: 320,
-        flexShrink: 0,
-        borderLeft: '1px solid var(--border-primary)',
-        background: 'var(--bg-secondary)',
-        overflow: 'auto',
-        height: '100%',
-      },
-    },
-      React.createElement(DetailPanel, {
-        element: selectedElement,
-        relationships: selectedRelationships,
-        elements,
-        onClose: handleCloseDetail,
-        onNavigate: handleNavigate,
-        onDelete: handleDelete,
-      }),
-    ),
+    isSpatial
+      ? React.createElement(React.Suspense, {
+          fallback: React.createElement('div', {
+            style: { display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)', fontSize: 12 },
+          }, 'Loading spatial renderer…'),
+        },
+          React.createElement(LegacySpatialCanvas, null),
+        )
+      : React.createElement(XYFlowCanvas, {
+          elements: visibleElements,
+          relationships: visibleRelationships,
+          viewElements,
+          viewId: currentView.id,
+          theme,
+          sublayerConfig,
+          onNodeClick: handleNodeClick,
+          onPositionChange: handlePositionChange,
+          onLabelChange: handleLabelChange,
+          onElementsDelete: handleElementsDelete,
+          onRelationshipsDelete: handleRelationshipsDelete,
+          onDropElement: handleDropElement,
+          onDropTreeElement: handleDropTreeElement,
+          onCreateRelationship: handleCreateRelationship,
+          onClearSelection: clearSelection,
+          onNodeContextMenu: showContextMenu,
+          validRelationships,
+        }),
   );
 }
