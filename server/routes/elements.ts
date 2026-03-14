@@ -16,6 +16,8 @@ interface ElementRow {
   confidence: number | null;
   source_session_id: string | null;
   parent_id: string | null;
+  created_by: string | null;
+  source: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -61,8 +63,9 @@ router.post('/elements', (req: Request, res: Response) => {
 
   const stmt = db.prepare(`
     INSERT INTO elements (id, name, archimate_type, specialisation, layer, sublayer,
-      domain_id, status, description, properties, confidence, source_session_id, parent_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      domain_id, status, description, properties, confidence, source_session_id, parent_id,
+      created_by, source)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   stmt.run(
@@ -79,6 +82,8 @@ router.post('/elements', (req: Request, res: Response) => {
     body.confidence ?? null,
     body.source_session_id ?? null,
     body.parent_id ?? null,
+    body.created_by ?? 'manual',
+    body.source ?? 'manual',
   );
 
   const created = db.prepare('SELECT * FROM elements WHERE id = ?').get(id) as ElementRow;
@@ -128,6 +133,33 @@ router.put('/elements/:id', (req: Request, res: Response) => {
 
   const updated = db.prepare('SELECT * FROM elements WHERE id = ?').get(id) as ElementRow;
   res.json(parseProperties(updated));
+});
+
+// GET /api/elements/:id/views — return all views containing this element
+router.get('/elements/:id/views', (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  const existing = db.prepare('SELECT id FROM elements WHERE id = ?').get(id);
+  if (!existing) {
+    res.status(404).json({ error: 'Element not found' });
+    return;
+  }
+
+  const rows = db.prepare(`
+    SELECT v.* FROM views v
+    JOIN view_elements ve ON v.id = ve.view_id
+    WHERE ve.element_id = ?
+  `).all(id);
+
+  // Parse JSON columns
+  const parsed = (rows as Record<string, unknown>[]).map((row) => ({
+    ...row,
+    filter_layers: typeof row.filter_layers === 'string' ? JSON.parse(row.filter_layers) : row.filter_layers ?? null,
+    filter_specialisations: typeof row.filter_specialisations === 'string' ? JSON.parse(row.filter_specialisations) : row.filter_specialisations ?? null,
+    rotation_default: typeof row.rotation_default === 'string' ? JSON.parse(row.rotation_default) : row.rotation_default ?? null,
+  }));
+
+  res.json(parsed);
 });
 
 // DELETE /api/elements/:id — delete an element

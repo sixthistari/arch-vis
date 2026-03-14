@@ -72,7 +72,13 @@ function jsonOrNull(val: unknown): string | null {
 // ---------------------------------------------------------------------------
 
 export default function seed(): void {
-  // Skip if data already exists
+  // Always load the valid relationship matrix (idempotent via INSERT OR IGNORE)
+  const validRelSql = readFileSync(resolve(PROJECT_ROOT, 'data', 'valid-relationships.sql'), 'utf-8');
+  db.exec(validRelSql);
+  const vrMatrixCount = (db.prepare('SELECT COUNT(*) AS cnt FROM valid_relationships').get() as { cnt: number }).cnt;
+  console.log(`[seed] Loaded ${vrMatrixCount} valid relationship rules`);
+
+  // Skip main seed data if already present
   const row = db.prepare('SELECT COUNT(*) AS cnt FROM elements').get() as { cnt: number };
   if (row.cnt > 0) {
     console.log('[seed] Data already present — skipping seed.');

@@ -11,7 +11,10 @@ interface RelationshipRow {
   description: string | null;
   properties: string | null;
   confidence: number | null;
+  created_by: string | null;
+  source: string | null;
   created_at: string;
+  updated_at: string | null;
 }
 
 function parseProperties(row: RelationshipRow): Omit<RelationshipRow, 'properties'> & { properties: Record<string, unknown> | null } {
@@ -54,8 +57,8 @@ router.post('/relationships', (req: Request, res: Response) => {
 
   const stmt = db.prepare(`
     INSERT INTO relationships (id, archimate_type, specialisation, source_id, target_id,
-      label, description, properties, confidence)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      label, description, properties, confidence, created_by, source)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   stmt.run(
@@ -68,10 +71,57 @@ router.post('/relationships', (req: Request, res: Response) => {
     body.description ?? null,
     body.properties ? JSON.stringify(body.properties) : null,
     body.confidence ?? null,
+    body.created_by ?? 'manual',
+    body.source ?? 'manual',
   );
 
   const created = db.prepare('SELECT * FROM relationships WHERE id = ?').get(body.id) as RelationshipRow;
   res.status(201).json(parseProperties(created));
+});
+
+// PUT /api/relationships/:id — update a relationship
+router.put('/relationships/:id', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const body = req.body as Record<string, unknown>;
+
+  const existing = db.prepare('SELECT id FROM relationships WHERE id = ?').get(id);
+  if (!existing) {
+    res.status(404).json({ error: 'Relationship not found' });
+    return;
+  }
+
+  const fields: string[] = [];
+  const params: unknown[] = [];
+
+  const updatable = [
+    'archimate_type', 'specialisation', 'source_id', 'target_id',
+    'label', 'description', 'confidence',
+  ];
+
+  for (const field of updatable) {
+    if (field in body) {
+      fields.push(`${field} = ?`);
+      params.push(body[field] ?? null);
+    }
+  }
+
+  if ('properties' in body) {
+    fields.push('properties = ?');
+    params.push(body.properties ? JSON.stringify(body.properties) : null);
+  }
+
+  if (fields.length === 0) {
+    res.status(400).json({ error: 'No fields to update' });
+    return;
+  }
+
+  fields.push("updated_at = datetime('now')");
+  params.push(id);
+
+  db.prepare(`UPDATE relationships SET ${fields.join(', ')} WHERE id = ?`).run(...params);
+
+  const updated = db.prepare('SELECT * FROM relationships WHERE id = ?').get(id) as RelationshipRow;
+  res.json(parseProperties(updated));
 });
 
 // DELETE /api/relationships/:id — delete a relationship

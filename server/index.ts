@@ -8,6 +8,8 @@ import relationshipsRouter from './routes/relationships.js';
 import viewsRouter from './routes/views.js';
 import exportRouter from './routes/export.js';
 import batchRouter from './routes/batch.js';
+import archimateIoRouter from './routes/archimate-io.js';
+import csvIoRouter from './routes/csv-io.js';
 
 const PORT = 3001;
 
@@ -31,6 +33,8 @@ app.use('/api', relationshipsRouter);
 app.use('/api', viewsRouter);
 app.use('/api', exportRouter);
 app.use('/api', batchRouter);
+app.use('/api', archimateIoRouter);
+app.use('/api', csvIoRouter);
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`[arch-vis] Server listening on 0.0.0.0:${PORT}`);

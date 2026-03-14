@@ -42,6 +42,8 @@ CREATE TABLE IF NOT EXISTS elements (
     confidence REAL,                        -- from PFC extraction (0.0–1.0)
     source_session_id TEXT,                 -- PFC session that created/modified this
     parent_id TEXT REFERENCES elements(id), -- hierarchy (capability trees, function decomposition)
+    created_by TEXT DEFAULT 'manual',       -- who/what created it
+    source TEXT DEFAULT 'manual',           -- creation pathway: 'manual','archimate-xml','csv','api','pfc'
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
 );
@@ -64,6 +66,9 @@ CREATE TABLE IF NOT EXISTS relationships (
         -- UML relationship types (Phase 3)
         'uml-inheritance','uml-realisation','uml-composition','uml-aggregation',
         'uml-association','uml-dependency','uml-assembly',
+        -- UML sequence diagram message types (Phase 4)
+        'uml-sync-message','uml-async-message','uml-return-message',
+        'uml-create-message','uml-destroy-message','uml-self-message',
         -- Wireframe relationship types (Phase 3)
         'wf-contains','wf-navigates-to','wf-binds-to'
     )),
@@ -74,7 +79,10 @@ CREATE TABLE IF NOT EXISTS relationships (
     description TEXT,
     properties JSON,
     confidence REAL,
-    created_at TEXT DEFAULT (datetime('now'))
+    created_by TEXT DEFAULT 'manual',       -- who/what created it
+    source TEXT DEFAULT 'manual',           -- creation pathway: 'manual','archimate-xml','csv','api','pfc'
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_rel_source ON relationships(source_id);
@@ -100,7 +108,9 @@ CREATE TABLE IF NOT EXISTS views (
     name TEXT NOT NULL,
     viewpoint_type TEXT NOT NULL CHECK(viewpoint_type IN (
         'layered','knowledge_cognition','domain_slice','governance_matrix',
-        'process_detail','infrastructure','information','application_landscape','custom'
+        'process_detail','infrastructure','information','application_landscape','custom',
+        'uml_class','uml_component','wireframe',
+        'uml_sequence','uml_activity','uml_usecase'
     )),
     description TEXT,
     render_mode TEXT DEFAULT 'spatial' CHECK(render_mode IN ('flat','spatial')),
