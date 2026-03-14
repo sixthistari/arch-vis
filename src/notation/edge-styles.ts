@@ -144,6 +144,16 @@ const STYLES: Record<string, UnifiedEdgeStyle> = {
     isMessage: true, isSelfMessage: true, inlineArrow: true, filledArrow: true,
   },
 
+  // ── UML activity ────────────────────────────────────────────────────────
+  'uml-control-flow': {
+    strokeStyle: 'solid', dashArray: '', width: 1.2,
+    sourceMarker: null, targetMarker: 'uml-open-arrow',
+  },
+  'uml-object-flow': {
+    strokeStyle: 'dashed', dashArray: '6 3', width: 1.0,
+    sourceMarker: null, targetMarker: 'uml-open-arrow',
+  },
+
   // ── Wireframe ──────────────────────────────────────────────────────────
   'wf-navigates-to': {
     strokeStyle: 'dashed', dashArray: '6 3', width: 1.0,

@@ -77,6 +77,8 @@ const UML_REL_TYPES = [
   { value: 'uml-aggregation',   label: 'Aggregation' },
   { value: 'uml-association',   label: 'Association' },
   { value: 'uml-dependency',    label: 'Dependency' },
+  { value: 'uml-control-flow',  label: 'Control Flow' },
+  { value: 'uml-object-flow',   label: 'Object Flow' },
 ];
 
 const WF_REL_TYPES = [
@@ -484,13 +486,15 @@ export function XYFlowCanvas({
 
   // Data overlay controls
   const colourByProperty = useDataOverlayStore(s => s.colourByProperty);
+  const heatmapProperty = useDataOverlayStore(s => s.heatmapProperty);
   const showStatusBadge = useDataOverlayStore(s => s.showStatusBadge);
   const displayFieldKeys = useDataOverlayStore(s => s.displayFields);
   const overlayConfig: OverlayConfig = React.useMemo(() => ({
     colourByProperty,
+    heatmapProperty,
     showStatusBadge,
     displayFieldKeys,
-  }), [colourByProperty, showStatusBadge, displayFieldKeys]);
+  }), [colourByProperty, heatmapProperty, showStatusBadge, displayFieldKeys]);
 
   // Edge context menu state
   const [edgeMenu, setEdgeMenu] = React.useState<EdgeContextMenuState | null>(null);

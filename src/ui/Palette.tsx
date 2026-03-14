@@ -249,6 +249,15 @@ const UML_CLASS_GROUPS: SimpleGroup[] = [
   { key: 'other-uml', label: 'Other', types: ['uml-actor', 'uml-use-case', 'uml-note', 'uml-state', 'uml-activity'] },
 ];
 
+const UML_ACTIVITY_GROUPS: SimpleGroup[] = [
+  { key: 'act-nodes', label: 'Action Nodes', types: ['uml-action', 'uml-decision', 'uml-merge'] },
+  { key: 'act-control', label: 'Control Nodes', types: ['uml-initial-node', 'uml-final-node', 'uml-flow-final', 'uml-fork', 'uml-join'] },
+];
+
+const UML_USECASE_GROUPS: SimpleGroup[] = [
+  { key: 'uc-elements', label: 'Elements', types: ['uml-actor', 'uml-use-case'] },
+];
+
 const UML_SEQUENCE_GROUPS: SimpleGroup[] = [
   { key: 'seq-elements', label: 'Elements', types: ['uml-lifeline', 'uml-activation', 'uml-fragment'] },
 ];
@@ -287,10 +296,17 @@ export function Palette(): React.ReactElement {
 
   // Determine palette mode from viewpoint
   const isUmlSequence = viewpointType === 'uml_sequence';
-  const isUml = !isUmlSequence && (viewpointType === 'uml_class' || viewpointType === 'uml_component' || viewpointType === 'uml_usecase' || viewpointType === 'uml_activity');
+  const isUmlActivity = viewpointType === 'uml_activity';
+  const isUmlUseCase = viewpointType === 'uml_usecase';
+  const isUml = !isUmlSequence && !isUmlActivity && !isUmlUseCase && (viewpointType === 'uml_class' || viewpointType === 'uml_component');
   const isWireframe = viewpointType === 'wireframe';
 
-  const paletteTitle = isUmlSequence ? 'Sequence Elements' : isUml ? 'UML Elements' : isWireframe ? 'Wireframe Elements' : 'Elements';
+  const paletteTitle = isUmlSequence ? 'Sequence Elements'
+    : isUmlActivity ? 'Activity Elements'
+    : isUmlUseCase ? 'Use Case Elements'
+    : isUml ? 'UML Elements'
+    : isWireframe ? 'Wireframe Elements'
+    : 'Elements';
 
   // Render a simple (non-ArchiMate) group for UML / wireframe palettes
   const renderSimpleGroup = (group: SimpleGroup, borderColour: string, chipBg: string, dropLayer: string) => {
@@ -403,7 +419,21 @@ export function Palette(): React.ReactElement {
       ...UML_SEQUENCE_GROUPS.map(g => renderSimpleGroup(g, '#4A90D9', 'rgba(74,144,217,0.08)', 'application')),
     ),
 
-    // Body — UML palette
+    // Body — UML Activity palette
+    !collapsed && isUmlActivity && React.createElement('div', {
+      style: { padding: '0 6px 6px' },
+    },
+      ...UML_ACTIVITY_GROUPS.map(g => renderSimpleGroup(g, '#4A90D9', 'rgba(74,144,217,0.08)', 'application')),
+    ),
+
+    // Body — UML Use Case palette
+    !collapsed && isUmlUseCase && React.createElement('div', {
+      style: { padding: '0 6px 6px' },
+    },
+      ...UML_USECASE_GROUPS.map(g => renderSimpleGroup(g, '#4A90D9', 'rgba(74,144,217,0.08)', 'application')),
+    ),
+
+    // Body — UML class/component palette
     !collapsed && isUml && React.createElement('div', {
       style: { padding: '0 6px 6px' },
     },
@@ -418,7 +448,7 @@ export function Palette(): React.ReactElement {
     ),
 
     // Body — ArchiMate palette (default)
-    !collapsed && !isUml && !isUmlSequence && !isWireframe && React.createElement('div', {
+    !collapsed && !isUml && !isUmlSequence && !isUmlActivity && !isUmlUseCase && !isWireframe && React.createElement('div', {
       style: { padding: '0 6px 6px' },
     },
       ...layerGroups.map(group => {

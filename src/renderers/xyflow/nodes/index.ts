@@ -4,6 +4,7 @@ import { UmlClassNode } from './uml/UmlClassNode';
 import { UmlComponentNode } from './uml/UmlComponentNode';
 import { UmlStateNode } from './uml/UmlStateNode';
 import { UmlUseCaseNode } from './uml/UmlUseCaseNode';
+import { UmlActivityNode } from './uml/UmlActivityNode';
 import { UmlLifelineNode, UmlActivationNode, UmlFragmentNode } from './uml/UmlSequenceNodes';
 import { SequenceLifelineNode } from './sequence/SequenceLifelineNode';
 import { SequenceActivationNode } from './sequence/SequenceActivationNode';
@@ -27,6 +28,7 @@ export const nodeTypes: NodeTypes = {
   'uml-component': UmlComponentNode,
   'uml-use-case': UmlUseCaseNode,
   'uml-state': UmlStateNode,
+  'uml-activity': UmlActivityNode,
   'uml-lifeline': UmlLifelineNode,
   'uml-activation': UmlActivationNode,
   'uml-fragment': UmlFragmentNode,
@@ -58,6 +60,8 @@ export { UmlUseCaseNode } from './uml/UmlUseCaseNode';
 export type { UmlUseCaseNodeData } from './uml/UmlUseCaseNode';
 export { UmlStateNode } from './uml/UmlStateNode';
 export type { UmlStateNodeData } from './uml/UmlStateNode';
+export { UmlActivityNode } from './uml/UmlActivityNode';
+export type { UmlActivityNodeData } from './uml/UmlActivityNode';
 export { UmlLifelineNode, UmlActivationNode, UmlFragmentNode } from './uml/UmlSequenceNodes';
 export type { UmlLifelineNodeData, UmlActivationNodeData, UmlFragmentNodeData } from './uml/UmlSequenceNodes';
 export { SequenceLifelineNode } from './sequence/SequenceLifelineNode';

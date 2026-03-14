@@ -92,6 +92,14 @@ export const archimateTypeValues = [
   'uml-use-case',
   'uml-state',
   'uml-activity',
+  'uml-action',
+  'uml-decision',
+  'uml-merge',
+  'uml-fork',
+  'uml-join',
+  'uml-initial-node',
+  'uml-final-node',
+  'uml-flow-final',
   'uml-note',
   'uml-package',
   // Wireframe element types (Phase 3)
@@ -145,6 +153,9 @@ export const relationshipTypeValues = [
   'uml-association',
   'uml-dependency',
   'uml-assembly',
+  // UML activity diagram flow types
+  'uml-control-flow',
+  'uml-object-flow',
   // UML sequence diagram message types (Phase 4)
   'uml-sync-message',
   'uml-async-message',

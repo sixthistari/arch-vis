@@ -36,8 +36,18 @@ export function getNodeType(archimateType: ArchimateType): string {
     case 'uml-component': return 'uml-component';
 
     case 'uml-state':
-    case 'uml-activity':
       return 'uml-state';
+
+    case 'uml-activity':
+    case 'uml-action':
+    case 'uml-decision':
+    case 'uml-merge':
+    case 'uml-fork':
+    case 'uml-join':
+    case 'uml-initial-node':
+    case 'uml-final-node':
+    case 'uml-flow-final':
+      return 'uml-activity';
 
     case 'uml-actor':
     case 'uml-use-case':

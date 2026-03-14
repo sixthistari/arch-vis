@@ -8,6 +8,7 @@ import type { LayerBandNodeData } from './nodes/LayerBandNode';
 import type { Element, ViewElement } from '../../model/types';
 import { getShapeDefinition } from '../../notation/registry';
 import { getNotation, getNodeType } from '../../model/notation';
+import { heatmapColour } from '../../store/data-overlay';
 import { computeGridLayout, FALLBACK_LAYER_ORDER, FALLBACK_SUBLAYER_ORDER } from './layout-computation';
 import { computeLayerBands, BAND_PAD, type LayerBandInfo } from './layer-bands';
 
@@ -34,6 +35,8 @@ function domainColour(domainId: string): string {
 
 export interface OverlayConfig {
   colourByProperty: string | null;
+  /** Numeric property key for continuous heatmap colour mapping. */
+  heatmapProperty: string | null;
   showStatusBadge: boolean;
   displayFieldKeys: string[];
 }
@@ -186,6 +189,18 @@ export function elementsToNodes(
       } else if (overlay?.colourByProperty === 'domain' && el.domain_id) {
         const c = domainColour(el.domain_id);
         colourOverride = { fill: c + '33', stroke: c };
+      } else if (overlay?.heatmapProperty) {
+        const props = (el.properties ?? {}) as Record<string, unknown>;
+        const rawVal = props[overlay.heatmapProperty];
+        if (rawVal != null) {
+          const numVal = typeof rawVal === 'number' ? rawVal : parseFloat(String(rawVal));
+          if (!isNaN(numVal)) {
+            // Normalise: assume 0-100 range, clamp to [0,1]
+            const t = Math.max(0, Math.min(1, numVal / 100));
+            const c = heatmapColour(t);
+            colourOverride = { fill: c + '33', stroke: c };
+          }
+        }
       }
 
       const statusBadge = overlay?.showStatusBadge ? el.status : undefined;

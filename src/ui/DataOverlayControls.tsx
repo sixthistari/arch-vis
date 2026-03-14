@@ -8,6 +8,14 @@ const COLOUR_BY_OPTIONS = [
   { value: 'domain', label: 'Domain' },
 ];
 
+const HEATMAP_OPTIONS = [
+  { value: '', label: 'None' },
+  { value: 'confidence', label: 'Confidence' },
+  { value: 'priority', label: 'Priority' },
+  { value: 'maturity_score', label: 'Maturity Score' },
+  { value: 'risk', label: 'Risk' },
+];
+
 const DISPLAY_FIELD_OPTIONS = [
   { key: 'status', label: 'Status' },
   { key: 'layer', label: 'Layer' },
@@ -18,9 +26,11 @@ const DISPLAY_FIELD_OPTIONS = [
 export function DataOverlayControls(): React.ReactElement {
   const [collapsed, setCollapsed] = useState(false);
   const colourByProperty = useDataOverlayStore(s => s.colourByProperty);
+  const heatmapProperty = useDataOverlayStore(s => s.heatmapProperty);
   const showStatusBadge = useDataOverlayStore(s => s.showStatusBadge);
   const displayFields = useDataOverlayStore(s => s.displayFields);
   const setColourByProperty = useDataOverlayStore(s => s.setColourByProperty);
+  const setHeatmapProperty = useDataOverlayStore(s => s.setHeatmapProperty);
   const toggleStatusBadge = useDataOverlayStore(s => s.toggleStatusBadge);
   const setDisplayFields = useDataOverlayStore(s => s.setDisplayFields);
 
@@ -97,6 +107,21 @@ export function DataOverlayControls(): React.ReactElement {
           style: selectStyle,
         },
           ...COLOUR_BY_OPTIONS.map(opt =>
+            React.createElement('option', { key: opt.value, value: opt.value }, opt.label),
+          ),
+        ),
+      ),
+
+      // Heatmap property
+      React.createElement('div', null,
+        React.createElement('div', { style: labelStyle }, 'Heatmap (numeric 0\u2013100)'),
+        React.createElement('select', {
+          value: heatmapProperty ?? '',
+          onChange: (e: React.ChangeEvent<HTMLSelectElement>) =>
+            setHeatmapProperty(e.target.value || null),
+          style: selectStyle,
+        },
+          ...HEATMAP_OPTIONS.map(opt =>
             React.createElement('option', { key: opt.value, value: opt.value }, opt.label),
           ),
         ),
