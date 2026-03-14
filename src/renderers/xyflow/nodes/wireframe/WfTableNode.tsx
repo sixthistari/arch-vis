@@ -4,7 +4,7 @@
  * Lo-fi grid: grey header, alternating row backgrounds,
  * optional action column, sort indicators.
  */
-import { memo } from 'react';
+import { memo, useState, useCallback, useRef } from 'react';
 import { Handle, Position, type NodeProps, type Node } from '@xyflow/react';
 
 export interface WfTableNodeData {
@@ -18,6 +18,7 @@ export interface WfTableNodeData {
   tableWidth?: number;
   theme?: 'dark' | 'light';
   dimmed?: boolean;
+  onLabelChange?: (id: string, newLabel: string) => void;
   [key: string]: unknown;
 }
 
@@ -33,7 +34,7 @@ const HEADER_H = 30;
 const SEARCH_H = 32;
 const PAGINATION_H = 28;
 
-function WfTableNodeComponent({ data, selected }: NodeProps<WfTableNodeType>) {
+function WfTableNodeComponent({ id, data, selected }: NodeProps<WfTableNodeType>) {
   const {
     label,
     columns = [],
@@ -44,10 +45,36 @@ function WfTableNodeComponent({ data, selected }: NodeProps<WfTableNodeType>) {
     hasSearch,
     tableWidth: propWidth,
     dimmed,
+    onLabelChange,
   } = data;
 
   const stroke = selected ? '#F59E0B' : WF_BORDER;
   const opacity = dimmed ? 0.1 : 1;
+
+  // Inline label editing
+  const [editing, setEditing] = useState(false);
+  const [editValue, setEditValue] = useState(label);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleDoubleClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditValue(label);
+    setEditing(true);
+    setTimeout(() => inputRef.current?.select(), 30);
+  }, [label]);
+
+  const commitEdit = useCallback(() => {
+    setEditing(false);
+    const trimmed = editValue.trim();
+    if (trimmed && trimmed !== label && typeof onLabelChange === 'function') {
+      onLabelChange(id, trimmed);
+    }
+  }, [editValue, label, id, onLabelChange]);
+
+  const cancelEdit = useCallback(() => {
+    setEditing(false);
+    setEditValue(label);
+  }, [label]);
 
   const allCols = hasActions ? [...columns, 'Actions'] : columns;
   const colCount = allCols.length || 1;
@@ -60,7 +87,28 @@ function WfTableNodeComponent({ data, selected }: NodeProps<WfTableNodeType>) {
   const totalH = searchOffset + HEADER_H + bodyH + paginationOffset;
 
   return (
-    <div style={{ opacity }}>
+    <div style={{ opacity, position: 'relative' as const }} onDoubleClick={handleDoubleClick}>
+      {editing && (
+        <div style={{ position: 'absolute', top: -24, left: 0, width: tableWidth, zIndex: 10 }}>
+          <input
+            ref={inputRef}
+            value={editValue}
+            onChange={e => setEditValue(e.target.value)}
+            onBlur={commitEdit}
+            onKeyDown={e => {
+              if (e.key === 'Enter') commitEdit();
+              if (e.key === 'Escape') cancelEdit();
+              e.stopPropagation();
+            }}
+            autoFocus
+            style={{
+              width: '100%', fontSize: 10, fontFamily: 'Inter, system-ui, sans-serif',
+              background: '#FFFFFF', color: '#374151', border: '1px solid #F59E0B',
+              borderRadius: 2, padding: '2px 4px', boxSizing: 'border-box' as const, outline: 'none',
+            }}
+          />
+        </div>
+      )}
       <svg width={tableWidth} height={totalH} overflow="visible">
         {/* Outer border */}
         <rect x={0} y={0} width={tableWidth} height={totalH} rx={4} stroke={stroke} fill="white" strokeWidth={1} />

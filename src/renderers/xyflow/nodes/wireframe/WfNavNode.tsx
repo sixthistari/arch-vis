@@ -4,7 +4,7 @@
  * Supports: horizontal navbar, vertical sidebar menu, tabs,
  * breadcrumbs, pagination, stepper/wizard.
  */
-import { memo } from 'react';
+import { memo, useState, useCallback, useRef } from 'react';
 import { Handle, Position, type NodeProps, type Node } from '@xyflow/react';
 
 export type WfNavType = 'horizontal' | 'vertical' | 'tabs' | 'breadcrumbs' | 'pagination' | 'stepper';
@@ -17,6 +17,7 @@ export interface WfNavNodeData {
   navWidth?: number;
   theme?: 'dark' | 'light';
   dimmed?: boolean;
+  onLabelChange?: (id: string, newLabel: string) => void;
   [key: string]: unknown;
 }
 
@@ -31,24 +32,90 @@ const WF_ACTIVE_BG = '#E5E7EB';
 const ITEM_H = 28;
 const ITEM_PAD = 12;
 
-function WfNavNodeComponent({ data, selected }: NodeProps<WfNavNodeType>) {
+function WfNavNodeComponent({ id, data, selected }: NodeProps<WfNavNodeType>) {
   const {
+    label,
     navType,
     items = [],
     activeIndex = 0,
     navWidth = 360,
     dimmed,
+    onLabelChange,
   } = data;
 
   const stroke = selected ? '#F59E0B' : WF_BORDER;
   const opacity = dimmed ? 0.1 : 1;
+
+  // Inline label editing
+  const [editing, setEditing] = useState(false);
+  const [editValue, setEditValue] = useState(label);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleDoubleClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditValue(label);
+    setEditing(true);
+    setTimeout(() => inputRef.current?.select(), 30);
+  }, [label]);
+
+  const commitEdit = useCallback(() => {
+    setEditing(false);
+    const trimmed = editValue.trim();
+    if (trimmed && trimmed !== label && typeof onLabelChange === 'function') {
+      onLabelChange(id, trimmed);
+    }
+  }, [editValue, label, id, onLabelChange]);
+
+  const cancelEdit = useCallback(() => {
+    setEditing(false);
+    setEditValue(label);
+  }, [label]);
+
+  // Shared edit overlay rendered above the SVG content
+  const renderEditOverlay = (w: number) => editing ? (
+    <div
+      style={{
+        position: 'absolute',
+        top: -24,
+        left: 0,
+        width: w,
+        zIndex: 10,
+      }}
+    >
+      <input
+        ref={inputRef}
+        value={editValue}
+        onChange={e => setEditValue(e.target.value)}
+        onBlur={commitEdit}
+        onKeyDown={e => {
+          if (e.key === 'Enter') commitEdit();
+          if (e.key === 'Escape') cancelEdit();
+          e.stopPropagation();
+        }}
+        autoFocus
+        style={{
+          width: '100%',
+          fontSize: 10,
+          fontFamily: 'Inter, system-ui, sans-serif',
+          background: '#FFFFFF',
+          color: '#374151',
+          border: '1px solid #F59E0B',
+          borderRadius: 2,
+          padding: '2px 4px',
+          boxSizing: 'border-box' as const,
+          outline: 'none',
+        }}
+      />
+    </div>
+  ) : null;
 
   // ── Horizontal navbar ──
   if (navType === 'horizontal') {
     const h = 36;
     const itemW = navWidth / Math.max(items.length, 1);
     return (
-      <div style={{ opacity }}>
+      <div style={{ opacity, position: 'relative' as const }} onDoubleClick={handleDoubleClick}>
+        {renderEditOverlay(navWidth)}
         <svg width={navWidth} height={h} overflow="visible">
           <rect x={0} y={0} width={navWidth} height={h} fill={WF_BG} stroke={stroke} strokeWidth={1} />
           {items.map((item, i) => {
@@ -83,7 +150,8 @@ function WfNavNodeComponent({ data, selected }: NodeProps<WfNavNodeType>) {
     const w = Math.min(navWidth, 200);
     const h = items.length * ITEM_H + 8;
     return (
-      <div style={{ opacity }}>
+      <div style={{ opacity, position: 'relative' as const }} onDoubleClick={handleDoubleClick}>
+        {renderEditOverlay(w)}
         <svg width={w} height={h} overflow="visible">
           <rect x={0} y={0} width={w} height={h} fill={WF_BG} stroke={stroke} strokeWidth={1} rx={2} />
           {items.map((item, i) => {
@@ -118,7 +186,8 @@ function WfNavNodeComponent({ data, selected }: NodeProps<WfNavNodeType>) {
     const tabW = Math.max(80, navWidth / items.length);
     const totalW = tabW * items.length;
     return (
-      <div style={{ opacity }}>
+      <div style={{ opacity, position: 'relative' as const }} onDoubleClick={handleDoubleClick}>
+        {renderEditOverlay(totalW)}
         <svg width={totalW} height={h} overflow="visible">
           <line x1={0} y1={h - 1} x2={totalW} y2={h - 1} stroke={WF_BORDER} strokeWidth={1} />
           {items.map((item, i) => {
@@ -154,7 +223,8 @@ function WfNavNodeComponent({ data, selected }: NodeProps<WfNavNodeType>) {
   if (navType === 'breadcrumbs') {
     const h = 24;
     return (
-      <div style={{ opacity }}>
+      <div style={{ opacity, position: 'relative' as const }} onDoubleClick={handleDoubleClick}>
+        {renderEditOverlay(navWidth)}
         <svg width={navWidth} height={h} overflow="visible">
           <text
             x={4} y={h / 2 + 1}
@@ -182,7 +252,8 @@ function WfNavNodeComponent({ data, selected }: NodeProps<WfNavNodeType>) {
     const h = 30;
     const totalW = items.length * btnW + 2 * btnW; // prev + pages + next
     return (
-      <div style={{ opacity }}>
+      <div style={{ opacity, position: 'relative' as const }} onDoubleClick={handleDoubleClick}>
+        {renderEditOverlay(totalW)}
         <svg width={totalW} height={h} overflow="visible">
           {/* Prev */}
           <rect x={0} y={2} width={btnW} height={h - 4} rx={3} stroke={WF_BORDER} fill="white" strokeWidth={0.8} />
@@ -216,7 +287,8 @@ function WfNavNodeComponent({ data, selected }: NodeProps<WfNavNodeType>) {
   const circleR = 10;
   const stepGap = stepW / Math.max(items.length, 1);
   return (
-    <div style={{ opacity }}>
+    <div style={{ opacity, position: 'relative' as const }} onDoubleClick={handleDoubleClick}>
+      {renderEditOverlay(stepW)}
       <svg width={stepW} height={stepH} overflow="visible">
         {items.map((item, i) => {
           const isActive = i === activeIndex;

@@ -61,6 +61,9 @@ export interface ArchimateNodeData {
   highlighted?: boolean;
   dimmed?: boolean;
   onLabelChange?: (id: string, newLabel: string) => void;
+  colourOverride?: { fill: string; stroke: string };
+  statusBadge?: string;
+  displayFields?: string[];
   [key: string]: unknown;
 }
 
@@ -163,7 +166,7 @@ function SpecBadge({ spec, x, y }: { spec: string; x: number; y: number }) {
 // ═══════════════════════════════════════
 
 function ArchimateNodeComponent({ id, data, selected }: NodeProps<ArchimateNodeType>) {
-  const { label, archimateType, specialisation, layer, theme = 'dark', dimmed, onLabelChange } = data;
+  const { label, archimateType, specialisation, layer, theme = 'dark', dimmed, onLabelChange, colourOverride, statusBadge, displayFields } = data;
   const connection = useConnection();
   const isConnecting = connection.inProgress;
   const shapeBoundary = getShapeBoundary(archimateType);
@@ -209,8 +212,8 @@ function ArchimateNodeComponent({ id, data, selected }: NodeProps<ArchimateNodeT
     setEditValue(label);
   }, [label]);
 
-  const stroke = selected ? '#F59E0B' : colours.stroke;
-  const fill = colours.fill;
+  const stroke = selected ? '#F59E0B' : (colourOverride?.stroke ?? colours.stroke);
+  const fill = colourOverride?.fill ?? colours.fill;
 
   const shapeProps: ShapeRendererProps = { width, height, stroke, fill };
 
@@ -340,6 +343,31 @@ function ArchimateNodeComponent({ id, data, selected }: NodeProps<ArchimateNodeT
         {tierConfig.showBadge && specialisation && (
           <SpecBadge spec={specialisation} x={width - 18} y={height - 12} />
         )}
+
+        {/* Status badge overlay — small pill in the top-left */}
+        {tierConfig.showBadge && statusBadge && (
+          <g>
+            <rect x={2} y={2} width={Math.max(statusBadge.length * 4.5 + 6, 20)} height={10} rx={3} fill={theme === 'dark' ? '#334155' : '#E2E8F0'} fillOpacity={0.9} />
+            <text x={2 + Math.max(statusBadge.length * 4.5 + 6, 20) / 2} y={9} textAnchor="middle" fontSize={6} fill={theme === 'dark' ? '#CBD5E1' : '#475569'} fontWeight={500} fontFamily="Inter, system-ui, sans-serif">{statusBadge}</text>
+          </g>
+        )}
+
+        {/* Display fields — small text lines below the main label */}
+        {tierConfig.showLabel && displayFields && displayFields.length > 0 && displayFields.map((field, i) => (
+          <text
+            key={i}
+            x={width / 2}
+            y={labelY + 10 + i * 9}
+            textAnchor="middle"
+            dominantBaseline="central"
+            fontSize={7}
+            fill={theme === 'dark' ? '#94A3B8' : '#6B7280'}
+            fontFamily="Inter, system-ui, sans-serif"
+            style={{ pointerEvents: 'none' }}
+          >
+            {field.length > 22 ? field.substring(0, 21) + '…' : field}
+          </text>
+        ))}
       </svg>
 
       {/* ── Routing handles — invisible, used by auto-routing system only ── */}

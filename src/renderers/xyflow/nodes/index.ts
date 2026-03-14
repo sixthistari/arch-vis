@@ -4,6 +4,9 @@ import { UmlClassNode } from './uml/UmlClassNode';
 import { UmlComponentNode } from './uml/UmlComponentNode';
 import { UmlStateNode } from './uml/UmlStateNode';
 import { UmlLifelineNode, UmlActivationNode, UmlFragmentNode } from './uml/UmlSequenceNodes';
+import { SequenceLifelineNode } from './sequence/SequenceLifelineNode';
+import { SequenceActivationNode } from './sequence/SequenceActivationNode';
+import { SequenceFragmentNode } from './sequence/SequenceFragmentNode';
 import { WfPageNode } from './wireframe/WfPageNode';
 import { WfSectionNode } from './wireframe/WfSectionNode';
 import { WfNavNode } from './wireframe/WfNavNode';
@@ -25,6 +28,10 @@ export const nodeTypes: NodeTypes = {
   'uml-lifeline': UmlLifelineNode,
   'uml-activation': UmlActivationNode,
   'uml-fragment': UmlFragmentNode,
+  // Sequence diagram (Phase 4)
+  'sequence-lifeline': SequenceLifelineNode,
+  'sequence-activation': SequenceActivationNode,
+  'sequence-fragment': SequenceFragmentNode,
   // Wireframe
   'wf-page': WfPageNode,
   'wf-section': WfSectionNode,
@@ -49,6 +56,12 @@ export { UmlStateNode } from './uml/UmlStateNode';
 export type { UmlStateNodeData } from './uml/UmlStateNode';
 export { UmlLifelineNode, UmlActivationNode, UmlFragmentNode } from './uml/UmlSequenceNodes';
 export type { UmlLifelineNodeData, UmlActivationNodeData, UmlFragmentNodeData } from './uml/UmlSequenceNodes';
+export { SequenceLifelineNode } from './sequence/SequenceLifelineNode';
+export type { SequenceLifelineNodeData } from './sequence/SequenceLifelineNode';
+export { SequenceActivationNode } from './sequence/SequenceActivationNode';
+export type { SequenceActivationNodeData } from './sequence/SequenceActivationNode';
+export { SequenceFragmentNode } from './sequence/SequenceFragmentNode';
+export type { SequenceFragmentNodeData } from './sequence/SequenceFragmentNode';
 
 // Wireframe exports
 export { WfPageNode } from './wireframe/WfPageNode';

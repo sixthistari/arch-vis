@@ -5,7 +5,7 @@
  * accordion, column-layout. All render as lo-fi grey containers
  * with optional title bar.
  */
-import { memo } from 'react';
+import { memo, useState, useCallback, useRef } from 'react';
 import { Handle, Position, type NodeProps, type Node } from '@xyflow/react';
 
 export type WfSectionType = 'card' | 'panel' | 'modal' | 'drawer' | 'sidebar' |
@@ -21,6 +21,7 @@ export interface WfSectionNodeData {
   collapsed?: boolean; // for accordion
   theme?: 'dark' | 'light';
   dimmed?: boolean;
+  onLabelChange?: (id: string, newLabel: string) => void;
   [key: string]: unknown;
 }
 
@@ -32,7 +33,7 @@ const WF_TEXT = '#374151';
 const WF_MUTED = '#9CA3AF';
 const TITLE_H = 28;
 
-function WfSectionNodeComponent({ data, selected }: NodeProps<WfSectionNodeType>) {
+function WfSectionNodeComponent({ id, data, selected }: NodeProps<WfSectionNodeType>) {
   const {
     label,
     sectionType,
@@ -42,11 +43,37 @@ function WfSectionNodeComponent({ data, selected }: NodeProps<WfSectionNodeType>
     sectionHeight = 200,
     collapsed,
     dimmed,
+    onLabelChange,
   } = data;
 
   const stroke = selected ? '#F59E0B' : WF_BORDER;
   const opacity = dimmed ? 0.1 : 1;
   const displayTitle = title ?? label;
+
+  // Inline label editing
+  const [editing, setEditing] = useState(false);
+  const [editValue, setEditValue] = useState(displayTitle);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleDoubleClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditValue(displayTitle);
+    setEditing(true);
+    setTimeout(() => inputRef.current?.select(), 30);
+  }, [displayTitle]);
+
+  const commitEdit = useCallback(() => {
+    setEditing(false);
+    const trimmed = editValue.trim();
+    if (trimmed && trimmed !== label && typeof onLabelChange === 'function') {
+      onLabelChange(id, trimmed);
+    }
+  }, [editValue, label, id, onLabelChange]);
+
+  const cancelEdit = useCallback(() => {
+    setEditing(false);
+    setEditValue(displayTitle);
+  }, [displayTitle]);
   const hasTitle = !!displayTitle;
   const rx = sectionType === 'card' ? 6 : sectionType === 'modal' ? 8 : 2;
 
@@ -77,15 +104,47 @@ function WfSectionNodeComponent({ data, selected }: NodeProps<WfSectionNodeType>
             {rx > 2 ? null : <rect x={0} y={TITLE_H - 2} width={w} height={2} fill="#E5E7EB" stroke="none" />}
             <line x1={0} y1={TITLE_H} x2={w} y2={TITLE_H} stroke={stroke} strokeWidth={0.8} />
 
-            <text
-              x={10} y={TITLE_H / 2 + 1}
-              dominantBaseline="central"
-              fontSize={11} fontWeight={600} fill={WF_TEXT}
-              fontFamily="Inter, system-ui, sans-serif"
-              style={{ pointerEvents: 'none' }}
-            >
-              {displayTitle}
-            </text>
+            {!editing && (
+              <text
+                x={10} y={TITLE_H / 2 + 1}
+                dominantBaseline="central"
+                fontSize={11} fontWeight={600} fill={WF_TEXT}
+                fontFamily="Inter, system-ui, sans-serif"
+                style={{ pointerEvents: 'all', cursor: 'default' }}
+                onDoubleClick={handleDoubleClick}
+              >
+                {displayTitle}
+              </text>
+            )}
+            {editing && (
+              <foreignObject x={4} y={4} width={w - 40} height={TITLE_H - 8}>
+                <input
+                  ref={inputRef}
+                  value={editValue}
+                  onChange={e => setEditValue(e.target.value)}
+                  onBlur={commitEdit}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') commitEdit();
+                    if (e.key === 'Escape') cancelEdit();
+                    e.stopPropagation();
+                  }}
+                  autoFocus
+                  style={{
+                    width: '100%',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    fontFamily: 'Inter, system-ui, sans-serif',
+                    background: '#FFFFFF',
+                    color: WF_TEXT,
+                    border: '1px solid #F59E0B',
+                    borderRadius: 2,
+                    padding: '1px 3px',
+                    boxSizing: 'border-box' as const,
+                    outline: 'none',
+                  }}
+                />
+              </foreignObject>
+            )}
 
             {/* Accordion chevron */}
             {sectionType === 'accordion' && (

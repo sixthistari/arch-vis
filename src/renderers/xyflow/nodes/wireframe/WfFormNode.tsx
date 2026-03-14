@@ -4,7 +4,7 @@
  * Each field has a label, type, and optional placeholder.
  * Submit/cancel buttons at bottom.
  */
-import { memo } from 'react';
+import { memo, useState, useCallback, useRef } from 'react';
 import { Handle, Position, type NodeProps, type Node } from '@xyflow/react';
 
 export type WfFieldType = 'text' | 'email' | 'password' | 'number' | 'date' |
@@ -26,6 +26,7 @@ export interface WfFormNodeData {
   formWidth?: number;
   theme?: 'dark' | 'light';
   dimmed?: boolean;
+  onLabelChange?: (id: string, newLabel: string) => void;
   [key: string]: unknown;
 }
 
@@ -157,17 +158,44 @@ function getFieldHeight(field: WfFormField): number {
   return LABEL_H + FIELD_H + FIELD_GAP;
 }
 
-function WfFormNodeComponent({ data, selected }: NodeProps<WfFormNodeType>) {
+function WfFormNodeComponent({ id, data, selected }: NodeProps<WfFormNodeType>) {
   const {
+    label,
     fields = [],
     submitLabel = 'Submit',
     cancelLabel,
     formWidth = 320,
     dimmed,
+    onLabelChange,
   } = data;
 
   const stroke = selected ? '#F59E0B' : WF_BORDER;
   const opacity = dimmed ? 0.1 : 1;
+
+  // Inline label editing
+  const [editing, setEditing] = useState(false);
+  const [editValue, setEditValue] = useState(label);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleDoubleClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditValue(label);
+    setEditing(true);
+    setTimeout(() => inputRef.current?.select(), 30);
+  }, [label]);
+
+  const commitEdit = useCallback(() => {
+    setEditing(false);
+    const trimmed = editValue.trim();
+    if (trimmed && trimmed !== label && typeof onLabelChange === 'function') {
+      onLabelChange(id, trimmed);
+    }
+  }, [editValue, label, id, onLabelChange]);
+
+  const cancelEdit = useCallback(() => {
+    setEditing(false);
+    setEditValue(label);
+  }, [label]);
 
   // Calculate total height
   let contentH = PAD;
@@ -180,7 +208,28 @@ function WfFormNodeComponent({ data, selected }: NodeProps<WfFormNodeType>) {
   const totalH = contentH;
 
   return (
-    <div style={{ opacity }}>
+    <div style={{ opacity, position: 'relative' as const }} onDoubleClick={handleDoubleClick}>
+      {editing && (
+        <div style={{ position: 'absolute', top: -24, left: 0, width: formWidth, zIndex: 10 }}>
+          <input
+            ref={inputRef}
+            value={editValue}
+            onChange={e => setEditValue(e.target.value)}
+            onBlur={commitEdit}
+            onKeyDown={e => {
+              if (e.key === 'Enter') commitEdit();
+              if (e.key === 'Escape') cancelEdit();
+              e.stopPropagation();
+            }}
+            autoFocus
+            style={{
+              width: '100%', fontSize: 10, fontFamily: 'Inter, system-ui, sans-serif',
+              background: '#FFFFFF', color: '#374151', border: '1px solid #F59E0B',
+              borderRadius: 2, padding: '2px 4px', boxSizing: 'border-box' as const, outline: 'none',
+            }}
+          />
+        </div>
+      )}
       <svg width={formWidth} height={totalH} overflow="visible">
         {/* Form border */}
         <rect x={0} y={0} width={formWidth} height={totalH} rx={4} stroke={stroke} fill="#FAFAFA" strokeWidth={1} />
