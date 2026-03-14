@@ -171,12 +171,12 @@ function ArchimateEdgeComponent(props: EdgeProps<ArchimateEdgeType>) {
   const activeWps: { x: number; y: number }[] = waypoints.length > 0 ? waypoints : routedWaypoints;
   const fullPath = [{ x: sourceX, y: sourceY }, ...activeWps, { x: targetX, y: targetY }];
 
-  // Display path
+  // Display path — must always be a string for SVG <path d>
   let displayPath = edgePath;
   if (activeWps.length > 0) {
     displayPath = buildRoundedPath(fullPath);
-  } else if (data?.customPath) {
-    displayPath = data.customPath as string;
+  } else if (data?.customPath && typeof data.customPath === 'string') {
+    displayPath = data.customPath;
   }
 
   // Label midpoint
