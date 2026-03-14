@@ -12,13 +12,14 @@
  *   Passive Structure (object/artifact): folded-corner rectangle
  *   Other: varies (dashed for gap/grouping, 3D for node/device)
  */
-import React, { memo, useState } from 'react';
-import { Handle, Position, type NodeProps, type Node, useViewport, useConnection } from '@xyflow/react';
+import React, { memo } from 'react';
+import { Handle, Position, type NodeProps, type Node, useViewport } from '@xyflow/react';
 import { getArchimateIcon } from './archimate-icons';
 import { getLayerColours } from '../../../notation/colors';
 import { getShapeDefinition } from '../../../notation/registry';
 import { getZoomTierConfig } from '../../spatial/zoom-tiers';
-import { useEditableNode } from '../hooks/useEditableNode';
+import { useNodeBehaviour } from '../hooks/useNodeBehaviour';
+import { RoutingHandles } from './shared/RoutingHandles';
 
 // ═══════════════════════════════════════
 // Shape classification by ArchiMate aspect
@@ -168,8 +169,6 @@ function SpecBadge({ spec, x, y }: { spec: string; x: number; y: number }) {
 
 function ArchimateNodeComponent({ id, data, selected }: NodeProps<ArchimateNodeType>) {
   const { label, archimateType, specialisation, layer, theme = 'dark', dimmed, onLabelChange, colourOverride, statusBadge, displayFields } = data;
-  const connection = useConnection();
-  const isConnecting = connection.inProgress;
   const shapeBoundary = getShapeBoundary(archimateType);
   const iconRenderer = getArchimateIcon(archimateType);
   const colours = getLayerColours(layer, theme);
@@ -182,14 +181,17 @@ function ArchimateNodeComponent({ id, data, selected }: NodeProps<ArchimateNodeT
   const svgWidth = shapeBoundary === 'box-3d' ? width + 12 : width;
   const svgHeight = shapeBoundary === 'box-3d' ? height + 12 : height;
   const iconSize = 14;
-  const opacity = dimmed ? 0.1 : 1;
 
   // Zoom tier — gates what detail level to render
   const { zoom } = useViewport();
   const tierConfig = getZoomTierConfig(zoom);
 
-  // Inline label edit state
-  const { editing, editValue, setEditValue, inputRef, handleDoubleClick, commitEdit, cancelEdit } = useEditableNode(id, label, onLabelChange);
+  // Shared node behaviour hook
+  const {
+    editing, editValue, setEditValue, inputRef, handleDoubleClick, commitEdit, cancelEdit,
+    isHovered, setIsHovered, isConnecting, opacity,
+    connectorHandleStyle, targetHandleStyle,
+  } = useNodeBehaviour({ id, label, dimmed, selected, theme, onLabelChange });
 
   const stroke = selected ? '#F59E0B' : (colourOverride?.stroke ?? colours.stroke);
   const fill = colourOverride?.fill ?? colours.fill;
@@ -211,45 +213,6 @@ function ArchimateNodeComponent({ id, data, selected }: NodeProps<ArchimateNodeT
   // Label position — shifted left when icon is present
   const labelX = iconRenderer ? (width - iconSize - 4) / 2 : width / 2;
   const labelY = height / 2;
-
-  // Hover state for showing connection handles
-  const [isHovered, setIsHovered] = useState(false);
-
-  // Routing handles — tiny, permanently invisible; used by edge auto-routing only
-  const handleBase: React.CSSProperties = {
-    width: 6,
-    height: 6,
-    background: 'transparent',
-    border: 'none',
-    opacity: 0,
-    pointerEvents: 'none',
-  };
-
-  // Cardinal connector handles — shown when hovering (source only, user-initiated connections)
-  const connectorHandleStyle = (visible: boolean): React.CSSProperties => ({
-    width: 12,
-    height: 12,
-    background: '#3B82F6',
-    border: '2px solid #FFFFFF',
-    borderRadius: '50%',
-    opacity: visible ? 1 : 0,
-    transition: 'opacity 0.15s ease',
-    cursor: 'crosshair',
-    zIndex: 10,
-    pointerEvents: visible ? 'all' : 'none',
-  });
-
-  // Target indicator handles — shown when a connection drag is in progress over this node
-  const targetHandleStyle = (visible: boolean): React.CSSProperties => ({
-    width: 16,
-    height: 16,
-    background: 'transparent',
-    border: `2px dashed ${isConnecting ? '#10B981' : 'transparent'}`,
-    borderRadius: '50%',
-    opacity: visible ? 1 : 0,
-    transition: 'opacity 0.15s ease',
-    pointerEvents: visible ? 'all' : 'none',
-  });
 
   return (
     <div
@@ -350,30 +313,7 @@ function ArchimateNodeComponent({ id, data, selected }: NodeProps<ArchimateNodeT
       </svg>
 
       {/* ── Routing handles — invisible, used by auto-routing system only ── */}
-      {[15, 30, 50, 70, 85].map((pct, i) => (
-        <React.Fragment key={`t${i}`}>
-          <Handle type="source" position={Position.Top} id={`t${i}`} style={{ ...handleBase, left: `${pct}%` }} />
-          <Handle type="target" position={Position.Top} id={`t${i}-t`} style={{ ...handleBase, left: `${pct}%` }} />
-        </React.Fragment>
-      ))}
-      {[15, 30, 50, 70, 85].map((pct, i) => (
-        <React.Fragment key={`b${i}`}>
-          <Handle type="source" position={Position.Bottom} id={`b${i}`} style={{ ...handleBase, left: `${pct}%` }} />
-          <Handle type="target" position={Position.Bottom} id={`b${i}-t`} style={{ ...handleBase, left: `${pct}%` }} />
-        </React.Fragment>
-      ))}
-      {shapeBoundary !== 'chevron' && [15, 30, 50, 70, 85].map((pct, i) => (
-        <React.Fragment key={`l${i}`}>
-          <Handle type="source" position={Position.Left} id={`l${i}`} style={{ ...handleBase, top: `${pct}%` }} />
-          <Handle type="target" position={Position.Left} id={`l${i}-t`} style={{ ...handleBase, top: `${pct}%` }} />
-        </React.Fragment>
-      ))}
-      {shapeBoundary !== 'chevron' && [15, 30, 50, 70, 85].map((pct, i) => (
-        <React.Fragment key={`r${i}`}>
-          <Handle type="source" position={Position.Right} id={`r${i}`} style={{ ...handleBase, top: `${pct}%` }} />
-          <Handle type="target" position={Position.Right} id={`r${i}-t`} style={{ ...handleBase, top: `${pct}%` }} />
-        </React.Fragment>
-      ))}
+      <RoutingHandles excludeSides={shapeBoundary === 'chevron' ? ['left', 'right'] : undefined} />
 
       {/* ── Cardinal connector handles — visible on hover for user-initiated connections ── */}
       <Handle type="source" position={Position.Top}    id="conn-n" style={{ ...connectorHandleStyle(isHovered && !isConnecting), left: '50%', top: -6 }} />

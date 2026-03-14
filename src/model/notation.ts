@@ -74,6 +74,8 @@ export function getNodeType(archimateType: ArchimateType): string {
     case 'wf-placeholder':
       return 'wf-control';
 
+    case 'wf-feedback': return 'wf-feedback';
+
     // ArchiMate core types
     case 'stakeholder':
     case 'driver':

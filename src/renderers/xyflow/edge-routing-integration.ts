@@ -4,7 +4,7 @@
  * Extracted from Canvas.tsx for modularity.
  */
 import type { Edge } from '@xyflow/react';
-import type { ArchimateEdgeData } from './edges/ArchimateEdge';
+import type { UnifiedEdgeData as ArchimateEdgeData } from './edges';
 import type { Relationship } from '../../model/types';
 import type { PortSide } from '../../layout/edge-routing';
 import { getEdgeType } from '../../model/notation';

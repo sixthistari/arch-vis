@@ -5,8 +5,9 @@
  * - uml-actor: stickman figure with label below
  * - uml-use-case: oval with centred label
  */
-import React, { memo } from 'react';
-import { Handle, Position, type NodeProps, type Node } from '@xyflow/react';
+import { memo } from 'react';
+import { type NodeProps, type Node } from '@xyflow/react';
+import { RoutingHandles } from '../shared/RoutingHandles';
 
 // ═══════════════════════════════════════
 // Data types
@@ -21,41 +22,6 @@ export interface UmlUseCaseNodeData {
 }
 
 type UmlUseCaseNodeType = Node<UmlUseCaseNodeData, 'uml-use-case'>;
-
-// ═══════════════════════════════════════
-// Routing handles (shared pattern)
-// ═══════════════════════════════════════
-
-function RoutingHandles() {
-  return (
-    <>
-      {[15, 30, 50, 70, 85].map((pct, i) => (
-        <React.Fragment key={`t${i}`}>
-          <Handle type="source" position={Position.Top} id={`t${i}`} style={{ visibility: 'hidden', left: `${pct}%` }} />
-          <Handle type="target" position={Position.Top} id={`t${i}-t`} style={{ visibility: 'hidden', left: `${pct}%` }} />
-        </React.Fragment>
-      ))}
-      {[15, 30, 50, 70, 85].map((pct, i) => (
-        <React.Fragment key={`b${i}`}>
-          <Handle type="source" position={Position.Bottom} id={`b${i}`} style={{ visibility: 'hidden', left: `${pct}%` }} />
-          <Handle type="target" position={Position.Bottom} id={`b${i}-t`} style={{ visibility: 'hidden', left: `${pct}%` }} />
-        </React.Fragment>
-      ))}
-      {[15, 30, 50, 70, 85].map((pct, i) => (
-        <React.Fragment key={`l${i}`}>
-          <Handle type="source" position={Position.Left} id={`l${i}`} style={{ visibility: 'hidden', top: `${pct}%` }} />
-          <Handle type="target" position={Position.Left} id={`l${i}-t`} style={{ visibility: 'hidden', top: `${pct}%` }} />
-        </React.Fragment>
-      ))}
-      {[15, 30, 50, 70, 85].map((pct, i) => (
-        <React.Fragment key={`r${i}`}>
-          <Handle type="source" position={Position.Right} id={`r${i}`} style={{ visibility: 'hidden', top: `${pct}%` }} />
-          <Handle type="target" position={Position.Right} id={`r${i}-t`} style={{ visibility: 'hidden', top: `${pct}%` }} />
-        </React.Fragment>
-      ))}
-    </>
-  );
-}
 
 // ═══════════════════════════════════════
 // Actor stickman

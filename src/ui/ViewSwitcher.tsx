@@ -130,7 +130,12 @@ export function ViewSwitcher(): React.ReactElement {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (creating) inputRef.current?.focus();
+    if (creating) {
+      setTimeout(() => {
+        inputRef.current?.focus();
+        inputRef.current?.scrollIntoView({ block: 'nearest' });
+      }, 30);
+    }
   }, [creating]);
 
   const handleCreate = async () => {

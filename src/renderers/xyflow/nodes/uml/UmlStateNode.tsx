@@ -11,6 +11,7 @@
  */
 import { memo } from 'react';
 import { Handle, Position, type NodeProps, type Node } from '@xyflow/react';
+import { RoutingHandles } from '../shared/RoutingHandles';
 
 export interface StateActivity {
   trigger: 'entry' | 'exit' | 'do';
@@ -161,10 +162,7 @@ function UmlStateNodeComponent({ data, selected }: NodeProps<UmlStateNodeType>) 
         )}
       </svg>
 
-      <Handle type="target" position={Position.Top} style={{ visibility: 'hidden' }} />
-      <Handle type="source" position={Position.Bottom} style={{ visibility: 'hidden' }} />
-      <Handle type="target" position={Position.Left} style={{ visibility: 'hidden' }} />
-      <Handle type="source" position={Position.Right} style={{ visibility: 'hidden' }} />
+      <RoutingHandles />
     </div>
   );
 }

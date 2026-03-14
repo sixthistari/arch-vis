@@ -287,7 +287,7 @@ export function Palette(): React.ReactElement {
 
   // Determine palette mode from viewpoint
   const isUmlSequence = viewpointType === 'uml_sequence';
-  const isUml = !isUmlSequence && (viewpointType === 'uml_class' || viewpointType === 'uml_component');
+  const isUml = !isUmlSequence && (viewpointType === 'uml_class' || viewpointType === 'uml_component' || viewpointType === 'uml_usecase' || viewpointType === 'uml_activity');
   const isWireframe = viewpointType === 'wireframe';
 
   const paletteTitle = isUmlSequence ? 'Sequence Elements' : isUml ? 'UML Elements' : isWireframe ? 'Wireframe Elements' : 'Elements';

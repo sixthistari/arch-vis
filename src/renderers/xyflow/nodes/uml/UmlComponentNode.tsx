@@ -7,8 +7,9 @@
  * - Required interfaces: socket (half-circle) on boundary
  * - Ports: small squares on boundary
  */
-import React, { memo } from 'react';
-import { Handle, Position, type NodeProps, type Node } from '@xyflow/react';
+import { memo } from 'react';
+import { type NodeProps, type Node } from '@xyflow/react';
+import { RoutingHandles } from '../shared/RoutingHandles';
 
 export interface UmlPort {
   id: string;
@@ -165,31 +166,7 @@ function UmlComponentNodeComponent({ data, selected }: NodeProps<UmlComponentNod
         {ports.map((port, i) => renderPort(port, WIDTH, HEIGHT, stroke, i))}
       </svg>
 
-      {/* Routing handles — 5 per side, matching edge-routing-integration handle IDs */}
-      {[15, 30, 50, 70, 85].map((pct, i) => (
-        <React.Fragment key={`t${i}`}>
-          <Handle type="source" position={Position.Top} id={`t${i}`} style={{ visibility: 'hidden', left: `${pct}%` }} />
-          <Handle type="target" position={Position.Top} id={`t${i}-t`} style={{ visibility: 'hidden', left: `${pct}%` }} />
-        </React.Fragment>
-      ))}
-      {[15, 30, 50, 70, 85].map((pct, i) => (
-        <React.Fragment key={`b${i}`}>
-          <Handle type="source" position={Position.Bottom} id={`b${i}`} style={{ visibility: 'hidden', left: `${pct}%` }} />
-          <Handle type="target" position={Position.Bottom} id={`b${i}-t`} style={{ visibility: 'hidden', left: `${pct}%` }} />
-        </React.Fragment>
-      ))}
-      {[15, 30, 50, 70, 85].map((pct, i) => (
-        <React.Fragment key={`l${i}`}>
-          <Handle type="source" position={Position.Left} id={`l${i}`} style={{ visibility: 'hidden', top: `${pct}%` }} />
-          <Handle type="target" position={Position.Left} id={`l${i}-t`} style={{ visibility: 'hidden', top: `${pct}%` }} />
-        </React.Fragment>
-      ))}
-      {[15, 30, 50, 70, 85].map((pct, i) => (
-        <React.Fragment key={`r${i}`}>
-          <Handle type="source" position={Position.Right} id={`r${i}`} style={{ visibility: 'hidden', top: `${pct}%` }} />
-          <Handle type="target" position={Position.Right} id={`r${i}-t`} style={{ visibility: 'hidden', top: `${pct}%` }} />
-        </React.Fragment>
-      ))}
+      <RoutingHandles />
     </div>
   );
 }

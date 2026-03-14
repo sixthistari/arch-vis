@@ -1,17 +1,16 @@
 import type { EdgeTypes } from '@xyflow/react';
-import { ArchimateEdge } from './ArchimateEdge';
-import { UmlEdge } from './uml/UmlEdge';
-import { SequenceMessageEdge } from './sequence/SequenceMessageEdge';
+import { UnifiedEdge } from './UnifiedEdge';
 
 export const edgeTypes: EdgeTypes = {
-  archimate: ArchimateEdge,
-  'uml-edge': UmlEdge,
-  'sequence-message': SequenceMessageEdge,
+  archimate: UnifiedEdge,
+  'uml-edge': UnifiedEdge,
+  'sequence-message': UnifiedEdge,
+  'wireframe': UnifiedEdge,
 };
 
-export { ArchimateEdge } from './ArchimateEdge';
-export type { ArchimateEdgeData } from './ArchimateEdge';
-export { UmlEdge } from './uml/UmlEdge';
-export type { UmlEdgeData } from './uml/UmlEdge';
-export { SequenceMessageEdge } from './sequence/SequenceMessageEdge';
-export type { SequenceMessageEdgeData } from './sequence/SequenceMessageEdge';
+export { UnifiedEdge } from './UnifiedEdge';
+export type { UnifiedEdgeData } from './UnifiedEdge';
+export type { LineType } from './UnifiedEdge';
+
+// Re-export legacy types for backward compatibility during transition
+export type { UnifiedEdgeData as ArchimateEdgeData } from './UnifiedEdge';

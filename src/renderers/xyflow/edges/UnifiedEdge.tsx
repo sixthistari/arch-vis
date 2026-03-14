@@ -1,11 +1,13 @@
 /**
- * xyflow custom edge for ArchiMate relationships.
+ * Unified edge component for all notation families.
  *
- * Selected mode:
- *  - Large endpoint circles at source/target
- *  - Amber waypoint handles (10 px) at each bend — drag to move
- *  - Segment slide handles (↕ / ↔) on non-terminal segments — drag perpendicular
- *  - Ctrl+click anywhere on the path to insert a bend at that position
+ * Based on the ArchimateEdge gold standard — supports:
+ *  - Waypoint manipulation (drag, Ctrl+click insert, segment slide)
+ *  - Rounded orthogonal polyline routing
+ *  - Notation-specific styling via getUnifiedEdgeStyle()
+ *  - UML label decorations (stereotype, multiplicity, role)
+ *  - Sequence messages (straight horizontal, self-message arcs, inline arrowheads)
+ *  - Wireframe edge styles
  */
 import React, { memo, useRef, useCallback } from 'react';
 import {
@@ -18,14 +20,15 @@ import {
   type EdgeProps,
   type Edge,
 } from '@xyflow/react';
-import { getEdgeStyle, type MarkerType } from '../../../notation/edges';
+import { getUnifiedEdgeStyle, type MarkerType } from '../../../notation/edge-styles';
 import { WaypointUpdateContext, type Waypoint } from '../context';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
 export type LineType = 'straight' | 'bezier' | 'step';
 
-export interface ArchimateEdgeData {
+export interface UnifiedEdgeData {
+  /** ArchiMate/UML/wireframe relationship type (key into the unified style registry). */
   relationshipType: string;
   label?: string;
   specialisation?: string | null;
@@ -35,15 +38,31 @@ export interface ArchimateEdgeData {
   dimmed?: boolean;
   theme?: 'dark' | 'light';
   routedWaypoints?: { x: number; y: number }[];
+  /** UML-specific: maps to getUnifiedEdgeStyle for sequence edges. */
+  edgeType?: string;
+  /** Sequence message type — sync, async, return, create, destroy, self. */
+  messageType?: string;
+  /** Sequence number for labelling. */
+  sequenceNumber?: number;
+  /** UML label decorations. */
+  stereotype?: string;
+  sourceMultiplicity?: string;
+  targetMultiplicity?: string;
+  sourceRole?: string;
+  targetRole?: string;
   [key: string]: unknown;
 }
 
-type ArchimateEdgeType = Edge<ArchimateEdgeData, 'archimate'>;
+type UnifiedEdgeType = Edge<UnifiedEdgeData, 'archimate'>;
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
 function markerUrl(marker: MarkerType | null): string | undefined {
-  return marker ? `url(#marker-${marker})` : undefined;
+  if (!marker || marker === 'none') return undefined;
+  // UML markers use their ID directly (e.g. 'uml-hollow-triangle' → '#uml-hollow-triangle')
+  // ArchiMate markers use 'marker-' prefix
+  if (marker.startsWith('uml-')) return `url(#${marker})`;
+  return `url(#marker-${marker})`;
 }
 
 /** Rounded-corner orthogonal polyline (mirrors edge-routing.ts buildPath). */
@@ -107,6 +126,47 @@ function closestOnSeg(pts: { x: number; y: number }[], i: number, px: number, py
   return { x: x1 + t * dx, y: y1 + t * dy };
 }
 
+// ─── Sequence message helpers ──────────────────────────────────────────────
+
+const ARROW_SIZE = 8;
+const SELF_LOOP_WIDTH = 40;
+const SELF_LOOP_HEIGHT = 30;
+
+function buildSequenceLabel(data: UnifiedEdgeData): string {
+  const parts: string[] = [];
+  if (data.sequenceNumber != null) parts.push(`${data.sequenceNumber}: `);
+  if (data.messageType === 'create') {
+    parts.push('\u00ABcreate\u00BB');
+    if (data.label) parts.push(` ${data.label}`);
+  } else if (data.label) {
+    parts.push(data.label);
+  }
+  return parts.join('');
+}
+
+function renderArrowhead(
+  tipX: number, tipY: number,
+  direction: 'right' | 'left',
+  filled: boolean, colour: string,
+): React.ReactElement {
+  const dx = direction === 'right' ? -ARROW_SIZE : ARROW_SIZE;
+  const dy = ARROW_SIZE / 2;
+  const points = `${tipX},${tipY} ${tipX + dx},${tipY - dy} ${tipX + dx},${tipY + dy}`;
+  if (filled) return <polygon key="arrow" points={points} fill={colour} stroke="none" />;
+  const d = `M${tipX + dx},${tipY - dy} L${tipX},${tipY} L${tipX + dx},${tipY + dy}`;
+  return <path key="arrow" d={d} fill="none" stroke={colour} strokeWidth={1.2} />;
+}
+
+function renderDestroyMarker(x: number, y: number, colour: string): React.ReactElement {
+  const size = 8;
+  return (
+    <g key="destroy">
+      <line x1={x - size} y1={y - size} x2={x + size} y2={y + size} stroke={colour} strokeWidth={2} />
+      <line x1={x + size} y1={y - size} x2={x - size} y2={y + size} stroke={colour} strokeWidth={2} />
+    </g>
+  );
+}
+
 // ─── Styles ────────────────────────────────────────────────────────────────
 
 const endpointHandleStyle: React.CSSProperties = {
@@ -135,7 +195,7 @@ function segHandleStyle(dir: 'h' | 'v'): React.CSSProperties {
 
 // ─── Component ─────────────────────────────────────────────────────────────
 
-function ArchimateEdgeComponent(props: EdgeProps<ArchimateEdgeType>) {
+function UnifiedEdgeComponent(props: EdgeProps<UnifiedEdgeType>) {
   const {
     id, sourceX, sourceY, sourcePosition,
     targetX, targetY, targetPosition,
@@ -145,16 +205,74 @@ function ArchimateEdgeComponent(props: EdgeProps<ArchimateEdgeType>) {
   const updateWaypoints = React.useContext(WaypointUpdateContext);
   const { screenToFlowPosition } = useReactFlow();
 
+  // Resolve the style key — for UML edges the edgeType carries the relationship type,
+  // for sequence messages the messageType carries it.
   const relType = data?.relationshipType ?? 'association';
-  const edgeStyle = getEdgeStyle(relType);
+  const styleKey = data?.messageType ?? data?.edgeType ?? relType;
+  const edgeStyle = getUnifiedEdgeStyle(styleKey);
+
   const dimmed = data?.dimmed ?? false;
   const highlighted = data?.highlighted ?? false;
   const lineType = data?.lineType ?? 'step';
   const stepOffset = data?.stepOffset ?? 20;
   const waypoints = (data?.waypoints as Waypoint[] | undefined) ?? [];
   const routedWaypoints = (data?.routedWaypoints as { x: number; y: number }[] | undefined) ?? [];
+  const isDark = (data?.theme ?? 'dark') === 'dark';
+  const strokeColour = selected || highlighted ? '#F59E0B' : (isDark ? '#94A3B8' : '#475569');
+  const opacity = dimmed ? 0.04 : 1;
+  const strokeWidth = highlighted && !selected ? edgeStyle.width * 2.0 : edgeStyle.width;
 
-  // ── xyflow fallback path ──────────────────────────────────────────────
+  // ── Sequence message — self-message arc ──────────────────────────────
+  if (edgeStyle.isSelfMessage) {
+    const colour = selected ? '#F59E0B' : '#374151';
+    const displayLabel = data ? buildSequenceLabel(data) : '';
+    const x0 = sourceX;
+    const y0 = sourceY;
+    const xRight = x0 + SELF_LOOP_WIDTH;
+    const yBottom = y0 + SELF_LOOP_HEIGHT;
+    const d = `M${x0},${y0} L${xRight},${y0} L${xRight},${yBottom} L${x0},${yBottom}`;
+
+    return (
+      <g>
+        <path d={d} fill="none" stroke={colour} strokeWidth={edgeStyle.width} strokeDasharray={edgeStyle.dashArray || undefined} />
+        {renderArrowhead(x0, yBottom, 'left', edgeStyle.filledArrow ?? true, colour)}
+        {displayLabel && (
+          <text x={xRight + 4} y={y0 + SELF_LOOP_HEIGHT / 2} fontSize={10} fill="#374151"
+            fontFamily="Inter, system-ui, sans-serif" dominantBaseline="central" style={{ pointerEvents: 'none' }}>
+            {displayLabel}
+          </text>
+        )}
+      </g>
+    );
+  }
+
+  // ── Sequence message — straight horizontal line with inline arrowhead ──
+  if (edgeStyle.isMessage) {
+    const colour = selected ? '#F59E0B' : '#374151';
+    const displayLabel = data ? buildSequenceLabel(data) : '';
+    const direction: 'right' | 'left' = targetX >= sourceX ? 'right' : 'left';
+    const d = `M${sourceX},${sourceY} L${targetX},${targetY}`;
+    const labelX = (sourceX + targetX) / 2;
+    const labelY = Math.min(sourceY, targetY) - 6;
+
+    return (
+      <g>
+        <path d={d} fill="none" stroke={colour} strokeWidth={edgeStyle.width} strokeDasharray={edgeStyle.dashArray || undefined} />
+        {renderArrowhead(targetX, targetY, direction, edgeStyle.filledArrow ?? false, colour)}
+        {data?.messageType === 'destroy' && renderDestroyMarker(targetX, targetY, colour)}
+        {displayLabel && (
+          <text x={labelX} y={labelY} textAnchor="middle" fontSize={10} fill="#374151"
+            fontFamily="Inter, system-ui, sans-serif" style={{ pointerEvents: 'none' }}>
+            {displayLabel}
+          </text>
+        )}
+      </g>
+    );
+  }
+
+  // ── Standard edge (ArchiMate / UML class / wireframe) ────────────────
+
+  // xyflow fallback path
   let edgePath: string; let labelX: number; let labelY: number;
   switch (lineType) {
     case 'bezier':
@@ -171,7 +289,7 @@ function ArchimateEdgeComponent(props: EdgeProps<ArchimateEdgeType>) {
   const activeWps: { x: number; y: number }[] = waypoints.length > 0 ? waypoints : routedWaypoints;
   const fullPath = [{ x: sourceX, y: sourceY }, ...activeWps, { x: targetX, y: targetY }];
 
-  // Display path — must always be a string for SVG <path d>
+  // Display path
   let displayPath = edgePath;
   if (activeWps.length > 0) {
     displayPath = buildRoundedPath(fullPath);
@@ -182,12 +300,6 @@ function ArchimateEdgeComponent(props: EdgeProps<ArchimateEdgeType>) {
   // Label midpoint
   const midPt = customPathMidpoint(displayPath);
   if (midPt) { labelX = midPt.x; labelY = midPt.y; }
-
-  // ── Visual style ──────────────────────────────────────────────────────
-  const isDark = (data?.theme ?? 'dark') === 'dark';
-  const strokeColour = selected || highlighted ? '#F59E0B' : (isDark ? '#94A3B8' : '#475569');
-  const strokeWidth = highlighted && !selected ? edgeStyle.width * 2.0 : edgeStyle.width;
-  const opacity = dimmed ? 0.04 : 1;
 
   // ── Segment slide drag ────────────────────────────────────────────────
   const segDragRef = useRef<{
@@ -250,13 +362,16 @@ function ArchimateEdgeComponent(props: EdgeProps<ArchimateEdgeType>) {
     updateWaypoints?.(id, [...base.slice(0, si), insertPt, ...base.slice(si)]);
   }, [fullPath, waypoints, routedWaypoints, id, screenToFlowPosition, updateWaypoints]);
 
-  // Interior segment indices: not the first or last segment
+  // Interior segment indices
   const n = fullPath.length;
   const interiorSegs: number[] = [];
   for (let i = 1; i <= n - 3; i++) {
     const d = segDir(fullPath[i]!, fullPath[i + 1]!);
     if (d !== 'd') interiorSegs.push(i);
   }
+
+  // ── UML label rendering ────────────────────────────────────────────────
+  const hasUmlLabels = !!(data?.stereotype || data?.sourceMultiplicity || data?.targetMultiplicity || data?.sourceRole || data?.targetRole);
 
   return (
     <>
@@ -282,11 +397,42 @@ function ArchimateEdgeComponent(props: EdgeProps<ArchimateEdgeType>) {
         markerEnd={markerUrl(edgeStyle.targetMarker)}
       />
 
-      {data?.label && (
+      {/* Main label */}
+      {data?.label && !edgeStyle.isMessage && (
         <text x={labelX} y={labelY - 4} textAnchor="middle" fontSize={7} fill="#9CA3AF"
           fontFamily="Inter, system-ui, sans-serif" style={{ pointerEvents: 'none', opacity: opacity * 1.2 }}>
-          {data.label as string}
+          {data.stereotype ? `\u00AB${data.stereotype}\u00BB ` : ''}{data.label as string}
         </text>
+      )}
+
+      {/* UML multiplicity/role labels */}
+      {hasUmlLabels && (
+        <>
+          {data?.sourceMultiplicity && (
+            <text x={sourceX + 12} y={sourceY - 8} fontSize={9} fill={strokeColour}
+              fontFamily="'JetBrains Mono', monospace" style={{ pointerEvents: 'none', opacity }}>
+              {data.sourceMultiplicity}
+            </text>
+          )}
+          {data?.targetMultiplicity && (
+            <text x={targetX - 12} y={targetY - 8} textAnchor="end" fontSize={9} fill={strokeColour}
+              fontFamily="'JetBrains Mono', monospace" style={{ pointerEvents: 'none', opacity }}>
+              {data.targetMultiplicity}
+            </text>
+          )}
+          {data?.sourceRole && (
+            <text x={sourceX + 12} y={sourceY + 12} fontSize={9} fill={strokeColour} fillOpacity={0.7}
+              fontFamily="Inter, system-ui, sans-serif" style={{ pointerEvents: 'none', opacity }}>
+              {data.sourceRole}
+            </text>
+          )}
+          {data?.targetRole && (
+            <text x={targetX - 12} y={targetY + 12} textAnchor="end" fontSize={9} fill={strokeColour} fillOpacity={0.7}
+              fontFamily="Inter, system-ui, sans-serif" style={{ pointerEvents: 'none', opacity }}>
+              {data.targetRole}
+            </text>
+          )}
+        </>
       )}
 
       <EdgeLabelRenderer>
@@ -316,7 +462,7 @@ function ArchimateEdgeComponent(props: EdgeProps<ArchimateEdgeType>) {
                   onMouseDown={(e) => handleSegmentMouseDown(e, si)}
                   title={d === 'h' ? 'Drag to slide segment up/down' : 'Drag to slide segment left/right'}
                 >
-                  {d === 'h' ? '↕' : '↔'}
+                  {d === 'h' ? '\u2195' : '\u2194'}
                 </div>
               );
             })}
@@ -327,4 +473,4 @@ function ArchimateEdgeComponent(props: EdgeProps<ArchimateEdgeType>) {
   );
 }
 
-export const ArchimateEdge = memo(ArchimateEdgeComponent);
+export const UnifiedEdge = memo(UnifiedEdgeComponent);

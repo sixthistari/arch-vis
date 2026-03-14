@@ -28,10 +28,9 @@ import '@xyflow/react/dist/style.css';
 
 import { nodeTypes } from './nodes';
 import { edgeTypes } from './edges';
-import { MarkerDefs } from './MarkerDefs';
-import { UmlMarkerDefs } from './edges/uml/UmlMarkerDefs';
+import { AllMarkerDefs } from './edges/AllMarkerDefs';
 import type { ArchimateNodeData } from './nodes';
-import type { LineType } from './edges/ArchimateEdge';
+import type { LineType } from './edges';
 import type { Element, Relationship, ViewElement, SublayerConfig, ValidRelationship } from '../../model/types';
 import { getLayerColours } from '../../notation/colors';
 import { computeOrthogonalRoutes, type RouteEdge, type RouteElement, type RoutedEdge } from '../../layout/edge-routing';
@@ -46,6 +45,8 @@ import { buildOrderMaps } from './layout-computation';
 import { recomputeBands } from './layer-bands';
 import { elementsToNodes, type OverlayConfig } from './node-conversion';
 import { relationshipsToEdges, detectPortSide } from './edge-routing-integration';
+import { computeElkLayout } from '../../layout/elk';
+import type { LayoutInput, SublayerEntry } from '../../layout/types';
 
 // ═══════════════════════════════════════
 // Canvas component — fully controlled mode
@@ -775,7 +776,7 @@ export function XYFlowCanvas({
   // Edge right-click context menu
   const handleNodeContextMenu = useCallback((event: React.MouseEvent, node: Node) => {
     event.preventDefault();
-    if (node.type === 'layerBand') return;
+    if (node.type === 'layer-band') return;
     const data = node.data as ArchimateNodeData;
     if (onNodeContextMenu) {
       onNodeContextMenu(data.elementId as string, event.clientX, event.clientY);
@@ -1161,8 +1162,7 @@ export function XYFlowCanvas({
         };
       }}
     >
-      <MarkerDefs />
-      <UmlMarkerDefs />
+      <AllMarkerDefs />
       <WaypointUpdateContext.Provider value={updateWaypoints}>
       <ReactFlow
         nodes={displayNodes}
@@ -1236,6 +1236,84 @@ export function XYFlowCanvas({
             }}
           >
             ⊞
+          </button>
+          <button
+            onClick={async () => {
+              // ELK hierarchical auto-layout
+              const posMap = buildPositionMap(nodesRef.current);
+              const layoutInputs: LayoutInput[] = elements.map(el => {
+                const p = posMap.get(el.id);
+                return {
+                  id: el.id,
+                  archimateType: el.archimate_type,
+                  layer: el.layer,
+                  sublayer: el.sublayer ?? null,
+                  width: p?.w ?? 150,
+                  height: p?.h ?? 60,
+                };
+              });
+              const rels = relationships.map(r => ({
+                id: r.id,
+                sourceId: r.source_id,
+                targetId: r.target_id,
+              }));
+              // Build sublayer entries from sublayerConfig
+              const sublayers: SublayerEntry[] = [];
+              const cfg = sublayerConfig as { layers?: Record<string, { sublayers: Array<{ name: string; element_types: string[]; specialisations?: string[] }> }> } | null;
+              if (cfg?.layers) {
+                let layerIdx = 0;
+                for (const [layerKey, layerDef] of Object.entries(cfg.layers)) {
+                  layerDef.sublayers.forEach((sl, slIdx) => {
+                    sublayers.push({
+                      name: sl.name,
+                      layerKey,
+                      layerIndex: layerIdx,
+                      sublayerIndex: slIdx,
+                      elementTypes: sl.element_types,
+                      specialisations: sl.specialisations,
+                    });
+                  });
+                  layerIdx++;
+                }
+              }
+              try {
+                const result = await computeElkLayout(layoutInputs, rels, sublayers);
+                // Apply positions from ELK to nodes
+                const elkPosMap = new Map(result.map(r => [r.id, { x: r.wx, y: r.wy }]));
+                nodesRef.current = nodesRef.current.map(n => {
+                  const elkPos = elkPosMap.get(n.id);
+                  if (elkPos) return { ...n, position: { x: elkPos.x, y: elkPos.y } };
+                  return n;
+                });
+                nodesRef.current = recomputeBands(nodesRef.current, layerLabels, theme);
+                edgesRef.current = relationshipsToEdges(relationships, buildPositionMap(nodesRef.current), theme);
+                forceRender(n => n + 1);
+                // Save positions
+                if (onPositionChange) {
+                  const positions = result.map(r => ({
+                    element_id: r.id, x: r.wx, y: r.wy,
+                  }));
+                  if (positions.length > 0) onPositionChange(positions);
+                }
+                setTimeout(() => fitViewRef.current?.(), 50);
+              } catch (err) {
+                console.error('ELK layout failed:', err);
+              }
+            }}
+            title="Arrange: ELK hierarchical auto-layout"
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '4px 6px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: isDark ? '#94A3B8' : '#475569',
+              fontSize: 14,
+            }}
+          >
+            ⊟
           </button>
         </Controls>
         <MiniMap

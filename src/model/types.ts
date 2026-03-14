@@ -116,6 +116,7 @@ export const archimateTypeValues = [
   'wf-tab-group',
   'wf-form',
   'wf-placeholder',
+  'wf-feedback',
   // UML sequence diagram types (Phase 4)
   'uml-lifeline',
   'uml-activation',
