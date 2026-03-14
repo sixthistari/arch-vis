@@ -4,8 +4,10 @@
  * Renders a header rectangle with the participant name and a dashed vertical
  * line extending downward to represent the passage of time.
  */
-import { memo, useState, useCallback, useRef } from 'react';
+import { memo } from 'react';
 import { Handle, Position, type NodeProps, type Node } from '@xyflow/react';
+import { useEditableNode } from '../../hooks/useEditableNode';
+import { EditableInput } from '../../hooks/EditableInput';
 
 export interface SequenceLifelineNodeData {
   label: string;
@@ -44,29 +46,7 @@ function SequenceLifelineNodeComponent({ id, data, selected }: NodeProps<Sequenc
   const totalHeight = HEADER_HEIGHT + lifelineHeight;
 
   // Inline label editing
-  const [editing, setEditing] = useState(false);
-  const [editValue, setEditValue] = useState(label);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const handleDoubleClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    setEditValue(label);
-    setEditing(true);
-    setTimeout(() => inputRef.current?.select(), 30);
-  }, [label]);
-
-  const commitEdit = useCallback(() => {
-    setEditing(false);
-    const trimmed = editValue.trim();
-    if (trimmed && trimmed !== label && typeof onLabelChange === 'function') {
-      onLabelChange(id, trimmed);
-    }
-  }, [editValue, label, id, onLabelChange]);
-
-  const cancelEdit = useCallback(() => {
-    setEditing(false);
-    setEditValue(label);
-  }, [label]);
+  const { editing, editValue, setEditValue, inputRef, handleDoubleClick, commitEdit, cancelEdit } = useEditableNode(id, label, onLabelChange);
 
   // Compute label Y position (shifted down if stereotype is present)
   const labelY = stereotype
@@ -112,30 +92,14 @@ function SequenceLifelineNodeComponent({ id, data, selected }: NodeProps<Sequenc
         )}
         {editing && (
           <foreignObject x={4} y={labelY - 9} width={HEADER_WIDTH - 8} height={20}>
-            <input
-              ref={inputRef}
+            <EditableInput
+              inputRef={inputRef}
               value={editValue}
-              onChange={e => setEditValue(e.target.value)}
-              onBlur={commitEdit}
-              onKeyDown={e => {
-                if (e.key === 'Enter') commitEdit();
-                if (e.key === 'Escape') cancelEdit();
-                e.stopPropagation();
-              }}
-              autoFocus
-              style={{
-                width: '100%',
-                fontSize: 11,
-                fontFamily: 'Inter, system-ui, sans-serif',
-                background: '#FFFFFF',
-                color: TEXT_COLOUR,
-                border: '1px solid #F59E0B',
-                borderRadius: 2,
-                padding: '1px 3px',
-                boxSizing: 'border-box' as const,
-                outline: 'none',
-                textAlign: 'center' as const,
-              }}
+              onChange={setEditValue}
+              onCommit={commitEdit}
+              onCancel={cancelEdit}
+              fontSize={11}
+              textAlign="center"
             />
           </foreignObject>
         )}

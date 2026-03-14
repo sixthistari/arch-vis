@@ -12,12 +12,13 @@
  *   Passive Structure (object/artifact): folded-corner rectangle
  *   Other: varies (dashed for gap/grouping, 3D for node/device)
  */
-import React, { memo, useState, useCallback, useRef } from 'react';
+import React, { memo, useState } from 'react';
 import { Handle, Position, type NodeProps, type Node, useViewport, useConnection } from '@xyflow/react';
 import { getArchimateIcon } from './archimate-icons';
 import { getLayerColours } from '../../../notation/colors';
 import { getShapeDefinition } from '../../../notation/registry';
 import { getZoomTierConfig } from '../../spatial/zoom-tiers';
+import { useEditableNode } from '../hooks/useEditableNode';
 
 // ═══════════════════════════════════════
 // Shape classification by ArchiMate aspect
@@ -188,29 +189,7 @@ function ArchimateNodeComponent({ id, data, selected }: NodeProps<ArchimateNodeT
   const tierConfig = getZoomTierConfig(zoom);
 
   // Inline label edit state
-  const [editing, setEditing] = useState(false);
-  const [editValue, setEditValue] = useState(label);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const handleDoubleClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    setEditValue(label);
-    setEditing(true);
-    setTimeout(() => inputRef.current?.select(), 30);
-  }, [label]);
-
-  const commitEdit = useCallback(() => {
-    setEditing(false);
-    const trimmed = editValue.trim();
-    if (trimmed && trimmed !== label && typeof onLabelChange === 'function') {
-      onLabelChange(id, trimmed);
-    }
-  }, [editValue, label, id, onLabelChange]);
-
-  const cancelEdit = useCallback(() => {
-    setEditing(false);
-    setEditValue(label);
-  }, [label]);
+  const { editing, editValue, setEditValue, inputRef, handleDoubleClick, commitEdit, cancelEdit } = useEditableNode(id, label, onLabelChange);
 
   const stroke = selected ? '#F59E0B' : (colourOverride?.stroke ?? colours.stroke);
   const fill = colourOverride?.fill ?? colours.fill;

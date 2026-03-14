@@ -5,8 +5,10 @@
  * accordion, column-layout. All render as lo-fi grey containers
  * with optional title bar.
  */
-import { memo, useState, useCallback, useRef } from 'react';
+import { memo } from 'react';
 import { Handle, Position, type NodeProps, type Node } from '@xyflow/react';
+import { useEditableNode } from '../../hooks/useEditableNode';
+import { EditableInput } from '../../hooks/EditableInput';
 
 export type WfSectionType = 'card' | 'panel' | 'modal' | 'drawer' | 'sidebar' |
   'header' | 'footer' | 'accordion' | 'columns' | 'section';
@@ -50,30 +52,8 @@ function WfSectionNodeComponent({ id, data, selected }: NodeProps<WfSectionNodeT
   const opacity = dimmed ? 0.1 : 1;
   const displayTitle = title ?? label;
 
-  // Inline label editing
-  const [editing, setEditing] = useState(false);
-  const [editValue, setEditValue] = useState(displayTitle);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const handleDoubleClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    setEditValue(displayTitle);
-    setEditing(true);
-    setTimeout(() => inputRef.current?.select(), 30);
-  }, [displayTitle]);
-
-  const commitEdit = useCallback(() => {
-    setEditing(false);
-    const trimmed = editValue.trim();
-    if (trimmed && trimmed !== label && typeof onLabelChange === 'function') {
-      onLabelChange(id, trimmed);
-    }
-  }, [editValue, label, id, onLabelChange]);
-
-  const cancelEdit = useCallback(() => {
-    setEditing(false);
-    setEditValue(displayTitle);
-  }, [displayTitle]);
+  // Inline label editing — uses displayTitle for initial value but commits against label
+  const { editing, editValue, setEditValue, inputRef, handleDoubleClick, commitEdit, cancelEdit } = useEditableNode(id, label, onLabelChange);
   const hasTitle = !!displayTitle;
   const rx = sectionType === 'card' ? 6 : sectionType === 'modal' ? 8 : 2;
 
@@ -118,30 +98,13 @@ function WfSectionNodeComponent({ id, data, selected }: NodeProps<WfSectionNodeT
             )}
             {editing && (
               <foreignObject x={4} y={4} width={w - 40} height={TITLE_H - 8}>
-                <input
-                  ref={inputRef}
+                <EditableInput
+                  inputRef={inputRef}
                   value={editValue}
-                  onChange={e => setEditValue(e.target.value)}
-                  onBlur={commitEdit}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') commitEdit();
-                    if (e.key === 'Escape') cancelEdit();
-                    e.stopPropagation();
-                  }}
-                  autoFocus
-                  style={{
-                    width: '100%',
-                    fontSize: 11,
-                    fontWeight: 600,
-                    fontFamily: 'Inter, system-ui, sans-serif',
-                    background: '#FFFFFF',
-                    color: WF_TEXT,
-                    border: '1px solid #F59E0B',
-                    borderRadius: 2,
-                    padding: '1px 3px',
-                    boxSizing: 'border-box' as const,
-                    outline: 'none',
-                  }}
+                  onChange={setEditValue}
+                  onCommit={commitEdit}
+                  onCancel={cancelEdit}
+                  fontSize={11}
                 />
               </foreignObject>
             )}

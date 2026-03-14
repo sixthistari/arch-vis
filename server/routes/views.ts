@@ -152,4 +152,10 @@ router.put('/views/:id/elements', (req: Request, res: Response) => {
   res.json(updated.map(parseViewElement));
 });
 
+// DELETE /api/views/:id — delete a view (cascade handles view_elements and view_relationships)
+router.delete('/views/:id', (req: Request, res: Response) => {
+  db.prepare('DELETE FROM views WHERE id = ?').run(req.params.id);
+  res.json({ deleted: req.params.id });
+});
+
 export default router;

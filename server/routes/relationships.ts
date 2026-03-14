@@ -1,21 +1,7 @@
 import { Router, Request, Response } from 'express';
 import db from '../db.js';
-
-interface RelationshipRow {
-  id: string;
-  archimate_type: string;
-  specialisation: string | null;
-  source_id: string;
-  target_id: string;
-  label: string | null;
-  description: string | null;
-  properties: string | null;
-  confidence: number | null;
-  created_by: string | null;
-  source: string | null;
-  created_at: string;
-  updated_at: string | null;
-}
+import type { RelationshipRow } from '../../shared/types.js';
+import { CreateRelationshipSchema, UpdateRelationshipSchema } from '../../src/model/types.js';
 
 function parseProperties(row: RelationshipRow): Omit<RelationshipRow, 'properties'> & { properties: Record<string, unknown> | null } {
   return {
@@ -53,7 +39,38 @@ router.get('/relationships', (req: Request, res: Response) => {
 
 // POST /api/relationships — create a new relationship
 router.post('/relationships', (req: Request, res: Response) => {
-  const body = req.body as Record<string, unknown>;
+  const parsed = CreateRelationshipSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.format() });
+    return;
+  }
+
+  const body = parsed.data;
+
+  // Validate relationship against metamodel
+  const sourceEl = db.prepare('SELECT archimate_type FROM elements WHERE id = ?').get(body.source_id) as { archimate_type: string } | undefined;
+  const targetEl = db.prepare('SELECT archimate_type FROM elements WHERE id = ?').get(body.target_id) as { archimate_type: string } | undefined;
+
+  if (!sourceEl) {
+    res.status(400).json({ error: `Source element '${body.source_id}' not found` });
+    return;
+  }
+  if (!targetEl) {
+    res.status(400).json({ error: `Target element '${body.target_id}' not found` });
+    return;
+  }
+
+  const validRel = db.prepare(
+    `SELECT 1 FROM valid_relationships
+     WHERE source_archimate_type = ? AND target_archimate_type = ? AND relationship_type = ?`
+  ).get(sourceEl.archimate_type, targetEl.archimate_type, body.archimate_type as string);
+
+  if (!validRel) {
+    res.status(400).json({
+      error: `Invalid relationship: '${body.archimate_type}' is not allowed from '${sourceEl.archimate_type}' to '${targetEl.archimate_type}'`,
+    });
+    return;
+  }
 
   const stmt = db.prepare(`
     INSERT INTO relationships (id, archimate_type, specialisation, source_id, target_id,
@@ -82,7 +99,14 @@ router.post('/relationships', (req: Request, res: Response) => {
 // PUT /api/relationships/:id — update a relationship
 router.put('/relationships/:id', (req: Request, res: Response) => {
   const { id } = req.params;
-  const body = req.body as Record<string, unknown>;
+
+  const parsed = UpdateRelationshipSchema.safeParse({ ...req.body, id });
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.format() });
+    return;
+  }
+
+  const body = parsed.data;
 
   const existing = db.prepare('SELECT id FROM relationships WHERE id = ?').get(id);
   if (!existing) {
@@ -98,16 +122,17 @@ router.put('/relationships/:id', (req: Request, res: Response) => {
     'label', 'description', 'confidence',
   ];
 
+  const bodyRecord = body as Record<string, unknown>;
   for (const field of updatable) {
-    if (field in body) {
+    if (field in bodyRecord) {
       fields.push(`${field} = ?`);
-      params.push(body[field] ?? null);
+      params.push(bodyRecord[field] ?? null);
     }
   }
 
-  if ('properties' in body) {
+  if ('properties' in bodyRecord) {
     fields.push('properties = ?');
-    params.push(body.properties ? JSON.stringify(body.properties) : null);
+    params.push(bodyRecord.properties ? JSON.stringify(bodyRecord.properties) : null);
   }
 
   if (fields.length === 0) {

@@ -4,8 +4,10 @@
  * Each field has a label, type, and optional placeholder.
  * Submit/cancel buttons at bottom.
  */
-import { memo, useState, useCallback, useRef } from 'react';
+import { memo } from 'react';
 import { Handle, Position, type NodeProps, type Node } from '@xyflow/react';
+import { useEditableNode } from '../../hooks/useEditableNode';
+import { EditableInput } from '../../hooks/EditableInput';
 
 export type WfFieldType = 'text' | 'email' | 'password' | 'number' | 'date' |
   'select' | 'textarea' | 'file' | 'checkbox' | 'radio' | 'toggle' | 'search';
@@ -173,29 +175,7 @@ function WfFormNodeComponent({ id, data, selected }: NodeProps<WfFormNodeType>) 
   const opacity = dimmed ? 0.1 : 1;
 
   // Inline label editing
-  const [editing, setEditing] = useState(false);
-  const [editValue, setEditValue] = useState(label);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const handleDoubleClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    setEditValue(label);
-    setEditing(true);
-    setTimeout(() => inputRef.current?.select(), 30);
-  }, [label]);
-
-  const commitEdit = useCallback(() => {
-    setEditing(false);
-    const trimmed = editValue.trim();
-    if (trimmed && trimmed !== label && typeof onLabelChange === 'function') {
-      onLabelChange(id, trimmed);
-    }
-  }, [editValue, label, id, onLabelChange]);
-
-  const cancelEdit = useCallback(() => {
-    setEditing(false);
-    setEditValue(label);
-  }, [label]);
+  const { editing, editValue, setEditValue, inputRef, handleDoubleClick, commitEdit, cancelEdit } = useEditableNode(id, label, onLabelChange);
 
   // Calculate total height
   let contentH = PAD;
@@ -211,22 +191,13 @@ function WfFormNodeComponent({ id, data, selected }: NodeProps<WfFormNodeType>) 
     <div style={{ opacity, position: 'relative' as const }} onDoubleClick={handleDoubleClick}>
       {editing && (
         <div style={{ position: 'absolute', top: -24, left: 0, width: formWidth, zIndex: 10 }}>
-          <input
-            ref={inputRef}
+          <EditableInput
+            inputRef={inputRef}
             value={editValue}
-            onChange={e => setEditValue(e.target.value)}
-            onBlur={commitEdit}
-            onKeyDown={e => {
-              if (e.key === 'Enter') commitEdit();
-              if (e.key === 'Escape') cancelEdit();
-              e.stopPropagation();
-            }}
-            autoFocus
-            style={{
-              width: '100%', fontSize: 10, fontFamily: 'Inter, system-ui, sans-serif',
-              background: '#FFFFFF', color: '#374151', border: '1px solid #F59E0B',
-              borderRadius: 2, padding: '2px 4px', boxSizing: 'border-box' as const, outline: 'none',
-            }}
+            onChange={setEditValue}
+            onCommit={commitEdit}
+            onCancel={cancelEdit}
+            fontSize={10}
           />
         </div>
       )}

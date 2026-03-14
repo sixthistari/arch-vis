@@ -4,8 +4,10 @@
  * button, input, search, text, link, image placeholder,
  * avatar, badge/tag, stat-card, progress bar, icon button.
  */
-import { memo, useState, useCallback, useRef } from 'react';
+import { memo } from 'react';
 import { Handle, Position, type NodeProps, type Node } from '@xyflow/react';
+import { useEditableNode } from '../../hooks/useEditableNode';
+import { EditableInput } from '../../hooks/EditableInput';
 
 export type WfControlType = 'button' | 'input' | 'search' | 'text' | 'heading' |
   'link' | 'image' | 'avatar' | 'badge' | 'stat-card' | 'progress' | 'icon-button' | 'divider';
@@ -49,57 +51,19 @@ function WfControlNodeComponent({ id, data, selected }: NodeProps<WfControlNodeT
   const opacity = dimmed ? 0.1 : 1;
 
   // Inline label editing
-  const [editing, setEditing] = useState(false);
-  const [editValue, setEditValue] = useState(label);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const handleDoubleClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    setEditValue(label);
-    setEditing(true);
-    setTimeout(() => inputRef.current?.select(), 30);
-  }, [label]);
-
-  const commitEdit = useCallback(() => {
-    setEditing(false);
-    const trimmed = editValue.trim();
-    if (trimmed && trimmed !== label && typeof onLabelChange === 'function') {
-      onLabelChange(id, trimmed);
-    }
-  }, [editValue, label, id, onLabelChange]);
-
-  const cancelEdit = useCallback(() => {
-    setEditing(false);
-    setEditValue(label);
-  }, [label]);
+  const { editing, editValue, setEditValue, inputRef, handleDoubleClick, commitEdit, cancelEdit } = useEditableNode(id, label, onLabelChange);
 
   // Shared inline edit input rendered as an overlay
   const renderEditInput = (w: number, h: number, fontSize = 11) => (
     <foreignObject x={2} y={h / 2 - 10} width={w - 4} height={20}>
-      <input
-        ref={inputRef}
+      <EditableInput
+        inputRef={inputRef}
         value={editValue}
-        onChange={e => setEditValue(e.target.value)}
-        onBlur={commitEdit}
-        onKeyDown={e => {
-          if (e.key === 'Enter') commitEdit();
-          if (e.key === 'Escape') cancelEdit();
-          e.stopPropagation();
-        }}
-        autoFocus
-        style={{
-          width: '100%',
-          fontSize,
-          fontFamily: 'Inter, system-ui, sans-serif',
-          background: '#FFFFFF',
-          color: WF_TEXT,
-          border: '1px solid #F59E0B',
-          borderRadius: 2,
-          padding: '1px 3px',
-          boxSizing: 'border-box' as const,
-          outline: 'none',
-          textAlign: 'center' as const,
-        }}
+        onChange={setEditValue}
+        onCommit={commitEdit}
+        onCancel={cancelEdit}
+        fontSize={fontSize}
+        textAlign="center"
       />
     </foreignObject>
   );
@@ -302,30 +266,14 @@ function WfControlNodeComponent({ id, data, selected }: NodeProps<WfControlNodeT
           )}
           {editing && (
             <foreignObject x={2} y={10} width={w - 4} height={20}>
-              <input
-                ref={inputRef}
+              <EditableInput
+                inputRef={inputRef}
                 value={editValue}
-                onChange={e => setEditValue(e.target.value)}
-                onBlur={commitEdit}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') commitEdit();
-                  if (e.key === 'Escape') cancelEdit();
-                  e.stopPropagation();
-                }}
-                autoFocus
-                style={{
-                  width: '100%',
-                  fontSize: 9,
-                  fontFamily: 'Inter, system-ui, sans-serif',
-                  background: '#FFFFFF',
-                  color: WF_TEXT,
-                  border: '1px solid #F59E0B',
-                  borderRadius: 2,
-                  padding: '1px 3px',
-                  boxSizing: 'border-box' as const,
-                  outline: 'none',
-                  textAlign: 'center' as const,
-                }}
+                onChange={setEditValue}
+                onCommit={commitEdit}
+                onCancel={cancelEdit}
+                fontSize={9}
+                textAlign="center"
               />
             </foreignObject>
           )}
@@ -356,29 +304,13 @@ function WfControlNodeComponent({ id, data, selected }: NodeProps<WfControlNodeT
           )}
           {editing && (
             <foreignObject x={0} y={0} width={w} height={14}>
-              <input
-                ref={inputRef}
+              <EditableInput
+                inputRef={inputRef}
                 value={editValue}
-                onChange={e => setEditValue(e.target.value)}
-                onBlur={commitEdit}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') commitEdit();
-                  if (e.key === 'Escape') cancelEdit();
-                  e.stopPropagation();
-                }}
-                autoFocus
-                style={{
-                  width: '100%',
-                  fontSize: 9,
-                  fontFamily: 'Inter, system-ui, sans-serif',
-                  background: '#FFFFFF',
-                  color: WF_TEXT,
-                  border: '1px solid #F59E0B',
-                  borderRadius: 2,
-                  padding: '0 3px',
-                  boxSizing: 'border-box' as const,
-                  outline: 'none',
-                }}
+                onChange={setEditValue}
+                onCommit={commitEdit}
+                onCancel={cancelEdit}
+                fontSize={9}
               />
             </foreignObject>
           )}

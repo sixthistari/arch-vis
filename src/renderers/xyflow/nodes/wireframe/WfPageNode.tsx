@@ -6,8 +6,10 @@
  * - URL bar with placeholder
  * - Content area (children rendered by xyflow parent-child)
  */
-import { memo, useState, useCallback, useRef } from 'react';
+import { memo } from 'react';
 import { Handle, Position, type NodeProps, type Node } from '@xyflow/react';
+import { useEditableNode } from '../../hooks/useEditableNode';
+import { EditableInput } from '../../hooks/EditableInput';
 
 export interface WfPageNodeData {
   label: string;
@@ -48,29 +50,7 @@ function WfPageNodeComponent({ id, data, selected }: NodeProps<WfPageNodeType>) 
   const opacity = dimmed ? 0.1 : 1;
 
   // Inline label editing
-  const [editing, setEditing] = useState(false);
-  const [editValue, setEditValue] = useState(label);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const handleDoubleClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    setEditValue(label);
-    setEditing(true);
-    setTimeout(() => inputRef.current?.select(), 30);
-  }, [label]);
-
-  const commitEdit = useCallback(() => {
-    setEditing(false);
-    const trimmed = editValue.trim();
-    if (trimmed && trimmed !== label && typeof onLabelChange === 'function') {
-      onLabelChange(id, trimmed);
-    }
-  }, [editValue, label, id, onLabelChange]);
-
-  const cancelEdit = useCallback(() => {
-    setEditing(false);
-    setEditValue(label);
-  }, [label]);
+  const { editing, editValue, setEditValue, inputRef, handleDoubleClick, commitEdit, cancelEdit } = useEditableNode(id, label, onLabelChange);
 
   return (
     <div style={{ opacity }}>
@@ -102,30 +82,14 @@ function WfPageNodeComponent({ id, data, selected }: NodeProps<WfPageNodeType>) 
         )}
         {editing && (
           <foreignObject x={60} y={2} width={pageWidth - 120} height={TITLE_BAR_H - 4}>
-            <input
-              ref={inputRef}
+            <EditableInput
+              inputRef={inputRef}
               value={editValue}
-              onChange={e => setEditValue(e.target.value)}
-              onBlur={commitEdit}
-              onKeyDown={e => {
-                if (e.key === 'Enter') commitEdit();
-                if (e.key === 'Escape') cancelEdit();
-                e.stopPropagation();
-              }}
-              autoFocus
-              style={{
-                width: '100%',
-                fontSize: 10,
-                fontFamily: 'Inter, system-ui, sans-serif',
-                background: '#FFFFFF',
-                color: WF_TEXT,
-                border: '1px solid #F59E0B',
-                borderRadius: 2,
-                padding: '1px 3px',
-                boxSizing: 'border-box' as const,
-                outline: 'none',
-                textAlign: 'center' as const,
-              }}
+              onChange={setEditValue}
+              onCommit={commitEdit}
+              onCancel={cancelEdit}
+              fontSize={10}
+              textAlign="center"
             />
           </foreignObject>
         )}

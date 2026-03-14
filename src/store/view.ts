@@ -70,7 +70,7 @@ export const useViewStore = create<ViewState>((set) => ({
     const view = await api.createView({
       id: `view-${crypto.randomUUID()}`,
       name,
-      viewpoint_type: viewpointType ?? 'custom',
+      viewpoint_type: (viewpointType ?? 'custom') as import('../model/types').ViewpointType,
     });
     const viewList = await api.fetchViews();
     const viewData = await api.fetchView(view.id);

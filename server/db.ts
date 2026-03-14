@@ -20,44 +20,46 @@ const schemaSql = readFileSync(SCHEMA_PATH, 'utf-8');
 db.exec(schemaSql);
 
 // ═══════════════════════════════════════
-// Migrations: add columns to existing databases
-// SQLite has no ADD COLUMN IF NOT EXISTS, so catch duplicate-column errors silently
+// Schema version tracking
 // ═══════════════════════════════════════
 
-const migrations = [
-  "ALTER TABLE elements ADD COLUMN created_by TEXT DEFAULT 'manual'",
-  "ALTER TABLE elements ADD COLUMN source TEXT DEFAULT 'manual'",
-  "ALTER TABLE relationships ADD COLUMN created_by TEXT DEFAULT 'manual'",
-  "ALTER TABLE relationships ADD COLUMN source TEXT DEFAULT 'manual'",
-  "ALTER TABLE relationships ADD COLUMN updated_at TEXT DEFAULT NULL",
-];
-
-for (const sql of migrations) {
-  try {
-    db.exec(sql);
-  } catch (err: unknown) {
-    // Ignore "duplicate column name" errors — column already exists
-    const msg = err instanceof Error ? err.message : String(err);
-    if (!msg.includes('duplicate column')) {
-      throw err;
-    }
-  }
+db.exec('CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL DEFAULT 0)');
+const versionRow = db.prepare('SELECT version FROM schema_version').get() as { version: number } | undefined;
+if (!versionRow) {
+  db.prepare('INSERT INTO schema_version (version) VALUES (0)').run();
 }
+let currentVersion = versionRow?.version ?? 0;
 
 // ═══════════════════════════════════════
-// Migration: update views table CHECK constraint for new viewpoint types
-// SQLite cannot ALTER CHECK constraints — must recreate the table
+// Versioned migrations
+// Each entry: [version_number, migration_fn]
+// Migrations run in a transaction; version updates after success
 // ═══════════════════════════════════════
 
-try {
-  // Check if the current CHECK constraint is missing new types
-  const testStmt = db.prepare("INSERT INTO views (id, name, viewpoint_type) VALUES ('__test_migration__', '__test__', 'uml_sequence')");
-  try {
-    testStmt.run();
-    // If it succeeded, constraint already allows it — clean up
-    db.prepare("DELETE FROM views WHERE id = '__test_migration__'").run();
-  } catch {
-    // Constraint rejected it — need to recreate the table
+type MigrationEntry = [number, () => void];
+
+const versionedMigrations: MigrationEntry[] = [
+  // Version 1: add created_by / source columns to elements and relationships
+  [1, () => {
+    const alters = [
+      "ALTER TABLE elements ADD COLUMN created_by TEXT DEFAULT 'manual'",
+      "ALTER TABLE elements ADD COLUMN source TEXT DEFAULT 'manual'",
+      "ALTER TABLE relationships ADD COLUMN created_by TEXT DEFAULT 'manual'",
+      "ALTER TABLE relationships ADD COLUMN source TEXT DEFAULT 'manual'",
+      "ALTER TABLE relationships ADD COLUMN updated_at TEXT DEFAULT NULL",
+    ];
+    for (const sql of alters) {
+      try {
+        db.exec(sql);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (!msg.includes('duplicate column')) throw err;
+      }
+    }
+  }],
+
+  // Version 2: update views CHECK constraint for UML/wireframe viewpoint types
+  [2, () => {
     db.exec(`
       CREATE TABLE IF NOT EXISTS views_new (
         id TEXT PRIMARY KEY,
@@ -82,18 +84,10 @@ try {
       DROP TABLE views;
       ALTER TABLE views_new RENAME TO views;
     `);
-  }
-} catch {
-  // Migration already applied or table structure differs — skip
-}
+  }],
 
-// Same for relationships CHECK constraint (new UML message types)
-try {
-  const testRel = db.prepare("INSERT INTO relationships (id, archimate_type, source_id, target_id) VALUES ('__test_rel_migration__', 'uml-sync-message', '__fake__', '__fake__')");
-  try {
-    testRel.run();
-    db.prepare("DELETE FROM relationships WHERE id = '__test_rel_migration__'").run();
-  } catch {
+  // Version 3: update relationships CHECK constraint for UML message types
+  [3, () => {
     db.exec(`
       CREATE TABLE IF NOT EXISTS relationships_new (
         id TEXT PRIMARY KEY,
@@ -124,9 +118,16 @@ try {
       CREATE INDEX IF NOT EXISTS idx_rel_source ON relationships(source_id);
       CREATE INDEX IF NOT EXISTS idx_rel_target ON relationships(target_id);
     `);
-  }
-} catch {
-  // Migration already applied or skip
+  }],
+];
+
+for (const [version, migrate] of versionedMigrations) {
+  if (currentVersion >= version) continue;
+  db.transaction(() => {
+    migrate();
+    db.prepare('UPDATE schema_version SET version = ?').run(version);
+  })();
+  currentVersion = version;
 }
 
 export default db;

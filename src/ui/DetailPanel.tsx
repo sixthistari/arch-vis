@@ -32,7 +32,7 @@ const VISIBILITY_OPTIONS: Array<{ value: string; label: string }> = [
 export function DetailPanel({ element, relationships, elements, onClose, onNavigate, onDelete }: DetailPanelProps): React.ReactElement {
   const [tab, setTab] = useState<Tab>('properties');
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState({
+  const [draft, setDraft] = useState<{ name: string; description: string; status: string; layer: string; sublayer: string }>({
     name: element.name,
     description: element.description ?? '',
     status: element.status,

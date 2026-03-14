@@ -107,6 +107,71 @@ class MinHeap {
   }
 }
 
+// ─── Spatial hash ─────────────────────────────────────────────────────────────
+
+const CELL_SIZE = 100; // px per spatial-hash cell
+
+/**
+ * Grid-based spatial hash for obstacle rectangles.
+ * Divides the canvas into CELL_SIZE×CELL_SIZE cells and maps each cell to the
+ * set of rects that overlap it. Segment-clear checks only inspect rects in
+ * cells the segment passes through → O(1) average per cell instead of O(N).
+ */
+class SpatialHash {
+  private cells = new Map<number, Rect[]>();
+
+  private keyFor(cx: number, cy: number): number {
+    // Pack two 16-bit cell indices into one 32-bit integer.
+    // Shift by +32768 so negative coords map to positive indices.
+    return ((cx + 32768) << 16) | ((cy + 32768) & 0xffff);
+  }
+
+  insert(rect: Rect): void {
+    const cxMin = Math.floor(rect.l / CELL_SIZE);
+    const cxMax = Math.floor(rect.r / CELL_SIZE);
+    const cyMin = Math.floor(rect.t / CELL_SIZE);
+    const cyMax = Math.floor(rect.b / CELL_SIZE);
+    for (let cx = cxMin; cx <= cxMax; cx++) {
+      for (let cy = cyMin; cy <= cyMax; cy++) {
+        const k = this.keyFor(cx, cy);
+        let bucket = this.cells.get(k);
+        if (!bucket) { bucket = []; this.cells.set(k, bucket); }
+        bucket.push(rect);
+      }
+    }
+  }
+
+  /** Return all rects in cells that an axis-aligned segment passes through. */
+  query(x1: number, y1: number, x2: number, y2: number): Rect[] {
+    const seen = new Set<Rect>();
+    const result: Rect[] = [];
+
+    const xMin = Math.min(x1, x2);
+    const xMax = Math.max(x1, x2);
+    const yMin = Math.min(y1, y2);
+    const yMax = Math.max(y1, y2);
+
+    const cxMin = Math.floor(xMin / CELL_SIZE);
+    const cxMax = Math.floor(xMax / CELL_SIZE);
+    const cyMin = Math.floor(yMin / CELL_SIZE);
+    const cyMax = Math.floor(yMax / CELL_SIZE);
+
+    for (let cx = cxMin; cx <= cxMax; cx++) {
+      for (let cy = cyMin; cy <= cyMax; cy++) {
+        const bucket = this.cells.get(this.keyFor(cx, cy));
+        if (!bucket) continue;
+        for (const rect of bucket) {
+          if (!seen.has(rect)) {
+            seen.add(rect);
+            result.push(rect);
+          }
+        }
+      }
+    }
+    return result;
+  }
+}
+
 // ─── Obstacle helpers ─────────────────────────────────────────────────────────
 
 /** Expand element bounds by MARGIN on each side. */
@@ -144,9 +209,10 @@ function segmentHitsRect(
 
 function isSegmentClear(
   x1: number, y1: number, x2: number, y2: number,
-  rects: Rect[],
+  rects: Rect[] | SpatialHash,
 ): boolean {
-  for (const rect of rects) {
+  const candidates = rects instanceof SpatialHash ? rects.query(x1, y1, x2, y2) : rects;
+  for (const rect of candidates) {
     if (segmentHitsRect(x1, y1, x2, y2, rect)) return false;
   }
   return true;
@@ -231,7 +297,7 @@ function sideToDir(side: PortSide): 'h' | 'v' {
 function aStarRoute(
   sx: number, sy: number,
   tx: number, ty: number,
-  rects: Rect[],
+  rects: Rect[] | SpatialHash,
   allXs: number[],
   allYs: number[],
   xiMap: Map<number, number>,
@@ -408,11 +474,28 @@ export function computeOrthogonalRoutes(
 
   const tubeIdx: TubeIndex = new Map();
 
+  // Pre-compute filtered rects per unique (source, target) pair using Set-based exclusion
+  // and build a SpatialHash for each, avoiding redundant .filter() calls per edge.
+  const pairHashCache = new Map<string, SpatialHash>();
+
   for (const edge of sortedEdges) {
-    const rects = expandedRects.filter(r => r.id !== edge.sourceId && r.id !== edge.targetId);
+    const pairKey = edge.sourceId < edge.targetId
+      ? `${edge.sourceId}\0${edge.targetId}`
+      : `${edge.targetId}\0${edge.sourceId}`;
+
+    let hash = pairHashCache.get(pairKey);
+    if (!hash) {
+      const excludeIds = new Set([edge.sourceId, edge.targetId]);
+      hash = new SpatialHash();
+      for (const r of expandedRects) {
+        if (!excludeIds.has(r.id)) hash.insert(r);
+      }
+      pairHashCache.set(pairKey, hash);
+    }
+
     const pts = aStarRoute(
       edge.sx1, edge.sy1, edge.sx2, edge.sy2,
-      rects, allXs, allYs,
+      hash, allXs, allYs,
       xiMap, yiMap,
       edge.srcSide, edge.tgtSide,
       tubeIdx,

@@ -544,9 +544,9 @@ export function Canvas(): React.ReactElement {
       const el = await createElement({
         id,
         name,
-        archimate_type: data.archimate_type,
+        archimate_type: data.archimate_type as import('../../model/types').ArchimateType,
         specialisation: null,
-        layer: elementLayer,
+        layer: elementLayer as import('../../model/types').ArchimateLayer,
       });
 
       // Save position so element appears at drop point
@@ -655,7 +655,7 @@ export function Canvas(): React.ReactElement {
             onClick: () => {},
             submenu: statuses.map(s => ({
               label: s.charAt(0).toUpperCase() + s.slice(1),
-              onClick: () => updateElementStatus(id, s),
+              onClick: () => updateElementStatus(id, s as import('../../model/types').ElementStatus),
               disabled: el.status === s,
             })),
           },

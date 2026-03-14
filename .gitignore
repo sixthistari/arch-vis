@@ -10,3 +10,10 @@ data/arch-vis.db-wal
 # OS
 .DS_Store
 screenshots/
+
+# Test artifacts
+*.png
+test-screenshots/
+snapshot-*.md
+.playwright-mcp/
+.mcp.json

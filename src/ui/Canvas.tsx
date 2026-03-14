@@ -129,7 +129,7 @@ export function Canvas(): React.ReactElement {
   const handleCreateRelationship = useCallback(async (sourceId: string, targetId: string, relType: string) => {
     await api.createRelationship({
       id: `rel-${crypto.randomUUID()}`,
-      archimate_type: relType,
+      archimate_type: relType as import('../model/types').RelationshipType,
       source_id: sourceId,
       target_id: targetId,
     });
@@ -144,8 +144,8 @@ export function Canvas(): React.ReactElement {
     const el = await api.createElement({
       id: `el-${crypto.randomUUID()}`,
       name: name.trim(),
-      archimate_type: archimateType,
-      layer,
+      archimate_type: archimateType as import('../model/types').ArchimateType,
+      layer: layer as import('../model/types').ArchimateLayer,
       specialisation: null,
     });
     await api.updateViewElements(currentView.id, [{

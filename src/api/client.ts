@@ -241,27 +241,8 @@ export function fetchValidRelationships(): Promise<ValidRelationship[]> {
 // Batch Import / Export
 // ═══════════════════════════════════════
 
-export interface BatchElementInput {
-  id?: string;
-  name: string;
-  archimate_type: string;
-  layer: string;
-  specialisation?: string | null;
-  sublayer?: string | null;
-  description?: string | null;
-  children?: BatchElementInput[];
-}
-
-export interface BatchRelationshipInput {
-  id?: string;
-  archimate_type: string;
-  source_id?: string;
-  source_name?: string;
-  target_id?: string;
-  target_name?: string;
-  label?: string | null;
-  specialisation?: string | null;
-}
+export type { BatchElementInput, BatchRelationshipInput } from '../../shared/types.js';
+import type { BatchElementInput, BatchRelationshipInput } from '../../shared/types.js';
 
 export interface BatchImportPayload {
   notation?: 'archimate' | 'uml' | 'wireframe';

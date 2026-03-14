@@ -1,80 +1,15 @@
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import db from '../db.js';
+import type {
+  ElementRow,
+  RelationshipRow,
+  ViewRow,
+} from '../../shared/types.js';
+import { BatchImportBodySchema } from '../../src/model/types.js';
+import type { BatchElementInputParsed } from '../../src/model/types.js';
 
 const router = Router();
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface BatchElementInput {
-  id?: string;
-  name: string;
-  archimate_type: string;
-  layer: string;
-  specialisation?: string | null;
-  sublayer?: string | null;
-  description?: string | null;
-  children?: BatchElementInput[];
-}
-
-interface BatchRelationshipInput {
-  id?: string;
-  archimate_type: string;
-  source_id?: string;
-  source_name?: string;
-  target_id?: string;
-  target_name?: string;
-  label?: string | null;
-  specialisation?: string | null;
-}
-
-interface BatchImportBody {
-  notation?: string;
-  elements?: BatchElementInput[];
-  relationships?: BatchRelationshipInput[];
-  view?: {
-    id?: string;
-    name: string;
-    viewpoint?: string;
-    render_mode?: string;
-  };
-}
-
-interface ElementRow {
-  id: string;
-  name: string;
-  archimate_type: string;
-  specialisation: string | null;
-  layer: string;
-  sublayer: string | null;
-  domain_id: string | null;
-  status: string;
-  description: string | null;
-  properties: string | null;
-  confidence: number | null;
-  source_session_id: string | null;
-  parent_id: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-interface RelationshipRow {
-  id: string;
-  archimate_type: string;
-  specialisation: string | null;
-  source_id: string;
-  target_id: string;
-  label: string | null;
-  description: string | null;
-  properties: string | null;
-  confidence: number | null;
-  created_at: string;
-}
-
-interface ViewRow {
-  view_id: string;
-  element_id: string;
-}
 
 // ─── Layer ordering for grid layout ──────────────────────────────────────────
 
@@ -88,6 +23,44 @@ const LAYER_ORDER = [
   'implementation',
 ];
 
+const UML_TYPES = new Set([
+  'uml-class', 'uml-abstract-class', 'uml-interface', 'uml-enum',
+  'uml-component', 'uml-actor', 'uml-use-case', 'uml-state',
+  'uml-activity', 'uml-note', 'uml-package', 'uml-lifeline',
+  'uml-activation', 'uml-fragment',
+]);
+
+const WF_TYPES = new Set([
+  'wf-page', 'wf-section', 'wf-header', 'wf-nav', 'wf-button',
+  'wf-input', 'wf-textarea', 'wf-select', 'wf-checkbox', 'wf-radio',
+  'wf-table', 'wf-image', 'wf-icon', 'wf-text', 'wf-link',
+  'wf-modal', 'wf-card', 'wf-list', 'wf-tab-group', 'wf-form',
+  'wf-placeholder',
+]);
+
+function deriveNotation(elements: ElementRow[]): string {
+  let hasUml = false;
+  let hasWf = false;
+  let hasArchimate = false;
+
+  for (const el of elements) {
+    if (UML_TYPES.has(el.archimate_type)) {
+      hasUml = true;
+    } else if (WF_TYPES.has(el.archimate_type)) {
+      hasWf = true;
+    } else {
+      hasArchimate = true;
+    }
+    if ((hasUml ? 1 : 0) + (hasWf ? 1 : 0) + (hasArchimate ? 1 : 0) > 1) {
+      return 'mixed';
+    }
+  }
+
+  if (hasUml) return 'uml';
+  if (hasWf) return 'wireframe';
+  return 'archimate';
+}
+
 const GRID_COLS = 8;
 const COL_WIDTH = 210;
 const ROW_HEIGHT = 80;
@@ -97,7 +70,13 @@ const LAYER_GAP = 60;
 // ─── POST /api/import/model-batch ────────────────────────────────────────────
 
 router.post('/import/model-batch', (req: Request, res: Response) => {
-  const body = req.body as BatchImportBody;
+  const parsed = BatchImportBodySchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.format() });
+    return;
+  }
+
+  const body = parsed.data;
 
   try {
     const result = db.transaction(() => {
@@ -105,12 +84,21 @@ router.post('/import/model-batch', (req: Request, res: Response) => {
       const insertedElementIds: string[] = [];
 
       const insertElement = db.prepare(`
-        INSERT OR REPLACE INTO elements
+        INSERT INTO elements
           (id, name, archimate_type, specialisation, layer, sublayer, description, parent_id)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          name = excluded.name,
+          archimate_type = excluded.archimate_type,
+          specialisation = excluded.specialisation,
+          layer = excluded.layer,
+          sublayer = excluded.sublayer,
+          description = excluded.description,
+          parent_id = excluded.parent_id,
+          updated_at = datetime('now')
       `);
 
-      function processElement(el: BatchElementInput, parentId: string | null): string {
+      function processElement(el: BatchElementInputParsed, parentId: string | null): string {
         const id = el.id ?? `el-${crypto.randomUUID()}`;
         insertElement.run(
           id,
@@ -139,12 +127,26 @@ router.post('/import/model-batch', (req: Request, res: Response) => {
       }
 
       const insertRelationship = db.prepare(`
-        INSERT OR REPLACE INTO relationships
+        INSERT INTO relationships
           (id, archimate_type, specialisation, source_id, target_id, label)
         VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          archimate_type = excluded.archimate_type,
+          specialisation = excluded.specialisation,
+          source_id = excluded.source_id,
+          target_id = excluded.target_id,
+          label = excluded.label,
+          updated_at = datetime('now')
       `);
 
       let relationshipsCreated = 0;
+      const warnings: string[] = [];
+
+      const lookupElementType = db.prepare('SELECT archimate_type FROM elements WHERE id = ?');
+      const checkValidRel = db.prepare(
+        `SELECT 1 FROM valid_relationships
+         WHERE source_archimate_type = ? AND target_archimate_type = ? AND relationship_type = ?`
+      );
 
       for (const rel of body.relationships ?? []) {
         const sourceId = rel.source_id ?? (rel.source_name ? nameToId.get(rel.source_name) : undefined);
@@ -153,6 +155,20 @@ router.post('/import/model-batch', (req: Request, res: Response) => {
         if (!sourceId || !targetId) {
           // Skip unresolvable relationships
           continue;
+        }
+
+        // Validate against metamodel — warn but don't fail the batch
+        const sourceEl = lookupElementType.get(sourceId) as { archimate_type: string } | undefined;
+        const targetEl = lookupElementType.get(targetId) as { archimate_type: string } | undefined;
+
+        if (sourceEl && targetEl) {
+          const valid = checkValidRel.get(sourceEl.archimate_type, targetEl.archimate_type, rel.archimate_type);
+          if (!valid) {
+            warnings.push(
+              `Skipped invalid relationship: '${rel.archimate_type}' from '${sourceEl.archimate_type}' to '${targetEl.archimate_type}'`
+            );
+            continue;
+          }
         }
 
         const id = rel.id ?? `rel-${crypto.randomUUID()}`;
@@ -176,8 +192,13 @@ router.post('/import/model-batch', (req: Request, res: Response) => {
         const renderMode = v.render_mode ?? 'flat';
 
         db.prepare(`
-          INSERT OR REPLACE INTO views (id, name, viewpoint_type, render_mode)
+          INSERT INTO views (id, name, viewpoint_type, render_mode)
           VALUES (?, ?, ?, ?)
+          ON CONFLICT(id) DO UPDATE SET
+            name = excluded.name,
+            viewpoint_type = excluded.viewpoint_type,
+            render_mode = excluded.render_mode,
+            updated_at = datetime('now')
         `).run(viewId, v.name, viewpointType, renderMode);
 
         // Group elements by layer in LAYER_ORDER order
@@ -191,8 +212,11 @@ router.post('/import/model-batch', (req: Request, res: Response) => {
         }
 
         const insertViewElement = db.prepare(`
-          INSERT OR REPLACE INTO view_elements (view_id, element_id, x, y)
+          INSERT INTO view_elements (view_id, element_id, x, y)
           VALUES (?, ?, ?, ?)
+          ON CONFLICT(view_id, element_id) DO UPDATE SET
+            x = excluded.x,
+            y = excluded.y
         `);
 
         let currentY = PADDING;
@@ -219,6 +243,7 @@ router.post('/import/model-batch', (req: Request, res: Response) => {
         elementsCreated: insertedElementIds.length,
         relationshipsCreated,
         viewId,
+        ...(warnings.length > 0 ? { warnings } : {}),
       };
     })();
 
@@ -273,7 +298,7 @@ router.get('/export/model-batch', (req: Request, res: Response) => {
       .all(...elementIds, ...elementIds) as RelationshipRow[];
 
     res.json({
-      notation: 'archimate',
+      notation: deriveNotation(elements),
       elements,
       relationships,
       view: viewRow,
@@ -284,7 +309,7 @@ router.get('/export/model-batch', (req: Request, res: Response) => {
     const relationships = db.prepare('SELECT * FROM relationships').all() as RelationshipRow[];
 
     res.json({
-      notation: 'archimate',
+      notation: deriveNotation(elements),
       elements,
       relationships,
     });

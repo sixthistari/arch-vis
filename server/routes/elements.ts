@@ -1,26 +1,8 @@
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import db from '../db.js';
-
-interface ElementRow {
-  id: string;
-  name: string;
-  archimate_type: string;
-  specialisation: string | null;
-  layer: string;
-  sublayer: string | null;
-  domain_id: string | null;
-  status: string;
-  description: string | null;
-  properties: string | null;
-  confidence: number | null;
-  source_session_id: string | null;
-  parent_id: string | null;
-  created_by: string | null;
-  source: string | null;
-  created_at: string;
-  updated_at: string;
-}
+import type { ElementRow } from '../../shared/types.js';
+import { CreateElementSchema, UpdateElementSchema } from '../../src/model/types.js';
 
 function parseProperties(row: ElementRow): Omit<ElementRow, 'properties'> & { properties: Record<string, unknown> | null } {
   return {
@@ -58,8 +40,14 @@ router.get('/elements', (req: Request, res: Response) => {
 
 // POST /api/elements — create a new element
 router.post('/elements', (req: Request, res: Response) => {
-  const body = req.body as Record<string, unknown>;
-  const id = (body.id as string | undefined) ?? `el-${crypto.randomUUID()}`;
+  const parsed = CreateElementSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.format() });
+    return;
+  }
+
+  const body = parsed.data;
+  const id = body.id ?? `el-${crypto.randomUUID()}`;
 
   const stmt = db.prepare(`
     INSERT INTO elements (id, name, archimate_type, specialisation, layer, sublayer,
@@ -93,7 +81,14 @@ router.post('/elements', (req: Request, res: Response) => {
 // PUT /api/elements/:id — update an element
 router.put('/elements/:id', (req: Request, res: Response) => {
   const { id } = req.params;
-  const body = req.body as Record<string, unknown>;
+
+  const parsed = UpdateElementSchema.safeParse({ ...req.body, id });
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.format() });
+    return;
+  }
+
+  const body = parsed.data;
 
   const existing = db.prepare('SELECT id FROM elements WHERE id = ?').get(id);
   if (!existing) {
@@ -109,16 +104,17 @@ router.put('/elements/:id', (req: Request, res: Response) => {
     'domain_id', 'status', 'description', 'confidence', 'source_session_id', 'parent_id',
   ];
 
+  const bodyRecord = body as Record<string, unknown>;
   for (const field of updatable) {
-    if (field in body) {
+    if (field in bodyRecord) {
       fields.push(`${field} = ?`);
-      params.push(body[field] ?? null);
+      params.push(bodyRecord[field] ?? null);
     }
   }
 
-  if ('properties' in body) {
+  if ('properties' in bodyRecord) {
     fields.push('properties = ?');
-    params.push(body.properties ? JSON.stringify(body.properties) : null);
+    params.push(bodyRecord.properties ? JSON.stringify(bodyRecord.properties) : null);
   }
 
   if (fields.length === 0) {

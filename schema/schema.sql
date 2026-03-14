@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS elements (
     archimate_type TEXT NOT NULL,
     specialisation TEXT,                    -- NULL for standard ArchiMate elements
     layer TEXT NOT NULL CHECK(layer IN (
-        'motivation','strategy','business','application','technology','data','implementation'
+        'motivation','strategy','business','application','technology','data','implementation','none'
     )),
     sublayer TEXT,                          -- default from config, overridable
     domain_id TEXT REFERENCES domains(id),
