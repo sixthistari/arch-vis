@@ -115,6 +115,10 @@ export const archimateTypeValues = [
   'wf-tab-group',
   'wf-form',
   'wf-placeholder',
+  // UML sequence diagram types (Phase 4)
+  'uml-lifeline',
+  'uml-activation',
+  'uml-fragment',
 ] as const;
 
 export type ArchimateType = (typeof archimateTypeValues)[number];
@@ -139,6 +143,13 @@ export const relationshipTypeValues = [
   'uml-association',
   'uml-dependency',
   'uml-assembly',
+  // UML sequence diagram message types (Phase 4)
+  'uml-sync-message',
+  'uml-async-message',
+  'uml-return-message',
+  'uml-create-message',
+  'uml-destroy-message',
+  'uml-self-message',
   // Wireframe relationship types (Phase 3)
   'wf-contains',
   'wf-navigates-to',
@@ -223,6 +234,12 @@ export const viewpointTypeValues = [
   'information',
   'application_landscape',
   'custom',
+  'uml_class',
+  'uml_component',
+  'wireframe',
+  'uml_sequence',
+  'uml_activity',
+  'uml_usecase',
 ] as const;
 
 export type ViewpointType = (typeof viewpointTypeValues)[number];
@@ -319,6 +336,8 @@ export const ElementSchema = z.object({
   confidence: z.number().min(0).max(1).nullable(),
   source_session_id: z.string().nullable(),
   parent_id: z.string().nullable(),
+  created_by: z.string().nullable(),
+  source: z.string().nullable(),
   created_at: z.string().nullable(),
   updated_at: z.string().nullable(),
 });
@@ -337,6 +356,8 @@ export const CreateElementSchema = ElementSchema.omit({
   confidence: true,
   source_session_id: true,
   parent_id: true,
+  created_by: true,
+  source: true,
 });
 
 export type CreateElementInput = z.infer<typeof CreateElementSchema>;
@@ -361,19 +382,25 @@ export const RelationshipSchema = z.object({
   description: z.string().nullable(),
   properties: z.record(z.unknown()).nullable(),
   confidence: z.number().min(0).max(1).nullable(),
+  created_by: z.string().nullable(),
+  source: z.string().nullable(),
   created_at: z.string().nullable(),
+  updated_at: z.string().nullable(),
 });
 
 export type Relationship = z.infer<typeof RelationshipSchema>;
 
 export const CreateRelationshipSchema = RelationshipSchema.omit({
   created_at: true,
+  updated_at: true,
 }).partial({
   specialisation: true,
   label: true,
   description: true,
   properties: true,
   confidence: true,
+  created_by: true,
+  source: true,
 });
 
 export type CreateRelationshipInput = z.infer<typeof CreateRelationshipSchema>;

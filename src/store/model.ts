@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import Graph from 'graphology';
-import type { Element, Relationship, Domain, SublayerConfig, CreateElementInput, UpdateElementInput } from '../model/types';
+import type { Element, Relationship, Domain, SublayerConfig, ValidRelationship, CreateElementInput, UpdateElementInput } from '../model/types';
 import { buildGraphFromData } from '../model/graph';
 import * as api from '../api/client';
 
@@ -9,6 +9,7 @@ interface ModelState {
   relationships: Relationship[];
   domains: Domain[];
   sublayerConfig: SublayerConfig | null;
+  validRelationships: ValidRelationship[];
   graph: Graph;
   loading: boolean;
   error: string | null;
@@ -24,6 +25,7 @@ export const useModelStore = create<ModelState>((set, get) => ({
   relationships: [],
   domains: [],
   sublayerConfig: null,
+  validRelationships: [],
   graph: new Graph(),
   loading: false,
   error: null,
@@ -31,11 +33,12 @@ export const useModelStore = create<ModelState>((set, get) => ({
   loadAll: async () => {
     set({ loading: true, error: null });
     try {
-      const [elements, relationships, domains, sublayerConfig] = await Promise.all([
+      const [elements, relationships, domains, sublayerConfig, validRelationships] = await Promise.all([
         api.fetchElements(),
         api.fetchRelationships(),
         api.fetchDomains(),
         api.fetchSublayerConfig(),
+        api.fetchValidRelationships(),
       ]);
 
       const graph = buildGraphFromData(elements, relationships);
@@ -45,6 +48,7 @@ export const useModelStore = create<ModelState>((set, get) => ({
         relationships,
         domains,
         sublayerConfig,
+        validRelationships,
         graph,
         loading: false,
       });

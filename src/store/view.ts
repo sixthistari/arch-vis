@@ -12,6 +12,7 @@ interface ViewState {
   loadView: (id: string) => Promise<void>;
   switchView: (id: string) => Promise<void>;
   savePositions: (viewId: string, elements: ViewElement[]) => Promise<void>;
+  createView: (name: string, viewpointType?: string) => Promise<void>;
 }
 
 export const useViewStore = create<ViewState>((set) => ({
@@ -63,5 +64,21 @@ export const useViewStore = create<ViewState>((set) => ({
     } catch {
       // Position save failed — positions will be lost on refresh
     }
+  },
+
+  createView: async (name: string, viewpointType?: string) => {
+    const view = await api.createView({
+      id: `view-${crypto.randomUUID()}`,
+      name,
+      viewpoint_type: viewpointType ?? 'custom',
+    });
+    const viewList = await api.fetchViews();
+    const viewData = await api.fetchView(view.id);
+    set({
+      viewList,
+      currentView: viewData.view,
+      viewElements: viewData.viewElements ?? [],
+      viewRelationships: viewData.viewRelationships ?? [],
+    });
   },
 }));

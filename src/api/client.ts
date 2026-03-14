@@ -299,4 +299,88 @@ export function exportModelBatch(viewId?: string): Promise<unknown> {
   return request(`/export/model-batch${query}`, z.unknown());
 }
 
+// ═══════════════════════════════════════
+// ArchiMate XML Import / Export
+// ═══════════════════════════════════════
+
+export interface ArchimateImportResult {
+  elementsCreated: number;
+  relationshipsCreated: number;
+}
+
+const ArchimateImportResultSchema = z.object({
+  elementsCreated: z.number(),
+  relationshipsCreated: z.number(),
+});
+
+export function importArchimateXml(xml: string): Promise<ArchimateImportResult> {
+  return request('/import/archimate-xml', ArchimateImportResultSchema, {
+    method: 'POST',
+    body: JSON.stringify({ xml }),
+  });
+}
+
+export async function exportArchimateXml(): Promise<string> {
+  const response = await fetch(`${API_BASE}/export/archimate-xml`);
+  if (!response.ok) {
+    const body = await response.text().catch(() => 'Unknown error');
+    throw new ApiError(response.status, `${response.status}: ${body}`);
+  }
+  return response.text();
+}
+
+// ═══════════════════════════════════════
+// CSV Import / Export
+// ═══════════════════════════════════════
+
+export interface CsvImportPayload {
+  elements: string;
+  relations: string;
+  properties?: string;
+}
+
+export interface CsvImportResult {
+  elementsCreated: number;
+  relationshipsCreated: number;
+}
+
+const CsvImportResultSchema = z.object({
+  elementsCreated: z.number(),
+  relationshipsCreated: z.number(),
+});
+
+export function importCsv(data: CsvImportPayload): Promise<CsvImportResult> {
+  return request('/import/csv', CsvImportResultSchema, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export interface CsvExportResult {
+  elements: string;
+  relations: string;
+  properties: string;
+}
+
+const CsvExportResultSchema = z.object({
+  elements: z.string(),
+  relations: z.string(),
+  properties: z.string(),
+});
+
+export function exportCsv(): Promise<CsvExportResult> {
+  return request('/export/csv', CsvExportResultSchema);
+}
+
+// ═══════════════════════════════════════
+// Element → Views lookup
+// ═══════════════════════════════════════
+
+export function fetchElementViews(elementId: string): Promise<View[]> {
+  return request(
+    `/elements/${encodeURIComponent(elementId)}/views`,
+    z.array(ViewSchema),
+  );
+}
+
 export { ApiError };
