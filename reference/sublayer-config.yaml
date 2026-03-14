@@ -11,13 +11,19 @@ layers:
     sublayers:
       - name: stakeholders
         element_types: [stakeholder]
-      - name: drivers_goals
-        element_types: [driver, goal, outcome, meaning, value]
+      - name: drivers
+        element_types: [driver]
+      - name: assessments
+        element_types: [assessment]
+      - name: goals
+        element_types: [goal]
+      - name: outcomes
+        element_types: [outcome, meaning, value]
       - name: principles
         element_types: [principle]
         specialisations: [track-crossing-protocol]
       - name: constraints_requirements
-        element_types: [constraint, requirement, assessment]
+        element_types: [constraint, requirement]
         specialisations: [ai-guardrail, autonomy-level, human-in-the-loop-gate, explanation-requirement, safety-case, data-classification-policy]
 
   strategy:
