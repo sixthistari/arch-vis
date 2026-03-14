@@ -7,7 +7,7 @@
  * - Required interfaces: socket (half-circle) on boundary
  * - Ports: small squares on boundary
  */
-import { memo } from 'react';
+import React, { memo } from 'react';
 import { Handle, Position, type NodeProps, type Node } from '@xyflow/react';
 
 export interface UmlPort {
@@ -61,6 +61,7 @@ function renderPort(port: UmlPort, width: number, height: number, stroke: string
     case 'bottom': cx = width * offset; cy = height; break;
     case 'left': cx = 0; cy = height * offset; break;
     case 'right': cx = width; cy = height * offset; break;
+    default: cx = width * offset; cy = height; break;
   }
 
   if (port.portType === 'provided') {
@@ -164,10 +165,31 @@ function UmlComponentNodeComponent({ data, selected }: NodeProps<UmlComponentNod
         {ports.map((port, i) => renderPort(port, WIDTH, HEIGHT, stroke, i))}
       </svg>
 
-      <Handle type="target" position={Position.Top} style={{ visibility: 'hidden' }} />
-      <Handle type="source" position={Position.Bottom} style={{ visibility: 'hidden' }} />
-      <Handle type="target" position={Position.Left} style={{ visibility: 'hidden' }} />
-      <Handle type="source" position={Position.Right} style={{ visibility: 'hidden' }} />
+      {/* Routing handles — 5 per side, matching edge-routing-integration handle IDs */}
+      {[15, 30, 50, 70, 85].map((pct, i) => (
+        <React.Fragment key={`t${i}`}>
+          <Handle type="source" position={Position.Top} id={`t${i}`} style={{ visibility: 'hidden', left: `${pct}%` }} />
+          <Handle type="target" position={Position.Top} id={`t${i}-t`} style={{ visibility: 'hidden', left: `${pct}%` }} />
+        </React.Fragment>
+      ))}
+      {[15, 30, 50, 70, 85].map((pct, i) => (
+        <React.Fragment key={`b${i}`}>
+          <Handle type="source" position={Position.Bottom} id={`b${i}`} style={{ visibility: 'hidden', left: `${pct}%` }} />
+          <Handle type="target" position={Position.Bottom} id={`b${i}-t`} style={{ visibility: 'hidden', left: `${pct}%` }} />
+        </React.Fragment>
+      ))}
+      {[15, 30, 50, 70, 85].map((pct, i) => (
+        <React.Fragment key={`l${i}`}>
+          <Handle type="source" position={Position.Left} id={`l${i}`} style={{ visibility: 'hidden', top: `${pct}%` }} />
+          <Handle type="target" position={Position.Left} id={`l${i}-t`} style={{ visibility: 'hidden', top: `${pct}%` }} />
+        </React.Fragment>
+      ))}
+      {[15, 30, 50, 70, 85].map((pct, i) => (
+        <React.Fragment key={`r${i}`}>
+          <Handle type="source" position={Position.Right} id={`r${i}`} style={{ visibility: 'hidden', top: `${pct}%` }} />
+          <Handle type="target" position={Position.Right} id={`r${i}-t`} style={{ visibility: 'hidden', top: `${pct}%` }} />
+        </React.Fragment>
+      ))}
     </div>
   );
 }

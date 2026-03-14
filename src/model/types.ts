@@ -12,6 +12,7 @@ export const archimateLayerValues = [
   'technology',
   'data',
   'implementation',
+  'none',
 ] as const;
 
 export type ArchimateLayer = (typeof archimateLayerValues)[number];
@@ -293,6 +294,96 @@ export const RenderModeSchema = z.enum(renderModeValues);
 export const ElementStatusSchema = z.enum(elementStatusValues);
 
 // ═══════════════════════════════════════
+// Per-notation property schemas
+// ═══════════════════════════════════════
+
+const UmlMemberSchema = z.object({
+  name: z.string(),
+  type: z.string().optional(),
+  visibility: z.enum(['+', '-', '#', '~']).optional(),
+});
+
+export const UmlClassPropertiesSchema = z.object({
+  attributes: z.array(UmlMemberSchema),
+  methods: z.array(UmlMemberSchema),
+  isAbstract: z.boolean().optional(),
+});
+
+export type UmlClassProperties = z.infer<typeof UmlClassPropertiesSchema>;
+
+export const UmlEnumPropertiesSchema = z.object({
+  literals: z.array(z.string()),
+});
+
+export type UmlEnumProperties = z.infer<typeof UmlEnumPropertiesSchema>;
+
+export const UmlSequenceFragmentPropertiesSchema = z.object({
+  operator: z.enum(['alt', 'opt', 'loop', 'break', 'par', 'critical', 'ref']),
+  guard: z.string().optional(),
+});
+
+export type UmlSequenceFragmentProperties = z.infer<typeof UmlSequenceFragmentPropertiesSchema>;
+
+export const WfPagePropertiesSchema = z.object({
+  url: z.string().optional(),
+  pageWidth: z.number().optional(),
+});
+
+export type WfPageProperties = z.infer<typeof WfPagePropertiesSchema>;
+
+export const WfTablePropertiesSchema = z.object({
+  columns: z.array(z.string()),
+  rows: z.number().int().optional(),
+  sampleData: z.array(z.array(z.string())).optional(),
+});
+
+export type WfTableProperties = z.infer<typeof WfTablePropertiesSchema>;
+
+export const WfInputPropertiesSchema = z.object({
+  placeholder: z.string().optional(),
+  inputType: z.enum(['text', 'email', 'password', 'number', 'date', 'search']).optional(),
+});
+
+export type WfInputProperties = z.infer<typeof WfInputPropertiesSchema>;
+
+export const WfSelectPropertiesSchema = z.object({
+  options: z.array(z.string()).optional(),
+  multiple: z.boolean().optional(),
+});
+
+export type WfSelectProperties = z.infer<typeof WfSelectPropertiesSchema>;
+
+/** Map from archimate_type to the expected properties schema. */
+export const propertiesSchemaByType: Partial<Record<ArchimateType, z.ZodType>> = {
+  'uml-class': UmlClassPropertiesSchema,
+  'uml-abstract-class': UmlClassPropertiesSchema,
+  'uml-interface': UmlClassPropertiesSchema,
+  'uml-enum': UmlEnumPropertiesSchema,
+  'uml-fragment': UmlSequenceFragmentPropertiesSchema,
+  'wf-page': WfPagePropertiesSchema,
+  'wf-table': WfTablePropertiesSchema,
+  'wf-input': WfInputPropertiesSchema,
+  'wf-textarea': WfInputPropertiesSchema,
+  'wf-select': WfSelectPropertiesSchema,
+};
+
+/**
+ * Validate properties against the typed schema for a given archimate_type.
+ * Returns { success: true, data } or { success: false, error }.
+ * If no typed schema exists for the type, any record is accepted.
+ */
+export function validateProperties(
+  archimateType: ArchimateType,
+  properties: Record<string, unknown> | null,
+): z.SafeParseReturnType<unknown, unknown> {
+  const schema = propertiesSchemaByType[archimateType];
+  if (!schema) {
+    return z.record(z.unknown()).nullable().safeParse(properties);
+  }
+  return schema.nullable().safeParse(properties);
+}
+
+// ═══════════════════════════════════════
 // Domain
 // ═══════════════════════════════════════
 
@@ -325,12 +416,12 @@ export type CreateDomainInput = z.infer<typeof CreateDomainSchema>;
 export const ElementSchema = z.object({
   id: z.string(),
   name: z.string(),
-  archimate_type: z.string(),
+  archimate_type: ArchimateTypeSchema,
   specialisation: z.string().nullable(),
-  layer: z.string(),
+  layer: ArchimateLayerSchema,
   sublayer: z.string().nullable(),
   domain_id: z.string().nullable(),
-  status: z.string(),
+  status: ElementStatusSchema,
   description: z.string().nullable(),
   properties: z.record(z.unknown()).nullable(),
   confidence: z.number().min(0).max(1).nullable(),
@@ -374,7 +465,7 @@ export type UpdateElementInput = z.infer<typeof UpdateElementSchema>;
 
 export const RelationshipSchema = z.object({
   id: z.string(),
-  archimate_type: z.string(),
+  archimate_type: RelationshipTypeSchema,
   specialisation: z.string().nullable(),
   source_id: z.string(),
   target_id: z.string(),
@@ -405,6 +496,63 @@ export const CreateRelationshipSchema = RelationshipSchema.omit({
 
 export type CreateRelationshipInput = z.infer<typeof CreateRelationshipSchema>;
 
+export const UpdateRelationshipSchema = CreateRelationshipSchema.partial().required({
+  id: true,
+});
+
+export type UpdateRelationshipInput = z.infer<typeof UpdateRelationshipSchema>;
+
+// ═══════════════════════════════════════
+// Batch Import
+// ═══════════════════════════════════════
+
+export interface BatchElementInputParsed {
+  id?: string;
+  name: string;
+  archimate_type: z.infer<typeof ArchimateTypeSchema>;
+  layer: z.infer<typeof ArchimateLayerSchema>;
+  specialisation?: string | null;
+  sublayer?: string | null;
+  description?: string | null;
+  children?: BatchElementInputParsed[];
+}
+
+export const BatchElementInputSchema: z.ZodType<BatchElementInputParsed> = z.lazy(() =>
+  z.object({
+    id: z.string().optional(),
+    name: z.string(),
+    archimate_type: ArchimateTypeSchema,
+    layer: ArchimateLayerSchema,
+    specialisation: z.string().nullable().optional(),
+    sublayer: z.string().nullable().optional(),
+    description: z.string().nullable().optional(),
+    children: z.array(BatchElementInputSchema).optional(),
+  })
+);
+
+export const BatchRelationshipInputSchema = z.object({
+  id: z.string().optional(),
+  archimate_type: RelationshipTypeSchema,
+  source_id: z.string().optional(),
+  source_name: z.string().optional(),
+  target_id: z.string().optional(),
+  target_name: z.string().optional(),
+  label: z.string().nullable().optional(),
+  specialisation: z.string().nullable().optional(),
+});
+
+export const BatchImportBodySchema = z.object({
+  notation: z.string().optional(),
+  elements: z.array(BatchElementInputSchema).optional(),
+  relationships: z.array(BatchRelationshipInputSchema).optional(),
+  view: z.object({
+    id: z.string().optional(),
+    name: z.string(),
+    viewpoint: z.string().optional(),
+    render_mode: z.string().optional(),
+  }).optional(),
+});
+
 // ═══════════════════════════════════════
 // View
 // ═══════════════════════════════════════
@@ -412,9 +560,9 @@ export type CreateRelationshipInput = z.infer<typeof CreateRelationshipSchema>;
 export const ViewSchema = z.object({
   id: z.string(),
   name: z.string(),
-  viewpoint_type: z.string(),
+  viewpoint_type: ViewpointTypeSchema,
   description: z.string().nullable(),
-  render_mode: z.string(),
+  render_mode: RenderModeSchema,
   filter_domain: z.string().nullable(),
   filter_layers: z.array(z.string()).nullable(),
   filter_specialisations: z.array(z.string()).nullable(),

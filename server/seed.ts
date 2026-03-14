@@ -183,6 +183,15 @@ export default function seed(): void {
       INSERT INTO view_relationships (view_id, relationship_id) VALUES (@view_id, @relationship_id)
     `);
 
+    // Viewpoint → archimate_type mapping for UML views
+    const viewpointTypeFilter: Record<string, string[]> = {
+      uml_class: ['uml-class', 'uml-abstract-class', 'uml-interface', 'uml-enum'],
+      uml_component: ['uml-component'],
+      uml_usecase: ['uml-actor', 'uml-use-case'],
+      uml_sequence: ['uml-lifeline', 'uml-activation', 'uml-fragment'],
+      uml_activity: ['uml-activity', 'uml-state'],
+    };
+
     for (const v of viewsFile.views) {
       if (!v.is_preset) continue;
 
@@ -190,17 +199,27 @@ export default function seed(): void {
       const conditions: string[] = [];
       const params: Record<string, string> = {};
 
-      if (v.filter_domain) {
-        conditions.push('domain_id = @domain');
-        params['domain'] = v.filter_domain;
-      }
-
-      if (v.filter_layers && v.filter_layers.length > 0) {
-        const placeholders = v.filter_layers.map((_, i) => `@layer${i}`).join(', ');
-        conditions.push(`layer IN (${placeholders})`);
-        v.filter_layers.forEach((layer, i) => {
-          params[`layer${i}`] = layer;
+      // UML viewpoint type filter takes precedence
+      const umlTypes = viewpointTypeFilter[v.viewpoint_type];
+      if (umlTypes) {
+        const placeholders = umlTypes.map((_, i) => `@umlType${i}`).join(', ');
+        conditions.push(`archimate_type IN (${placeholders})`);
+        umlTypes.forEach((t, i) => {
+          params[`umlType${i}`] = t;
         });
+      } else {
+        if (v.filter_domain) {
+          conditions.push('domain_id = @domain');
+          params['domain'] = v.filter_domain;
+        }
+
+        if (v.filter_layers && v.filter_layers.length > 0) {
+          const placeholders = v.filter_layers.map((_, i) => `@layer${i}`).join(', ');
+          conditions.push(`layer IN (${placeholders})`);
+          v.filter_layers.forEach((layer, i) => {
+            params[`layer${i}`] = layer;
+          });
+        }
       }
 
       const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';

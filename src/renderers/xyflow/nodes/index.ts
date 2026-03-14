@@ -3,6 +3,7 @@ import { ArchimateNode } from './ArchimateNode';
 import { UmlClassNode } from './uml/UmlClassNode';
 import { UmlComponentNode } from './uml/UmlComponentNode';
 import { UmlStateNode } from './uml/UmlStateNode';
+import { UmlUseCaseNode } from './uml/UmlUseCaseNode';
 import { UmlLifelineNode, UmlActivationNode, UmlFragmentNode } from './uml/UmlSequenceNodes';
 import { SequenceLifelineNode } from './sequence/SequenceLifelineNode';
 import { SequenceActivationNode } from './sequence/SequenceActivationNode';
@@ -24,6 +25,7 @@ export const nodeTypes: NodeTypes = {
   // UML
   'uml-class': UmlClassNode,
   'uml-component': UmlComponentNode,
+  'uml-use-case': UmlUseCaseNode,
   'uml-state': UmlStateNode,
   'uml-lifeline': UmlLifelineNode,
   'uml-activation': UmlActivationNode,
@@ -52,6 +54,8 @@ export { UmlClassNode } from './uml/UmlClassNode';
 export type { UmlClassNodeData } from './uml/UmlClassNode';
 export { UmlComponentNode } from './uml/UmlComponentNode';
 export type { UmlComponentNodeData } from './uml/UmlComponentNode';
+export { UmlUseCaseNode } from './uml/UmlUseCaseNode';
+export type { UmlUseCaseNodeData } from './uml/UmlUseCaseNode';
 export { UmlStateNode } from './uml/UmlStateNode';
 export type { UmlStateNodeData } from './uml/UmlStateNode';
 export { UmlLifelineNode, UmlActivationNode, UmlFragmentNode } from './uml/UmlSequenceNodes';

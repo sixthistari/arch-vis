@@ -33,7 +33,7 @@ export function buildGraphFromData(
   elements: Element[],
   relationships: Relationship[],
 ): Graph<NodeData, EdgeData> {
-  const graph = new Graph<NodeData, EdgeData>();
+  const graph = new Graph<NodeData, EdgeData>({ multi: true, type: 'directed' });
 
   for (const el of elements) {
     if (!graph.hasNode(el.id)) {

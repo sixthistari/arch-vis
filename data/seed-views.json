@@ -50,6 +50,30 @@
       "description": "Agents × grounding × governance × quality",
       "render_mode": "flat",
       "is_preset": 1
+    },
+    {
+      "id": "view-uml-class",
+      "name": "arch-vis Class Model",
+      "viewpoint_type": "uml_class",
+      "description": "Core domain types: Element, Relationship, View, stores",
+      "render_mode": "flat",
+      "is_preset": 1
+    },
+    {
+      "id": "view-uml-component",
+      "name": "arch-vis Component Architecture",
+      "viewpoint_type": "uml_component",
+      "description": "Frontend components, stores, API, and server",
+      "render_mode": "flat",
+      "is_preset": 1
+    },
+    {
+      "id": "view-uml-usecase",
+      "name": "arch-vis Use Cases",
+      "viewpoint_type": "uml_usecase",
+      "description": "Architect and Viewer actor interactions",
+      "render_mode": "flat",
+      "is_preset": 1
     }
   ]
 }
