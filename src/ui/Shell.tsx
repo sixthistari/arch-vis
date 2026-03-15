@@ -332,6 +332,7 @@ function FileMenu(): React.ReactElement {
 
 function ViewMenu(): React.ReactElement {
   const [open, setOpen] = useState(false);
+  const menuRef = React.useRef<HTMLDivElement>(null);
   const leftPanelOpen = usePanelStore(s => s.leftPanelOpen);
   const rightPanelOpen = usePanelStore(s => s.rightPanelOpen);
   const bottomPanelOpen = usePanelStore(s => s.bottomPanelOpen);
@@ -340,6 +341,16 @@ function ViewMenu(): React.ReactElement {
   const toggleRightPanel = usePanelStore(s => s.toggleRightPanel);
   const toggleBottomPanel = usePanelStore(s => s.toggleBottomPanel);
   const toggleFullScreen = usePanelStore(s => s.toggleFullScreen);
+
+  // Close menu on click outside
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
 
   const itemStyle: React.CSSProperties = {
     display: 'block',
@@ -361,7 +372,7 @@ function ViewMenu(): React.ReactElement {
     style: { height: 1, background: 'var(--border-primary)', margin: '2px 0' },
   });
 
-  return React.createElement('div', { style: { position: 'relative' } },
+  return React.createElement('div', { ref: menuRef, style: { position: 'relative' } },
     React.createElement('button', {
       onClick: () => setOpen(!open),
       style: {
@@ -388,7 +399,6 @@ function ViewMenu(): React.ReactElement {
         minWidth: 220,
         fontFamily: 'monospace',
       },
-      onMouseLeave: () => setOpen(false),
     },
       React.createElement('button', { onClick: toggle(toggleLeftPanel), style: itemStyle },
         checkMark(leftPanelOpen), 'Model Tree & Views',

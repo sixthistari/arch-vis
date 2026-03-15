@@ -53,7 +53,11 @@ function buildLayerGroups(sublayerConfig: unknown): LayerGroup[] {
     }
   }
 
-  const remaining = archimateTypeValues.filter(t => !seen.has(t) && t !== 'grouping' && t !== 'junction' && t !== 'location' && t !== 'annotation');
+  const remaining = archimateTypeValues.filter(t =>
+    !seen.has(t) &&
+    t !== 'grouping' && t !== 'junction' && t !== 'location' && t !== 'annotation' &&
+    !t.startsWith('uml-') && !t.startsWith('wf-') && !t.startsWith('dm-') && !t.startsWith('pf-'),
+  );
   if (remaining.length > 0) {
     groups.push({ key: 'other', label: 'Other', colorKey: 'implementation', types: remaining as unknown as ArchimateType[] });
   }

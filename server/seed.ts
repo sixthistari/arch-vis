@@ -263,6 +263,19 @@ export default function seed(): void {
               params[`layer${i}`] = layer;
             });
           }
+
+          // Specialisation filter: ["*"] = any non-null specialisation, or specific values
+          if (v.filter_specialisations && v.filter_specialisations.length > 0) {
+            if (v.filter_specialisations.length === 1 && v.filter_specialisations[0] === '*') {
+              conditions.push('specialisation IS NOT NULL');
+            } else {
+              const placeholders = v.filter_specialisations.map((_, i) => `@spec${i}`).join(', ');
+              conditions.push(`specialisation IN (${placeholders})`);
+              v.filter_specialisations.forEach((s, i) => {
+                params[`spec${i}`] = s;
+              });
+            }
+          }
         }
 
         const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';

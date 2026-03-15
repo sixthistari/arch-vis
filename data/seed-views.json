@@ -41,6 +41,7 @@
       "viewpoint_type": "knowledge_cognition",
       "description": "AI/Knowledge specialised elements across all layers",
       "render_mode": "flat",
+      "filter_specialisations": ["*"],
       "is_preset": 1
     },
     {
