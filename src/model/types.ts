@@ -140,6 +140,18 @@ export const archimateTypeValues = [
   'uml-lifeline',
   'uml-activation',
   'uml-fragment',
+  // Process flow types
+  'pf-start',
+  'pf-end',
+  'pf-human-task',
+  'pf-agent-task',
+  'pf-system-call',
+  'pf-decision',
+  'pf-gateway',
+  'pf-approval-gate',
+  'pf-timer',
+  'pf-swimlane',
+  'pf-subprocess',
 ] as const;
 
 export type ArchimateType = (typeof archimateTypeValues)[number];
@@ -184,6 +196,10 @@ export const relationshipTypeValues = [
   'dm-one-to-one',
   'dm-one-to-many',
   'dm-many-to-many',
+  // Process flow relationship types
+  'pf-sequence-flow',
+  'pf-conditional-flow',
+  'pf-error-flow',
 ] as const;
 
 export type RelationshipType = (typeof relationshipTypeValues)[number];
@@ -336,6 +352,8 @@ export const viewpointTypeValues = [
   'am_business_cooperation',
   'am_business_function',
   'am_business_product',
+  // Process flow viewpoints
+  'process_flow',
 ] as const;
 
 export type ViewpointType = (typeof viewpointTypeValues)[number];
@@ -771,6 +789,45 @@ export const ValidRelationshipSchema = z.object({
 });
 
 export type ValidRelationship = z.infer<typeof ValidRelationshipSchema>;
+
+// ═══════════════════════════════════════
+// Process Step
+// ═══════════════════════════════════════
+
+export const ProcessStepSchema = z.object({
+  id: z.string(),
+  process_id: z.string(),
+  sequence: z.number(),
+  name: z.string(),
+  step_type: z.string().nullable(),
+  role_id: z.string().nullable(),
+  agent_id: z.string().nullable(),
+  agent_autonomy: z.string().nullable(),
+  description: z.string().nullable(),
+  input_objects: z.array(z.string()).nullable(),
+  output_objects: z.array(z.string()).nullable(),
+  approval_required: z.boolean(),
+  track_crossing: z.boolean(),
+});
+
+export type ProcessStep = z.infer<typeof ProcessStepSchema>;
+
+export const CreateProcessStepSchema = z.object({
+  process_id: z.string(),
+  name: z.string(),
+  archimate_type: z.string(),
+  step_type: z.string().optional(),
+  role_id: z.string().optional(),
+  agent_id: z.string().optional(),
+  agent_autonomy: z.string().optional(),
+  description: z.string().optional(),
+  input_objects: z.array(z.string()).optional(),
+  output_objects: z.array(z.string()).optional(),
+  approval_required: z.boolean().optional(),
+  track_crossing: z.boolean().optional(),
+});
+
+export type CreateProcessStepInput = z.infer<typeof CreateProcessStepSchema>;
 
 // ═══════════════════════════════════════
 // API filter types

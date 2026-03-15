@@ -663,6 +663,12 @@ function renderAnnotationMiniShape(_type: string, stroke: string): React.ReactEl
   );
 }
 
+const PROCESS_FLOW_GROUPS: SimpleGroup[] = [
+  { key: 'pf-tasks', label: 'Tasks', types: ['pf-human-task', 'pf-agent-task', 'pf-system-call'] },
+  { key: 'pf-control', label: 'Control', types: ['pf-start', 'pf-end', 'pf-decision', 'pf-gateway', 'pf-approval-gate', 'pf-timer'] },
+  { key: 'pf-containers', label: 'Containers', types: ['pf-swimlane', 'pf-subprocess'] },
+];
+
 const WIREFRAME_GROUPS: SimpleGroup[] = [
   { key: 'layout', label: 'Layout', types: ['wf-page', 'wf-section', 'wf-card', 'wf-modal', 'wf-header'] },
   { key: 'controls', label: 'Controls', types: ['wf-button', 'wf-input', 'wf-textarea', 'wf-select', 'wf-checkbox', 'wf-radio'] },
@@ -757,6 +763,117 @@ function renderDmMiniShape(type: string, stroke: string): React.ReactElement {
     default: {
       children.push(
         React.createElement('rect', { key: 'r', x, y, width: w, height: h, stroke, fill: 'none', strokeWidth: sw, rx: 1 }),
+      );
+      break;
+    }
+  }
+
+  return React.createElement('svg', { width: ICON_W + 2, height: ICON_H + 2, viewBox: ICON_VB, style: { flexShrink: 0 } }, ...children);
+}
+
+/**
+ * Render a mini shape icon for process flow element types.
+ */
+function renderPfMiniShape(type: string, stroke: string): React.ReactElement {
+  const w = ICON_W, h = ICON_H, x = 1, y = 1, sw = 1.2;
+  const children: React.ReactElement[] = [];
+
+  switch (type) {
+    case 'pf-start': {
+      const cx = x + w / 2, cy = y + h / 2;
+      children.push(React.createElement('circle', { key: 'c', cx, cy, r: 5, fill: stroke }));
+      break;
+    }
+    case 'pf-end': {
+      const cx = x + w / 2, cy = y + h / 2;
+      children.push(
+        React.createElement('circle', { key: 'o', cx, cy, r: 5.5, stroke, fill: 'none', strokeWidth: 1.5 }),
+        React.createElement('circle', { key: 'i', cx, cy, r: 3, fill: stroke }),
+      );
+      break;
+    }
+    case 'pf-human-task': {
+      children.push(
+        React.createElement('rect', { key: 'r', x, y, width: w, height: h, stroke, fill: 'none', strokeWidth: sw, rx: 3 }),
+        // Person icon
+        React.createElement('circle', { key: 'head', cx: x + 5, cy: y + 4, r: 1.5, stroke, fill: 'none', strokeWidth: 0.8 }),
+        React.createElement('line', { key: 'body', x1: x + 5, y1: y + 5.5, x2: x + 5, y2: y + 9, stroke, strokeWidth: 0.8 }),
+        React.createElement('line', { key: 'arms', x1: x + 3, y1: y + 7, x2: x + 7, y2: y + 7, stroke, strokeWidth: 0.8 }),
+      );
+      break;
+    }
+    case 'pf-agent-task': {
+      children.push(
+        React.createElement('rect', { key: 'r', x, y, width: w, height: h, stroke, fill: 'none', strokeWidth: sw, rx: 3 }),
+        // Bot icon
+        React.createElement('rect', { key: 'bot', x: x + 2, y: y + 3, width: 6, height: 5, rx: 1, stroke, fill: 'none', strokeWidth: 0.8 }),
+        React.createElement('circle', { key: 'e1', cx: x + 4, cy: y + 5.5, r: 0.6, fill: stroke }),
+        React.createElement('circle', { key: 'e2', cx: x + 6, cy: y + 5.5, r: 0.6, fill: stroke }),
+        React.createElement('line', { key: 'ant', x1: x + 5, y1: y + 3, x2: x + 5, y2: y + 1.5, stroke, strokeWidth: 0.8 }),
+      );
+      break;
+    }
+    case 'pf-system-call': {
+      children.push(
+        React.createElement('rect', { key: 'r', x, y, width: w, height: h, stroke, fill: 'none', strokeWidth: sw, rx: 3 }),
+        // Gear icon
+        React.createElement('circle', { key: 'gear', cx: x + 5, cy: y + h / 2, r: 3, stroke, fill: 'none', strokeWidth: 0.8 }),
+        React.createElement('circle', { key: 'dot', cx: x + 5, cy: y + h / 2, r: 1, fill: stroke }),
+      );
+      break;
+    }
+    case 'pf-decision': {
+      const cx = x + w / 2, cy = y + h / 2;
+      children.push(
+        React.createElement('path', { key: 'd', d: `M${cx},${y + 1} L${x + w - 3},${cy} L${cx},${y + h - 1} L${x + 3},${cy} Z`, stroke, fill: 'none', strokeWidth: sw }),
+      );
+      break;
+    }
+    case 'pf-gateway': {
+      const cx = x + w / 2, cy = y + h / 2;
+      children.push(
+        React.createElement('path', { key: 'd', d: `M${cx},${y + 1} L${x + w - 3},${cy} L${cx},${y + h - 1} L${x + 3},${cy} Z`, stroke, fill: 'none', strokeWidth: sw }),
+        React.createElement('line', { key: 'v', x1: cx, y1: cy - 3, x2: cx, y2: cy + 3, stroke, strokeWidth: 1.2 }),
+        React.createElement('line', { key: 'h', x1: cx - 3, y1: cy, x2: cx + 3, y2: cy, stroke, strokeWidth: 1.2 }),
+      );
+      break;
+    }
+    case 'pf-approval-gate': {
+      // Octagon
+      const cutX = w * 0.22, cutY = h * 0.22;
+      const d = `M${x + cutX},${y} L${x + w - cutX},${y} L${x + w},${y + cutY} L${x + w},${y + h - cutY} L${x + w - cutX},${y + h} L${x + cutX},${y + h} L${x},${y + h - cutY} L${x},${y + cutY} Z`;
+      children.push(React.createElement('path', { key: 'oct', d, stroke: '#EF4444', fill: 'none', strokeWidth: sw }));
+      break;
+    }
+    case 'pf-timer': {
+      const cx = x + w / 2, cy = y + h / 2, r = 5;
+      children.push(
+        React.createElement('circle', { key: 'c', cx, cy, r, stroke, fill: 'none', strokeWidth: sw }),
+        React.createElement('line', { key: 'h1', x1: cx, y1: cy, x2: cx, y2: cy - 3, stroke, strokeWidth: 1 }),
+        React.createElement('line', { key: 'h2', x1: cx, y1: cy, x2: cx + 2, y2: cy + 0.5, stroke, strokeWidth: 0.8 }),
+      );
+      break;
+    }
+    case 'pf-swimlane': {
+      children.push(
+        React.createElement('rect', { key: 'r', x, y, width: w, height: h, stroke, fill: 'none', strokeWidth: sw, strokeDasharray: '2 1.5', rx: 1 }),
+        React.createElement('line', { key: 'hdr', x1: x + 4, y1: y, x2: x + 4, y2: y + h, stroke, strokeWidth: sw * 0.6 }),
+      );
+      break;
+    }
+    case 'pf-subprocess': {
+      children.push(
+        React.createElement('rect', { key: 'r', x, y, width: w, height: h, stroke, fill: 'none', strokeWidth: sw, strokeDasharray: '2 1.5', rx: 3 }),
+        // [+] marker at bottom
+        React.createElement('rect', { key: 'box', x: x + w / 2 - 2.5, y: y + h - 5, width: 5, height: 4, stroke, fill: 'none', strokeWidth: 0.7 }),
+        React.createElement('line', { key: 'plus-v', x1: x + w / 2, y1: y + h - 4.5, x2: x + w / 2, y2: y + h - 1.5, stroke, strokeWidth: 0.6 }),
+        React.createElement('line', { key: 'plus-h', x1: x + w / 2 - 1.5, y1: y + h - 3, x2: x + w / 2 + 1.5, y2: y + h - 3, stroke, strokeWidth: 0.6 }),
+      );
+      break;
+    }
+    default: {
+      children.push(
+        React.createElement('rect', { key: 'r', x, y, width: w, height: h, stroke, fill: 'none', strokeWidth: sw, rx: 3 }),
       );
       break;
     }
@@ -874,7 +991,8 @@ export function Palette(): React.ReactElement {
   const currentView = useViewStore(s => s.currentView);
   const viewpointType = currentView?.viewpoint_type ?? 'layered';
   const [collapsed, setCollapsed] = useState(false);
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  // Groups are expanded by default; this set tracks which ones the user has collapsed
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
   const layerGroupsBase = useMemo(() => buildLayerGroups(sublayerConfig), [sublayerConfig]);
 
@@ -892,7 +1010,7 @@ export function Palette(): React.ReactElement {
   }, [layerGroupsBase, allowedTypes]);
 
   const toggleGroup = useCallback((key: string) => {
-    setExpandedGroups(prev => {
+    setCollapsedGroups(prev => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
       else next.add(key);
@@ -911,12 +1029,14 @@ export function Palette(): React.ReactElement {
   const isUmlUseCase = viewpointType === 'uml_usecase';
   const isUml = !isUmlSequence && !isUmlActivity && !isUmlUseCase && (viewpointType === 'uml_class' || viewpointType === 'uml_component');
   const isWireframe = viewpointType === 'wireframe';
+  const isProcessFlow = viewpointType === 'process_detail' || viewpointType === 'process_flow';
   const isDataConceptual = viewpointType === 'data_conceptual';
   const isDataLogical = viewpointType === 'data_logical';
   const isDataPhysical = viewpointType === 'data_physical';
   const isData = isDataConceptual || isDataLogical || isDataPhysical;
 
-  const paletteTitle = isUmlSequence ? 'Sequence Elements'
+  const paletteTitle = isProcessFlow ? 'Process Flow'
+    : isUmlSequence ? 'Sequence Elements'
     : isUmlActivity ? 'Activity Elements'
     : isUmlUseCase ? 'Use Case Elements'
     : isUml ? 'UML Elements'
@@ -928,20 +1048,22 @@ export function Palette(): React.ReactElement {
     : 'Elements';
 
   // Determine notation key for relationship types
-  const notationKey: 'archimate' | 'uml' | 'wireframe' | 'data' =
-    (isUml || isUmlSequence || isUmlActivity || isUmlUseCase) ? 'uml'
+  const notationKey: 'archimate' | 'uml' | 'wireframe' | 'data' | 'process-flow' =
+    isProcessFlow ? 'process-flow'
+    : (isUml || isUmlSequence || isUmlActivity || isUmlUseCase) ? 'uml'
     : isWireframe ? 'wireframe'
     : isData ? 'data'
     : 'archimate';
   const relationshipTypes = NOTATION_RELATIONSHIP_TYPES[notationKey];
-  const relBorderColour = notationKey === 'uml' ? '#4A90D9'
+  const relBorderColour = notationKey === 'process-flow' ? '#6366F1'
+    : notationKey === 'uml' ? '#4A90D9'
     : notationKey === 'wireframe' ? '#8E8E93'
     : notationKey === 'data' ? '#60A5FA'
     : '#888';
 
   // Render a simple (non-ArchiMate) group for UML / wireframe palettes
   const renderSimpleGroup = (group: SimpleGroup, borderColour: string, _chipBg: string, dropLayer: string, miniShapeRenderer?: (type: string, stroke: string) => React.ReactElement) => {
-    const isExpanded = expandedGroups.has(group.key);
+    const isExpanded = !collapsedGroups.has(group.key);
     return React.createElement('div', {
       key: group.key,
       style: {
@@ -1045,6 +1167,14 @@ export function Palette(): React.ReactElement {
       }, collapsed ? '\u25B6' : '\u25BC'),
     ),
 
+    // Body — Process Flow palette
+    !collapsed && isProcessFlow && React.createElement('div', {
+      style: { padding: '0 6px 6px' },
+    },
+      ...PROCESS_FLOW_GROUPS.map(g => renderSimpleGroup(g, '#6366F1', 'rgba(99,102,241,0.08)', 'none', renderPfMiniShape)),
+      renderSimpleGroup(ANNOTATION_GROUP, '#D97706', 'rgba(217,119,6,0.08)', 'none', renderAnnotationMiniShape),
+    ),
+
     // Body — UML Sequence palette
     !collapsed && isUmlSequence && React.createElement('div', {
       style: { padding: '0 6px 6px' },
@@ -1097,12 +1227,12 @@ export function Palette(): React.ReactElement {
     ),
 
     // Body — ArchiMate palette (default)
-    !collapsed && !isUml && !isUmlSequence && !isUmlActivity && !isUmlUseCase && !isWireframe && !isData && React.createElement('div', {
+    !collapsed && !isUml && !isUmlSequence && !isUmlActivity && !isUmlUseCase && !isWireframe && !isData && !isProcessFlow && React.createElement('div', {
       style: { padding: '0 6px 6px' },
     },
       ...layerGroups.map(group => {
         const colours = getLayerColours(group.colorKey, theme);
-        const isExpanded = expandedGroups.has(group.key);
+        const isExpanded = !collapsedGroups.has(group.key);
 
         return React.createElement('div', {
           key: group.key,
@@ -1217,10 +1347,10 @@ export function Palette(): React.ReactElement {
           'Relationships',
           React.createElement('span', {
             style: { fontSize: 7, opacity: 0.5 },
-          }, expandedGroups.has('__relationships__') ? '\u25BC' : '\u25B6'),
+          }, !collapsedGroups.has('__relationships__') ? '\u25BC' : '\u25B6'),
         ),
         // Relationship type list
-        expandedGroups.has('__relationships__') && React.createElement('div', {
+        !collapsedGroups.has('__relationships__') && React.createElement('div', {
           style: {
             padding: '4px 6px',
             display: 'flex',

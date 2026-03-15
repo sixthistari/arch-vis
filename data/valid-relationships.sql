@@ -597,3 +597,66 @@ INSERT OR IGNORE INTO valid_relationships VALUES ('application-process', 'techno
 INSERT OR IGNORE INTO valid_relationships VALUES ('application-process', 'technology-function', 'flow');
 INSERT OR IGNORE INTO valid_relationships VALUES ('technology-process', 'application-process', 'flow');
 INSERT OR IGNORE INTO valid_relationships VALUES ('technology-process', 'application-function', 'flow');
+
+-- ═══════════════════════════════════════
+-- Process flow relationships
+-- ═══════════════════════════════════════
+-- Sequence flow: any step can flow to any other step
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-start', 'pf-human-task', 'pf-sequence-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-start', 'pf-agent-task', 'pf-sequence-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-start', 'pf-system-call', 'pf-sequence-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-start', 'pf-decision', 'pf-sequence-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-start', 'pf-gateway', 'pf-sequence-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-human-task', 'pf-human-task', 'pf-sequence-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-human-task', 'pf-agent-task', 'pf-sequence-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-human-task', 'pf-system-call', 'pf-sequence-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-human-task', 'pf-decision', 'pf-sequence-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-human-task', 'pf-gateway', 'pf-sequence-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-human-task', 'pf-approval-gate', 'pf-sequence-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-human-task', 'pf-end', 'pf-sequence-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-agent-task', 'pf-human-task', 'pf-sequence-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-agent-task', 'pf-agent-task', 'pf-sequence-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-agent-task', 'pf-system-call', 'pf-sequence-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-agent-task', 'pf-decision', 'pf-sequence-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-agent-task', 'pf-gateway', 'pf-sequence-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-agent-task', 'pf-approval-gate', 'pf-sequence-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-agent-task', 'pf-end', 'pf-sequence-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-system-call', 'pf-human-task', 'pf-sequence-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-system-call', 'pf-agent-task', 'pf-sequence-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-system-call', 'pf-system-call', 'pf-sequence-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-system-call', 'pf-decision', 'pf-sequence-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-system-call', 'pf-gateway', 'pf-sequence-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-system-call', 'pf-approval-gate', 'pf-sequence-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-system-call', 'pf-end', 'pf-sequence-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-approval-gate', 'pf-human-task', 'pf-sequence-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-approval-gate', 'pf-agent-task', 'pf-sequence-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-approval-gate', 'pf-system-call', 'pf-sequence-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-approval-gate', 'pf-end', 'pf-sequence-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-gateway', 'pf-human-task', 'pf-sequence-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-gateway', 'pf-agent-task', 'pf-sequence-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-gateway', 'pf-system-call', 'pf-sequence-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-gateway', 'pf-gateway', 'pf-sequence-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-gateway', 'pf-end', 'pf-sequence-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-timer', 'pf-human-task', 'pf-sequence-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-timer', 'pf-agent-task', 'pf-sequence-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-timer', 'pf-system-call', 'pf-sequence-flow');
+-- Conditional flow: from decisions
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-decision', 'pf-human-task', 'pf-conditional-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-decision', 'pf-agent-task', 'pf-conditional-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-decision', 'pf-system-call', 'pf-conditional-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-decision', 'pf-approval-gate', 'pf-conditional-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-decision', 'pf-gateway', 'pf-conditional-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-decision', 'pf-end', 'pf-conditional-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-decision', 'pf-subprocess', 'pf-conditional-flow');
+-- Error flow: from tasks
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-human-task', 'pf-human-task', 'pf-error-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-human-task', 'pf-agent-task', 'pf-error-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-human-task', 'pf-end', 'pf-error-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-agent-task', 'pf-human-task', 'pf-error-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-agent-task', 'pf-agent-task', 'pf-error-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-agent-task', 'pf-end', 'pf-error-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-system-call', 'pf-human-task', 'pf-error-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-system-call', 'pf-agent-task', 'pf-error-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-system-call', 'pf-end', 'pf-error-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-subprocess', 'pf-human-task', 'pf-error-flow');
+INSERT OR IGNORE INTO valid_relationships VALUES ('pf-subprocess', 'pf-end', 'pf-error-flow');

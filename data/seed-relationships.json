@@ -211,6 +211,15 @@
     {"id": "arch-uicr-an-rh", "archimate_type": "uml-dependency", "source_id": "arch-uic-am-node", "target_id": "arch-uic-handles", "label": "uses"},
     {"id": "arch-uicr-cn-he", "archimate_type": "uml-dependency", "source_id": "arch-uic-cls-node", "target_id": "arch-uic-hook-edit", "label": "uses"},
     {"id": "arch-uicr-cn-rh", "archimate_type": "uml-dependency", "source_id": "arch-uic-cls-node", "target_id": "arch-uic-handles", "label": "uses"},
-    {"id": "arch-uicr-an-sr", "archimate_type": "uml-dependency", "source_id": "arch-uic-am-node", "target_id": "arch-uic-shape-reg", "label": "uses"}
+    {"id": "arch-uicr-an-sr", "archimate_type": "uml-dependency", "source_id": "arch-uic-am-node", "target_id": "arch-uic-shape-reg", "label": "uses"},
+
+    {"id": "pf-rel-start-extract", "archimate_type": "pf-sequence-flow", "source_id": "pf-doc-start", "target_id": "pf-doc-extract"},
+    {"id": "pf-rel-extract-review", "archimate_type": "pf-sequence-flow", "source_id": "pf-doc-extract", "target_id": "pf-doc-review"},
+    {"id": "pf-rel-review-decision", "archimate_type": "pf-sequence-flow", "source_id": "pf-doc-review", "target_id": "pf-doc-decision"},
+    {"id": "pf-rel-decision-approval", "archimate_type": "pf-conditional-flow", "source_id": "pf-doc-decision", "target_id": "pf-doc-approval", "label": "Yes"},
+    {"id": "pf-rel-decision-revise", "archimate_type": "pf-conditional-flow", "source_id": "pf-doc-decision", "target_id": "pf-doc-revise", "label": "No"},
+    {"id": "pf-rel-approval-publish", "archimate_type": "pf-sequence-flow", "source_id": "pf-doc-approval", "target_id": "pf-doc-publish"},
+    {"id": "pf-rel-publish-end", "archimate_type": "pf-sequence-flow", "source_id": "pf-doc-publish", "target_id": "pf-doc-end"},
+    {"id": "pf-rel-revise-review", "archimate_type": "pf-sequence-flow", "source_id": "pf-doc-revise", "target_id": "pf-doc-review"}
   ]
 }

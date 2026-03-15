@@ -94,7 +94,7 @@ export interface RelationshipTypeOption {
   label: string;
 }
 
-export const NOTATION_RELATIONSHIP_TYPES: Record<'archimate' | 'uml' | 'wireframe' | 'data', RelationshipTypeOption[]> = {
+export const NOTATION_RELATIONSHIP_TYPES: Record<'archimate' | 'uml' | 'wireframe' | 'data' | 'process-flow', RelationshipTypeOption[]> = {
   archimate: [
     { value: 'association',    label: 'Association' },
     { value: 'serving',        label: 'Serving' },
@@ -129,5 +129,10 @@ export const NOTATION_RELATIONSHIP_TYPES: Record<'archimate' | 'uml' | 'wirefram
     { value: 'dm-one-to-one',     label: 'One-to-One' },
     { value: 'dm-one-to-many',    label: 'One-to-Many' },
     { value: 'dm-many-to-many',   label: 'Many-to-Many' },
+  ],
+  'process-flow': [
+    { value: 'pf-sequence-flow',    label: 'Sequence Flow' },
+    { value: 'pf-conditional-flow', label: 'Conditional Flow' },
+    { value: 'pf-error-flow',       label: 'Error Flow' },
   ],
 };

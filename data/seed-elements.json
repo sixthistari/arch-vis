@@ -220,6 +220,18 @@
     {"id": "arch-uic-colour", "name": "ColourService", "archimate_type": "uml-component", "layer": "none", "status": "active", "description": "getLayerColours() per layer and theme"},
     {"id": "arch-uic-hook-edit", "name": "useEditableNode", "archimate_type": "uml-component", "layer": "none", "status": "active", "description": "Double-click inline label editing hook"},
     {"id": "arch-uic-hook-conn", "name": "useCanvasConnection", "archimate_type": "uml-component", "layer": "none", "status": "active", "description": "Drag-to-connect + relationship type picker hook"},
-    {"id": "arch-uic-alignment", "name": "AlignmentToolbar", "archimate_type": "uml-component", "layer": "none", "status": "active", "description": "Multi-select alignment actions"}
+    {"id": "arch-uic-alignment", "name": "AlignmentToolbar", "archimate_type": "uml-component", "layer": "none", "status": "active", "description": "Multi-select alignment actions"},
+
+    {"id": "pf-lane-human", "name": "Human", "archimate_type": "pf-swimlane", "layer": "none", "status": "active", "description": "Human participant lane"},
+    {"id": "pf-lane-agent", "name": "Agent", "archimate_type": "pf-swimlane", "layer": "none", "status": "active", "description": "AI agent participant lane"},
+    {"id": "pf-lane-system", "name": "System", "archimate_type": "pf-swimlane", "layer": "none", "status": "active", "description": "System participant lane"},
+    {"id": "pf-doc-start", "name": "Start", "archimate_type": "pf-start", "layer": "none", "status": "active"},
+    {"id": "pf-doc-extract", "name": "Extract Metadata", "archimate_type": "pf-agent-task", "layer": "none", "status": "active", "description": "AI agent extracts metadata from uploaded document"},
+    {"id": "pf-doc-review", "name": "Review Document", "archimate_type": "pf-human-task", "layer": "none", "status": "active", "description": "Subject matter expert reviews document and metadata"},
+    {"id": "pf-doc-decision", "name": "Approved?", "archimate_type": "pf-decision", "layer": "none", "status": "active", "description": "Decision: does the document meet quality standards?"},
+    {"id": "pf-doc-approval", "name": "Manager Approval", "archimate_type": "pf-approval-gate", "layer": "none", "status": "active", "description": "Manager must approve before publication"},
+    {"id": "pf-doc-publish", "name": "Publish", "archimate_type": "pf-system-call", "layer": "none", "status": "active", "description": "System publishes document to knowledge base"},
+    {"id": "pf-doc-revise", "name": "Revise Document", "archimate_type": "pf-agent-task", "layer": "none", "status": "active", "description": "AI agent revises document based on review feedback"},
+    {"id": "pf-doc-end", "name": "End", "archimate_type": "pf-end", "layer": "none", "status": "active"}
   ]
 }

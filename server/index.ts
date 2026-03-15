@@ -12,6 +12,7 @@ import archimateIoRouter from './routes/archimate-io.js';
 import csvIoRouter from './routes/csv-io.js';
 import reportsRouter from './routes/reports.js';
 import modelFileRouter from './routes/model-file.js';
+import processStepsRouter from './routes/process-steps.js';
 
 const PORT = 3001;
 
@@ -41,6 +42,7 @@ app.use('/api', archimateIoRouter);
 app.use('/api', csvIoRouter);
 app.use('/api', reportsRouter);
 app.use('/api', modelFileRouter);
+app.use('/api', processStepsRouter);
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`[arch-vis] Server listening on 0.0.0.0:${PORT}`);

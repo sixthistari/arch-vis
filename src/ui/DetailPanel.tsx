@@ -1,8 +1,9 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import type { Element, Relationship, ViewElement } from '../model/types';
+import type { Element, Relationship, ViewElement, ProcessStep } from '../model/types';
 import { elementStatusValues, SPECIALISATION_CATEGORIES, specialisationLabel } from '../model/types';
 import { useModelStore } from '../store/model';
 import { ImpactAnalysisPanel } from './ImpactAnalysisPanel';
+import { fetchProcessSteps } from '../api/client';
 
 interface DetailPanelProps {
   element: Element;
@@ -83,6 +84,8 @@ export function DetailPanel({ element, relationships, elements, onClose, onNavig
 
   const isUmlClass = UML_CLASS_TYPES.includes(element.archimate_type);
   const isUmlEnum = element.archimate_type === 'uml-enum';
+  const isProcessFlow = element.archimate_type.startsWith('pf-');
+  const [processStep, setProcessStep] = useState<ProcessStep | null>(null);
 
   // Reset draft when element changes
   useEffect(() => {
@@ -96,6 +99,21 @@ export function DetailPanel({ element, relationships, elements, onClose, onNavig
     });
     setEditing(false);
   }, [element.id, element.name, element.description, element.status, element.layer, element.sublayer, element.specialisation]);
+
+  // Fetch process step data when a pf-* element is selected
+  useEffect(() => {
+    if (!isProcessFlow) { setProcessStep(null); return; }
+    // Try to find process step by matching name + parent
+    const parentId = element.parent_id;
+    if (parentId) {
+      fetchProcessSteps(parentId).then(steps => {
+        const match = steps.find(s => s.name === element.name);
+        setProcessStep(match ?? null);
+      }).catch(() => setProcessStep(null));
+    } else {
+      setProcessStep(null);
+    }
+  }, [element.id, element.name, element.parent_id, isProcessFlow]);
 
   // Initialise UML member drafts from element properties
   useEffect(() => {
@@ -306,6 +324,7 @@ export function DetailPanel({ element, relationships, elements, onClose, onNavig
           : React.createElement(React.Fragment, null,
               renderProperties(element),
               isUmlClass ? renderUmlMembers(element, isUmlEnum) : null,
+              isProcessFlow && processStep ? renderProcessStepInfo(processStep) : null,
               viewId ? renderAppearanceSection(appearanceFill, setAppearanceFill, appearanceStroke, setAppearanceStroke, handleAppearanceSave, handleAppearanceReset, inputStyle) : null,
             ))
         : tab === 'relationships'
@@ -718,6 +737,43 @@ function renderAppearanceSection(
       onClick: onReset,
       style: { ...smallBtn, fontSize: 9 },
     }, 'Reset to Default') : null,
+  );
+}
+
+function renderProcessStepInfo(step: ProcessStep): React.ReactElement {
+  const rows: Array<[string, string]> = [
+    ['Step Type', step.step_type ?? '\u2014'],
+    ['Sequence', String(step.sequence)],
+    ['Role', step.role_id ?? '\u2014'],
+    ['Agent', step.agent_id ?? '\u2014'],
+    ['Autonomy', step.agent_autonomy ?? '\u2014'],
+    ['Approval Required', step.approval_required ? 'Yes' : 'No'],
+    ['Track Crossing', step.track_crossing ? 'Yes' : 'No'],
+    ['Description', step.description ?? '\u2014'],
+  ];
+
+  return React.createElement('div', { style: { marginTop: 12 } },
+    React.createElement('div', {
+      style: { color: 'var(--text-muted)', fontSize: 9, textTransform: 'uppercase', marginBottom: 6, borderTop: '1px solid var(--border-secondary)', paddingTop: 8 },
+    }, 'Process Step Metadata'),
+    ...rows.map(([label, value]) =>
+      React.createElement('div', { key: label, style: { marginBottom: 6 } },
+        React.createElement('div', { style: { color: 'var(--text-muted)', fontSize: 9, textTransform: 'uppercase' } }, label),
+        React.createElement('div', { style: { color: 'var(--text-primary)', wordBreak: 'break-word' } }, value),
+      ),
+    ),
+    step.input_objects && step.input_objects.length > 0 ? React.createElement('div', { style: { marginBottom: 6 } },
+      React.createElement('div', { style: { color: 'var(--text-muted)', fontSize: 9, textTransform: 'uppercase' } }, 'Inputs'),
+      ...step.input_objects.map((obj, i) =>
+        React.createElement('div', { key: i, style: { color: 'var(--text-primary)', fontSize: 11, paddingLeft: 8 } }, obj),
+      ),
+    ) : null,
+    step.output_objects && step.output_objects.length > 0 ? React.createElement('div', { style: { marginBottom: 6 } },
+      React.createElement('div', { style: { color: 'var(--text-muted)', fontSize: 9, textTransform: 'uppercase' } }, 'Outputs'),
+      ...step.output_objects.map((obj, i) =>
+        React.createElement('div', { key: i, style: { color: 'var(--text-primary)', fontSize: 11, paddingLeft: 8 } }, obj),
+      ),
+    ) : null,
   );
 }
 

@@ -93,6 +93,19 @@ const SHAPE_REGISTRY: Record<string, ShapeDefinition> = {
 
   // Annotation (notation-agnostic)
   'annotation': { shapeType: 'folded-corner', defaultWidth: 75, defaultHeight: 50 },
+
+  // Process Flow
+  'pf-start': { shapeType: 'rect', defaultWidth: 24, defaultHeight: 24 },
+  'pf-end': { shapeType: 'rect', defaultWidth: 24, defaultHeight: 24 },
+  'pf-human-task': { shapeType: 'rounded-rect', defaultWidth: 140, defaultHeight: 40 },
+  'pf-agent-task': { shapeType: 'rounded-rect', defaultWidth: 140, defaultHeight: 40 },
+  'pf-system-call': { shapeType: 'rounded-rect', defaultWidth: 140, defaultHeight: 40 },
+  'pf-decision': { shapeType: 'rect', defaultWidth: 40, defaultHeight: 40 },
+  'pf-gateway': { shapeType: 'rect', defaultWidth: 40, defaultHeight: 40 },
+  'pf-approval-gate': { shapeType: 'rect', defaultWidth: 100, defaultHeight: 50 },
+  'pf-timer': { shapeType: 'rect', defaultWidth: 30, defaultHeight: 30 },
+  'pf-swimlane': { shapeType: 'dashed-rect', defaultWidth: 600, defaultHeight: 120 },
+  'pf-subprocess': { shapeType: 'dashed-rect', defaultWidth: 160, defaultHeight: 60 },
 };
 
 const FALLBACK_SHAPE: ShapeDefinition = {

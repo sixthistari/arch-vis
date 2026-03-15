@@ -13,6 +13,7 @@ import {
   UML_REL_TYPES,
   WF_REL_TYPES,
   DM_REL_TYPES,
+  PF_REL_TYPES,
 } from './RelationshipTypePicker';
 
 export interface MagicConnectorState {
@@ -36,7 +37,7 @@ interface ElementTypeEntry {
  * Build a flat list of element types appropriate for a given notation,
  * using the same groupings as the Palette.
  */
-function getElementTypesForNotation(notation: 'archimate' | 'uml' | 'wireframe' | 'data' | 'any', viewpointType?: string): ElementTypeEntry[] {
+function getElementTypesForNotation(notation: 'archimate' | 'uml' | 'wireframe' | 'data' | 'process-flow' | 'any', viewpointType?: string): ElementTypeEntry[] {
   const fmt = (t: string) => t.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
   if (notation === 'uml') {
@@ -127,6 +128,22 @@ function getElementTypesForNotation(notation: 'archimate' | 'uml' | 'wireframe' 
     ];
   }
 
+  if (notation === 'process-flow') {
+    return [
+      { type: 'pf-human-task', label: 'Human Task', group: 'Tasks', layer: 'none' },
+      { type: 'pf-agent-task', label: 'Agent Task', group: 'Tasks', layer: 'none' },
+      { type: 'pf-system-call', label: 'System Call', group: 'Tasks', layer: 'none' },
+      { type: 'pf-start', label: 'Start', group: 'Control', layer: 'none' },
+      { type: 'pf-end', label: 'End', group: 'Control', layer: 'none' },
+      { type: 'pf-decision', label: 'Decision', group: 'Control', layer: 'none' },
+      { type: 'pf-gateway', label: 'Parallel Gateway', group: 'Control', layer: 'none' },
+      { type: 'pf-approval-gate', label: 'Approval Gate', group: 'Control', layer: 'none' },
+      { type: 'pf-timer', label: 'Timer', group: 'Control', layer: 'none' },
+      { type: 'pf-swimlane', label: 'Swimlane', group: 'Containers', layer: 'none' },
+      { type: 'pf-subprocess', label: 'Subprocess', group: 'Containers', layer: 'none' },
+    ];
+  }
+
   // ArchiMate — common types grouped by layer
   return [
     // Business
@@ -180,10 +197,11 @@ function getElementTypesForNotation(notation: 'archimate' | 'uml' | 'wireframe' 
   ];
 }
 
-function getRelTypesForNotation(notation: 'archimate' | 'uml' | 'wireframe' | 'data' | 'any') {
+function getRelTypesForNotation(notation: 'archimate' | 'uml' | 'wireframe' | 'data' | 'process-flow' | 'any') {
   if (notation === 'uml') return UML_REL_TYPES;
   if (notation === 'wireframe') return WF_REL_TYPES;
   if (notation === 'data') return DM_REL_TYPES;
+  if (notation === 'process-flow') return PF_REL_TYPES;
   return ARCHIMATE_REL_TYPES;
 }
 

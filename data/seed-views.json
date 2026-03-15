@@ -262,6 +262,27 @@
         {"id": "arch-uic-hook-conn", "x": 830, "y": 590},
         {"id": "arch-uic-alignment", "x": 1030, "y": 590}
       ]
+    },
+    {
+      "id": "view-pf-doc-review",
+      "name": "Document Review & Approval",
+      "viewpoint_type": "process_flow",
+      "description": "Sample process flow: document review with agent extraction, human review, approval gate",
+      "render_mode": "flat",
+      "is_preset": 1,
+      "element_positions": [
+        {"id": "pf-lane-agent", "x": 0, "y": 0, "width": 700, "height": 120},
+        {"id": "pf-lane-human", "x": 0, "y": 140, "width": 700, "height": 120},
+        {"id": "pf-lane-system", "x": 0, "y": 280, "width": 700, "height": 120},
+        {"id": "pf-doc-start", "x": 50, "y": 50},
+        {"id": "pf-doc-extract", "x": 140, "y": 40},
+        {"id": "pf-doc-review", "x": 300, "y": 180},
+        {"id": "pf-doc-decision", "x": 480, "y": 180},
+        {"id": "pf-doc-approval", "x": 550, "y": 175},
+        {"id": "pf-doc-revise", "x": 480, "y": 40},
+        {"id": "pf-doc-publish", "x": 550, "y": 310},
+        {"id": "pf-doc-end", "x": 650, "y": 328}
+      ]
     }
   ]
 }

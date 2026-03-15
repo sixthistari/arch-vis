@@ -32,9 +32,16 @@ const WF_TYPES = new Set([
   'wf-placeholder',
 ]);
 
+const PF_TYPES = new Set([
+  'pf-start', 'pf-end', 'pf-human-task', 'pf-agent-task', 'pf-system-call',
+  'pf-decision', 'pf-gateway', 'pf-approval-gate', 'pf-timer',
+  'pf-swimlane', 'pf-subprocess',
+]);
+
 function deriveNotation(elements: ElementRow[]): string {
   let hasUml = false;
   let hasWf = false;
+  let hasPf = false;
   let hasArchimate = false;
 
   for (const el of elements) {
@@ -42,16 +49,19 @@ function deriveNotation(elements: ElementRow[]): string {
       hasUml = true;
     } else if (WF_TYPES.has(el.archimate_type)) {
       hasWf = true;
+    } else if (PF_TYPES.has(el.archimate_type)) {
+      hasPf = true;
     } else {
       hasArchimate = true;
     }
-    if ((hasUml ? 1 : 0) + (hasWf ? 1 : 0) + (hasArchimate ? 1 : 0) > 1) {
+    if ((hasUml ? 1 : 0) + (hasWf ? 1 : 0) + (hasPf ? 1 : 0) + (hasArchimate ? 1 : 0) > 1) {
       return 'mixed';
     }
   }
 
   if (hasUml) return 'uml';
   if (hasWf) return 'wireframe';
+  if (hasPf) return 'process-flow';
   return 'archimate';
 }
 
@@ -323,12 +333,23 @@ router.get('/export/model-batch', (req: Request, res: Response) => {
       )
       .all(...elementIds, ...elementIds) as RelationshipRow[];
 
+    const notation = deriveNotation(elements);
+
+    // For process-flow views, include process_steps metadata
+    let processSteps: unknown[] | undefined;
+    if (notation === 'process-flow') {
+      processSteps = db
+        .prepare(`SELECT * FROM process_steps WHERE process_id IN (${placeholders}) ORDER BY process_id, sequence`)
+        .all(...elementIds);
+    }
+
     res.json({
-      notation: deriveNotation(elements),
+      notation,
       elements,
       relationships,
       view: viewRow,
       viewElements,
+      ...(processSteps ? { processSteps } : {}),
     });
   } else {
     const elements = db.prepare('SELECT * FROM elements ORDER BY name ASC').all() as ElementRow[];

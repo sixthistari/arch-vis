@@ -22,6 +22,12 @@ import { WfControlNode } from './wireframe/WfControlNode';
 import { WfListNode } from './wireframe/WfListNode';
 import { WfFeedbackNode } from './wireframe/WfFeedbackNode';
 import { DmEntityNode } from './data/DmEntityNode';
+import { PfTaskNode } from './process-flow/PfTaskNode';
+import { PfPseudoNode } from './process-flow/PfPseudoNode';
+import { PfDecisionNode } from './process-flow/PfDecisionNode';
+import { PfGateNode } from './process-flow/PfGateNode';
+import { PfSwimlaneNode } from './process-flow/PfSwimlaneNode';
+import { PfSubprocessNode } from './process-flow/PfSubprocessNode';
 import { GroupNode } from './GroupNode';
 import { LayerBandNode } from './LayerBandNode';
 
@@ -51,6 +57,13 @@ export const nodeTypes: NodeTypes = {
   'sequence-fragment': SequenceFragmentNode,
   // Data modelling
   'dm-entity': DmEntityNode,
+  // Process flow
+  'pf-task': PfTaskNode,
+  'pf-pseudo': PfPseudoNode,
+  'pf-decision': PfDecisionNode,
+  'pf-gate': PfGateNode,
+  'pf-swimlane': PfSwimlaneNode,
+  'pf-subprocess': PfSubprocessNode,
   // Wireframe
   'wf-page': WfPageNode,
   'wf-section': WfSectionNode,
@@ -121,3 +134,17 @@ export { WfListNode } from './wireframe/WfListNode';
 export type { WfListNodeData } from './wireframe/WfListNode';
 export { WfFeedbackNode } from './wireframe/WfFeedbackNode';
 export type { WfFeedbackNodeData } from './wireframe/WfFeedbackNode';
+
+// Process flow exports
+export { PfTaskNode } from './process-flow/PfTaskNode';
+export type { PfTaskNodeData } from './process-flow/PfTaskNode';
+export { PfPseudoNode } from './process-flow/PfPseudoNode';
+export type { PfPseudoNodeData } from './process-flow/PfPseudoNode';
+export { PfDecisionNode } from './process-flow/PfDecisionNode';
+export type { PfDecisionNodeData } from './process-flow/PfDecisionNode';
+export { PfGateNode } from './process-flow/PfGateNode';
+export type { PfGateNodeData } from './process-flow/PfGateNode';
+export { PfSwimlaneNode } from './process-flow/PfSwimlaneNode';
+export type { PfSwimlaneNodeData } from './process-flow/PfSwimlaneNode';
+export { PfSubprocessNode } from './process-flow/PfSubprocessNode';
+export type { PfSubprocessNodeData } from './process-flow/PfSubprocessNode';

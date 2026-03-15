@@ -7,6 +7,7 @@ export const edgeTypes: EdgeTypes = {
   'sequence-message': UnifiedEdge,
   'wireframe': UnifiedEdge,
   'data-edge': UnifiedEdge,
+  'pf-edge': UnifiedEdge,
 };
 
 export { UnifiedEdge } from './UnifiedEdge';

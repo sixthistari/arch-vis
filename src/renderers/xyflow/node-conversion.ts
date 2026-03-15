@@ -210,6 +210,40 @@ export function elementsToNodes(
         fragmentWidth: (props.fragmentWidth as number) ?? 300,
         fragmentHeight: (props.fragmentHeight as number) ?? 150,
       };
+    } else if (notation === 'process-flow') {
+      if (nodeType === 'pf-task') {
+        data = {
+          label: el.name,
+          taskType: el.archimate_type.replace('pf-', '') as string,
+          theme,
+          onLabelChange,
+        };
+      } else if (nodeType === 'pf-pseudo') {
+        const pseudoMap: Record<string, string> = {
+          'pf-start': 'start', 'pf-end': 'end', 'pf-timer': 'timer',
+        };
+        data = {
+          label: el.name,
+          pseudoType: pseudoMap[el.archimate_type] ?? 'start',
+          theme,
+          onLabelChange,
+        };
+      } else if (nodeType === 'pf-decision') {
+        data = {
+          label: el.name,
+          decisionType: el.archimate_type === 'pf-gateway' ? 'gateway' : 'decision',
+          theme,
+          onLabelChange,
+        };
+      } else if (nodeType === 'pf-gate') {
+        data = { label: el.name, theme, onLabelChange };
+      } else if (nodeType === 'pf-swimlane') {
+        data = { label: el.name, theme, onLabelChange };
+      } else if (nodeType === 'pf-subprocess') {
+        data = { label: el.name, theme, onLabelChange };
+      } else {
+        data = { label: el.name, theme, onLabelChange };
+      }
     } else if (notation === 'data') {
       const dmProps = (el.properties ?? {}) as Record<string, unknown>;
       const isTable = el.archimate_type === 'dm-table';
@@ -395,6 +429,29 @@ export function elementsToNodes(
       const dmContentW = Math.round(dmLongest * 6.8 + 20);
       width = ve?.width ?? Math.min(380, Math.max(160, dmContentW));
       height = ve?.height ?? Math.max(60, 30 + dmAttrCount * 16 + 10);
+    } else if (notation === 'process-flow') {
+      if (nodeType === 'pf-pseudo') {
+        width = ve?.width ?? 24;
+        height = ve?.height ?? 24;
+      } else if (nodeType === 'pf-decision') {
+        width = ve?.width ?? 40;
+        height = ve?.height ?? 40;
+      } else if (nodeType === 'pf-task') {
+        width = ve?.width ?? 140;
+        height = ve?.height ?? 40;
+      } else if (nodeType === 'pf-gate') {
+        width = ve?.width ?? 100;
+        height = ve?.height ?? 50;
+      } else if (nodeType === 'pf-swimlane') {
+        width = ve?.width ?? 600;
+        height = ve?.height ?? 120;
+      } else if (nodeType === 'pf-subprocess') {
+        width = ve?.width ?? 160;
+        height = ve?.height ?? 60;
+      } else {
+        width = ve?.width ?? shapeDef.defaultWidth;
+        height = ve?.height ?? shapeDef.defaultHeight;
+      }
     } else if (notation === 'wireframe') {
       width = ve?.width ?? 200;
       height = ve?.height ?? 100;

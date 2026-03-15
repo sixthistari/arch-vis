@@ -18,6 +18,7 @@ const DARK_LAYER_COLOURS: Record<string, LayerColours> = {
   technology: { stroke: '#5BBD72', fill: 'rgba(91,189,114,0.78)', planeFill: 'rgba(91,189,114,0.14)' },
   data: { stroke: '#E07848', fill: 'rgba(224,120,72,0.78)', planeFill: 'rgba(224,120,72,0.12)' },
   implementation: { stroke: '#A0A0A0', fill: 'rgba(160,160,160,0.78)', planeFill: 'rgba(160,160,160,0.12)' },
+  process_flow: { stroke: '#6366F1', fill: 'rgba(99,102,241,0.78)', planeFill: 'rgba(99,102,241,0.12)' },
 };
 
 // Light mode: fills at ~0.60 — less saturated backgrounds over a white canvas,
@@ -32,6 +33,7 @@ const LIGHT_LAYER_COLOURS: Record<string, LayerColours> = {
   technology: { stroke: '#27AE60', fill: 'rgba(181,255,181,0.60)', planeFill: 'rgba(181,255,181,0.25)' },
   data: { stroke: '#D35400', fill: 'rgba(255,208,181,0.60)', planeFill: 'rgba(255,208,181,0.25)' },
   implementation: { stroke: '#7F8C8D', fill: 'rgba(189,195,199,0.60)', planeFill: 'rgba(189,195,199,0.25)' },
+  process_flow: { stroke: '#6366F1', fill: 'rgba(129,140,248,0.60)', planeFill: 'rgba(129,140,248,0.25)' },
 };
 
 export function getLayerColours(layer: string, theme: Theme): LayerColours {

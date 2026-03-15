@@ -44,6 +44,12 @@ export const DM_REL_TYPES = [
   { value: 'dm-many-to-many',   label: 'Many-to-Many' },
 ];
 
+export const PF_REL_TYPES = [
+  { value: 'pf-sequence-flow',    label: 'Sequence Flow' },
+  { value: 'pf-conditional-flow', label: 'Conditional Flow' },
+  { value: 'pf-error-flow',       label: 'Error Flow' },
+];
+
 export interface PendingConnection {
   sourceId: string;
   targetId: string;
@@ -61,7 +67,7 @@ export function RelationshipTypePicker({
   sourceType: string;
   targetType: string;
   validRelationships: ValidRelationship[];
-  sourceNotation?: 'archimate' | 'uml' | 'wireframe' | 'data';
+  sourceNotation?: 'archimate' | 'uml' | 'wireframe' | 'data' | 'process-flow';
 }) {
   const isDark = theme === 'dark';
   const bg = isDark ? '#1E293B' : '#FFFFFF';
@@ -74,6 +80,7 @@ export function RelationshipTypePicker({
   const relTypes = sourceNotation === 'uml' ? UML_REL_TYPES
     : sourceNotation === 'wireframe' ? WF_REL_TYPES
     : sourceNotation === 'data' ? DM_REL_TYPES
+    : sourceNotation === 'process-flow' ? PF_REL_TYPES
     : ARCHIMATE_REL_TYPES;
 
   // Build a set of valid relationship types for this source→target pair

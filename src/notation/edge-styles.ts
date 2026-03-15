@@ -191,6 +191,20 @@ const STYLES: Record<string, UnifiedEdgeStyle> = {
     strokeStyle: 'solid', dashArray: '', width: 1.2,
     sourceMarker: 'dm-many', targetMarker: 'dm-many',
   },
+
+  // ── Process Flow ────────────────────────────────────────────────────
+  'pf-sequence-flow': {
+    strokeStyle: 'solid', dashArray: '', width: 1.4,
+    sourceMarker: null, targetMarker: 'filled-arrow',
+  },
+  'pf-conditional-flow': {
+    strokeStyle: 'dashed', dashArray: '6 3', width: 1.2,
+    sourceMarker: null, targetMarker: 'filled-arrow',
+  },
+  'pf-error-flow': {
+    strokeStyle: 'dashed', dashArray: '6 3', width: 1.2,
+    sourceMarker: null, targetMarker: 'filled-arrow',
+  },
 };
 
 /** Default fallback style (plain association line). */

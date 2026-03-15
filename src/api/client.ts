@@ -537,4 +537,50 @@ export function fetchElementViews(elementId: string): Promise<View[]> {
   );
 }
 
+// ═══════════════════════════════════════
+// Process Steps
+// ═══════════════════════════════════════
+
+import { ProcessStepSchema, type ProcessStep, type CreateProcessStepInput } from '../model/types';
+
+export function fetchProcessSteps(processId: string): Promise<ProcessStep[]> {
+  return request(
+    `/process-steps/${encodeURIComponent(processId)}`,
+    z.array(ProcessStepSchema),
+  );
+}
+
+export function createProcessStep(data: CreateProcessStepInput): Promise<ProcessStep & { element_id: string }> {
+  return request(
+    '/process-steps',
+    ProcessStepSchema.extend({ element_id: z.string() }) as z.ZodType<ProcessStep & { element_id: string }>,
+    { method: 'POST', body: JSON.stringify(data) },
+  );
+}
+
+export function updateProcessStep(
+  id: string,
+  data: Partial<Omit<ProcessStep, 'id' | 'process_id' | 'sequence'>>,
+): Promise<ProcessStep> {
+  return request(
+    `/process-steps/${encodeURIComponent(id)}`,
+    ProcessStepSchema,
+    { method: 'PUT', body: JSON.stringify(data) },
+  );
+}
+
+export function deleteProcessStep(id: string): Promise<void> {
+  return requestVoid(`/process-steps/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
+}
+
+export function reorderProcessSteps(stepIds: string[]): Promise<{ success: boolean; count: number }> {
+  return request(
+    '/process-steps/reorder',
+    z.object({ success: z.boolean(), count: z.number() }),
+    { method: 'POST', body: JSON.stringify({ step_ids: stepIds }) },
+  );
+}
+
 export { ApiError };
