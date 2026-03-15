@@ -57,6 +57,10 @@ interface SeedView {
   filter_specialisations?: string[];
   rotation_default?: Record<string, number>;
   is_preset?: number;
+  /** Explicit element inclusion list — overrides auto-filter when present. */
+  element_ids?: string[];
+  /** Explicit element positions — overrides element_ids when present. */
+  element_positions?: Array<{ id: string; x: number; y: number }>;
 }
 
 // ---------------------------------------------------------------------------
@@ -179,6 +183,9 @@ export default function seed(): void {
     const insertVE = db.prepare(`
       INSERT INTO view_elements (view_id, element_id) VALUES (@view_id, @element_id)
     `);
+    const insertVEPos = db.prepare(`
+      INSERT INTO view_elements (view_id, element_id, x, y) VALUES (@view_id, @element_id, @x, @y)
+    `);
     const insertVR = db.prepare(`
       INSERT INTO view_relationships (view_id, relationship_id) VALUES (@view_id, @relationship_id)
     `);
@@ -189,46 +196,73 @@ export default function seed(): void {
       uml_component: ['uml-component'],
       uml_usecase: ['uml-actor', 'uml-use-case'],
       uml_sequence: ['uml-lifeline', 'uml-activation', 'uml-fragment'],
-      uml_activity: ['uml-activity', 'uml-state'],
+      uml_activity: ['uml-activity', 'uml-state', 'uml-action', 'uml-decision', 'uml-merge', 'uml-fork', 'uml-join', 'uml-initial-node', 'uml-final-node', 'uml-flow-final'],
     };
 
     for (const v of viewsFile.views) {
       if (!v.is_preset) continue;
 
-      // Build the element filter query dynamically
-      const conditions: string[] = [];
-      const params: Record<string, string> = {};
+      let elementIds: Set<string>;
+      const positionMap = new Map<string, { x: number; y: number }>();
 
-      // UML viewpoint type filter takes precedence
-      const umlTypes = viewpointTypeFilter[v.viewpoint_type];
-      if (umlTypes) {
-        const placeholders = umlTypes.map((_, i) => `@umlType${i}`).join(', ');
-        conditions.push(`archimate_type IN (${placeholders})`);
-        umlTypes.forEach((t, i) => {
-          params[`umlType${i}`] = t;
-        });
+      if (v.element_positions && v.element_positions.length > 0) {
+        // Explicit positions — use directly (verify they exist)
+        const allIds = new Set(
+          (db.prepare('SELECT id FROM elements').all() as { id: string }[]).map(e => e.id),
+        );
+        elementIds = new Set<string>();
+        for (const ep of v.element_positions) {
+          if (allIds.has(ep.id)) {
+            elementIds.add(ep.id);
+            positionMap.set(ep.id, { x: ep.x, y: ep.y });
+          }
+        }
+      } else if (v.element_ids && v.element_ids.length > 0) {
+        // Explicit element list without positions
+        const allIds = new Set(
+          (db.prepare('SELECT id FROM elements').all() as { id: string }[]).map(e => e.id),
+        );
+        elementIds = new Set(v.element_ids.filter(id => allIds.has(id)));
       } else {
-        if (v.filter_domain) {
-          conditions.push('domain_id = @domain');
-          params['domain'] = v.filter_domain;
+        // Build the element filter query dynamically
+        const conditions: string[] = [];
+        const params: Record<string, string> = {};
+
+        // UML viewpoint type filter takes precedence
+        const umlTypes = viewpointTypeFilter[v.viewpoint_type];
+        if (umlTypes) {
+          const placeholders = umlTypes.map((_, i) => `@umlType${i}`).join(', ');
+          conditions.push(`archimate_type IN (${placeholders})`);
+          umlTypes.forEach((t, i) => {
+            params[`umlType${i}`] = t;
+          });
+        } else {
+          if (v.filter_domain) {
+            conditions.push('domain_id = @domain');
+            params['domain'] = v.filter_domain;
+          }
+
+          if (v.filter_layers && v.filter_layers.length > 0) {
+            const placeholders = v.filter_layers.map((_, i) => `@layer${i}`).join(', ');
+            conditions.push(`layer IN (${placeholders})`);
+            v.filter_layers.forEach((layer, i) => {
+              params[`layer${i}`] = layer;
+            });
+          }
         }
 
-        if (v.filter_layers && v.filter_layers.length > 0) {
-          const placeholders = v.filter_layers.map((_, i) => `@layer${i}`).join(', ');
-          conditions.push(`layer IN (${placeholders})`);
-          v.filter_layers.forEach((layer, i) => {
-            params[`layer${i}`] = layer;
-          });
-        }
+        const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+        const matchingElements = db.prepare(`SELECT id FROM elements ${whereClause}`).all(params) as { id: string }[];
+        elementIds = new Set(matchingElements.map((e) => e.id));
       }
 
-      const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-      const matchingElements = db.prepare(`SELECT id FROM elements ${whereClause}`).all(params) as { id: string }[];
-
-      const elementIds = new Set(matchingElements.map((e) => e.id));
-
       for (const eid of elementIds) {
-        insertVE.run({ view_id: v.id, element_id: eid });
+        const pos = positionMap.get(eid);
+        if (pos) {
+          insertVEPos.run({ view_id: v.id, element_id: eid, x: pos.x, y: pos.y });
+        } else {
+          insertVE.run({ view_id: v.id, element_id: eid });
+        }
       }
 
       // Auto-populate relationships where both endpoints are in the view
