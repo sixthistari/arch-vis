@@ -65,17 +65,22 @@ function formatTypeName(type: string): string {
     .join(' ');
 }
 
+// SVG icon dimensions for palette chips
+const ICON_W = 32;
+const ICON_H = 22;
+const ICON_VB = `0 0 ${ICON_W + 2} ${ICON_H + 2}`;
+
 /**
- * Render a mini shape/icon preview for a given ArchiMate type.
- * Returns an SVG element (20×14) showing the notation silhouette.
+ * Render a shape icon for a given ArchiMate type.
+ * Returns an SVG element showing the notation silhouette.
  */
 function renderMiniShape(type: string, stroke: string): React.ReactElement {
   const shapeDef = getShapeDefinition(type);
-  const w = 18;
-  const h = 12;
+  const w = ICON_W;
+  const h = ICON_H;
   const x = 1;
   const y = 1;
-  const sw = 0.8; // strokeWidth
+  const sw = 1.2; // strokeWidth
 
   const children: React.ReactElement[] = [];
 
@@ -172,9 +177,9 @@ function renderMiniShape(type: string, stroke: string): React.ReactElement {
   }
 
   return React.createElement('svg', {
-    width: 20,
-    height: 14,
-    viewBox: '0 0 20 14',
+    width: ICON_W + 2,
+    height: ICON_H + 2,
+    viewBox: ICON_VB,
     style: { flexShrink: 0 },
   }, ...children);
 }
@@ -183,50 +188,49 @@ function renderMiniShape(type: string, stroke: string): React.ReactElement {
  * Render a tiny icon for rect-with-icon types.
  */
 function renderMiniIcon(iconType: string, ix: number, iy: number, stroke: string): React.ReactElement | null {
-  const s = 0.7; // mini scale
   switch (iconType) {
     case 'person': {
-      const cx = ix + 2.5;
+      const cx = ix + 4;
       return React.createElement('g', { key: 'icon' },
-        React.createElement('circle', { cx, cy: iy + 1.5, r: 1.2 * s, stroke, fill: 'none', strokeWidth: 0.6 }),
-        React.createElement('line', { x1: cx, y1: iy + 3, x2: cx, y2: iy + 5.5, stroke, strokeWidth: 0.6 }),
-        React.createElement('line', { x1: cx - 1.5, y1: iy + 3.5, x2: cx + 1.5, y2: iy + 3.5, stroke, strokeWidth: 0.6 }),
+        React.createElement('circle', { cx, cy: iy + 2.5, r: 2, stroke, fill: 'none', strokeWidth: 0.8 }),
+        React.createElement('line', { x1: cx, y1: iy + 5, x2: cx, y2: iy + 10, stroke, strokeWidth: 0.8 }),
+        React.createElement('line', { x1: cx - 2.5, y1: iy + 6.5, x2: cx + 2.5, y2: iy + 6.5, stroke, strokeWidth: 0.8 }),
       );
     }
     case 'component': {
       return React.createElement('g', { key: 'icon' },
-        React.createElement('rect', { x: ix + 1, y: iy, width: 4, height: 5.5, stroke, fill: 'none', strokeWidth: 0.5 }),
-        React.createElement('rect', { x: ix, y: iy + 0.8, width: 1.8, height: 1.2, stroke, fill: 'none', strokeWidth: 0.4 }),
-        React.createElement('rect', { x: ix, y: iy + 3.2, width: 1.8, height: 1.2, stroke, fill: 'none', strokeWidth: 0.4 }),
+        React.createElement('rect', { x: ix + 2, y: iy, width: 7, height: 10, stroke, fill: 'none', strokeWidth: 0.7 }),
+        React.createElement('rect', { x: ix, y: iy + 1.5, width: 3, height: 2, stroke, fill: 'none', strokeWidth: 0.6 }),
+        React.createElement('rect', { x: ix, y: iy + 6, width: 3, height: 2, stroke, fill: 'none', strokeWidth: 0.6 }),
       );
     }
     case 'lollipop': {
-      const cx = ix + 2.5;
+      const cx = ix + 4;
       return React.createElement('g', { key: 'icon' },
-        React.createElement('circle', { cx, cy: iy + 1.5, r: 1.5, stroke, fill: 'none', strokeWidth: 0.6 }),
-        React.createElement('line', { x1: cx, y1: iy + 3, x2: cx, y2: iy + 6, stroke, strokeWidth: 0.6 }),
+        React.createElement('circle', { cx, cy: iy + 3, r: 2.5, stroke, fill: 'none', strokeWidth: 0.8 }),
+        React.createElement('line', { x1: cx, y1: iy + 5.5, x2: cx, y2: iy + 10, stroke, strokeWidth: 0.8 }),
       );
     }
     case 'artifact': {
-      const fold = 1.2;
+      const fold = 2;
       return React.createElement('path', {
         key: 'icon',
-        d: `M${ix},${iy} L${ix + 4 - fold},${iy} L${ix + 4},${iy + fold} L${ix + 4},${iy + 6} L${ix},${iy + 6} Z`,
-        stroke, fill: 'none', strokeWidth: 0.5,
+        d: `M${ix},${iy} L${ix + 7 - fold},${iy} L${ix + 7},${iy + fold} L${ix + 7},${iy + 10} L${ix},${iy + 10} Z`,
+        stroke, fill: 'none', strokeWidth: 0.7,
       });
     }
     case 'stepped': {
       return React.createElement('g', { key: 'icon' },
-        React.createElement('rect', { x: ix, y: iy + 2.5, width: 3.5, height: 3.5, stroke, fill: 'none', strokeWidth: 0.4 }),
-        React.createElement('rect', { x: ix + 1, y: iy + 1.2, width: 3.5, height: 3.5, stroke, fill: 'none', strokeWidth: 0.4 }),
-        React.createElement('rect', { x: ix + 2, y: iy, width: 3.5, height: 3.5, stroke, fill: 'none', strokeWidth: 0.4 }),
+        React.createElement('rect', { x: ix, y: iy + 4, width: 5.5, height: 5.5, stroke, fill: 'none', strokeWidth: 0.6 }),
+        React.createElement('rect', { x: ix + 1.5, y: iy + 2, width: 5.5, height: 5.5, stroke, fill: 'none', strokeWidth: 0.6 }),
+        React.createElement('rect', { x: ix + 3, y: iy, width: 5.5, height: 5.5, stroke, fill: 'none', strokeWidth: 0.6 }),
       );
     }
     case 'header-bar': {
       return React.createElement('rect', {
         key: 'icon',
-        x: ix - 3, y: iy - 0.5,
-        width: 8, height: 2.5,
+        x: ix - 5, y: iy,
+        width: 14, height: 4,
         fill: stroke, opacity: 0.3,
       });
     }
@@ -239,7 +243,7 @@ function renderMiniIcon(iconType: string, ix: number, iy: number, stroke: string
  * Render a mini shape icon for UML element types (20×14 SVG).
  */
 function renderUmlMiniShape(type: string, stroke: string): React.ReactElement {
-  const w = 18, h = 12, x = 1, y = 1, sw = 0.8;
+  const w = ICON_W, h = ICON_H, x = 1, y = 1, sw = 1.2;
   const children: React.ReactElement[] = [];
 
   switch (type) {
@@ -404,14 +408,14 @@ function renderUmlMiniShape(type: string, stroke: string): React.ReactElement {
     }
   }
 
-  return React.createElement('svg', { width: 20, height: 14, viewBox: '0 0 20 14', style: { flexShrink: 0 } }, ...children);
+  return React.createElement('svg', { width: ICON_W + 2, height: ICON_H + 2, viewBox: ICON_VB, style: { flexShrink: 0 } }, ...children);
 }
 
 /**
  * Render a mini shape icon for wireframe element types (20×14 SVG).
  */
 function renderWfMiniShape(type: string, stroke: string): React.ReactElement {
-  const w = 18, h = 12, x = 1, y = 1, sw = 0.8;
+  const w = ICON_W, h = ICON_H, x = 1, y = 1, sw = 1.2;
   const children: React.ReactElement[] = [];
 
   switch (type) {
@@ -595,7 +599,7 @@ function renderWfMiniShape(type: string, stroke: string): React.ReactElement {
     }
   }
 
-  return React.createElement('svg', { width: 20, height: 14, viewBox: '0 0 20 14', style: { flexShrink: 0 } }, ...children);
+  return React.createElement('svg', { width: ICON_W + 2, height: ICON_H + 2, viewBox: ICON_VB, style: { flexShrink: 0 } }, ...children);
 }
 
 // ── UML palette groups ──────────────────────────────────────────
@@ -703,12 +707,12 @@ export function Palette(): React.ReactElement {
           style: { fontSize: 7, opacity: 0.5 },
         }, isExpanded ? '\u25BC' : '\u25B6'),
       ),
-      // Type chips with optional mini shape icons
+      // Type chips — icon-centric grid
       isExpanded && React.createElement('div', {
         style: {
-          padding: '3px 4px',
+          padding: '4px 2px',
           display: 'flex',
-          flexDirection: 'column' as const,
+          flexWrap: 'wrap' as const,
           gap: 2,
         },
       },
@@ -718,17 +722,13 @@ export function Palette(): React.ReactElement {
             draggable: true,
             onDragStart: (e: React.DragEvent) => handleDragStart(e, type, dropLayer),
             style: {
-              padding: '2px 4px',
-              fontSize: 9,
+              padding: '3px 2px 1px',
               cursor: 'grab',
               borderRadius: 3,
-              border: `1px solid ${borderColour}44`,
-              background: chipBg,
               display: 'flex',
+              flexDirection: 'column' as const,
               alignItems: 'center',
-              gap: 4,
-              maxWidth: 160,
-              height: 20,
+              width: 52,
               userSelect: 'none' as const,
             },
             title: formatTypeName(type),
@@ -736,10 +736,15 @@ export function Palette(): React.ReactElement {
             miniShapeRenderer ? miniShapeRenderer(type, borderColour) : null,
             React.createElement('span', {
               style: {
+                fontSize: 7,
+                lineHeight: '9px',
+                textAlign: 'center' as const,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap' as const,
-                lineHeight: '14px',
+                width: '100%',
+                opacity: 0.7,
+                marginTop: 1,
               },
             }, formatTypeName(type)),
           ),
@@ -849,12 +854,12 @@ export function Palette(): React.ReactElement {
             }, isExpanded ? '\u25BC' : '\u25B6'),
           ),
 
-          // Type chips with mini shape icons
+          // Type chips — icon-centric grid
           isExpanded && React.createElement('div', {
             style: {
-              padding: '3px 4px',
+              padding: '4px 2px',
               display: 'flex',
-              flexDirection: 'column' as const,
+              flexWrap: 'wrap' as const,
               gap: 2,
             },
           },
@@ -864,17 +869,13 @@ export function Palette(): React.ReactElement {
                 draggable: true,
                 onDragStart: (e: React.DragEvent) => handleDragStart(e, type, group.colorKey),
                 style: {
-                  padding: '2px 4px',
-                  fontSize: 9,
+                  padding: '3px 2px 1px',
                   cursor: 'grab',
                   borderRadius: 3,
-                  border: `1px solid ${colours.stroke}44`,
-                  background: colours.fill,
                   display: 'flex',
+                  flexDirection: 'column' as const,
                   alignItems: 'center',
-                  gap: 4,
-                  maxWidth: 160,
-                  height: 20,
+                  width: 52,
                   userSelect: 'none' as const,
                 },
                 title: formatTypeName(type),
@@ -882,10 +883,15 @@ export function Palette(): React.ReactElement {
                 renderMiniShape(type, colours.stroke),
                 React.createElement('span', {
                   style: {
+                    fontSize: 7,
+                    lineHeight: '9px',
+                    textAlign: 'center' as const,
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap' as const,
-                    lineHeight: '14px',
+                    width: '100%',
+                    opacity: 0.7,
+                    marginTop: 1,
                   },
                 }, formatTypeName(type)),
               ),
