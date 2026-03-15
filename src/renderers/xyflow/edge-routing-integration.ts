@@ -207,13 +207,16 @@ export function relationshipsToEdges(
     const stepOffset = SLOT_OFFSETS[slotIndex % SLOT_OFFSETS.length]!;
     const edgeType = getEdgeType(info.rel.archimate_type);
 
+    // Sequence messages use lifeline handles (right/left), not standard 5-per-side
+    const isSeqMsg = edgeType === 'sequence-message';
+
     return {
       id: info.rel.id,
       type: edgeType,
       source: info.rel.source_id,
       target: info.rel.target_id,
-      sourceHandle,
-      targetHandle,
+      sourceHandle: isSeqMsg ? undefined : sourceHandle,
+      targetHandle: isSeqMsg ? undefined : targetHandle,
       reconnectable: true,
       data: {
         relationshipType: info.rel.archimate_type,
