@@ -89,6 +89,19 @@ export interface NodePositionEntry {
   excludedSides?: string[];
 }
 
+/** Extract UML multiplicity/role/stereotype from relationship properties JSON. */
+function extractUmlLabels(properties: unknown): Record<string, string | undefined> {
+  const props = properties as Record<string, unknown> | null | undefined;
+  if (!props) return {};
+  const result: Record<string, string | undefined> = {};
+  if (typeof props.sourceMultiplicity === 'string') result.sourceMultiplicity = props.sourceMultiplicity;
+  if (typeof props.targetMultiplicity === 'string') result.targetMultiplicity = props.targetMultiplicity;
+  if (typeof props.sourceRole === 'string') result.sourceRole = props.sourceRole;
+  if (typeof props.targetRole === 'string') result.targetRole = props.targetRole;
+  if (typeof props.stereotype === 'string') result.stereotype = props.stereotype;
+  return result;
+}
+
 /**
  * Convert relationships to xyflow edges with handle usage tracking.
  *
@@ -208,7 +221,11 @@ export function relationshipsToEdges(
         specialisation: info.rel.specialisation,
         stepOffset,
         theme,
-        ...(edgeType === 'uml-edge' ? { edgeType: info.rel.archimate_type } : {}),
+        ...(edgeType === 'uml-edge' ? {
+          edgeType: info.rel.archimate_type,
+          // Pass through UML multiplicity/role labels from relationship properties
+          ...extractUmlLabels(info.rel.properties),
+        } : {}),
         ...(edgeType === 'sequence-message' ? {
           messageType: info.rel.archimate_type.replace('uml-', '').replace('-message', '') as string,
           sequenceNumber: (info.rel.properties as Record<string, unknown>)?.sequenceNumber as number | undefined,
