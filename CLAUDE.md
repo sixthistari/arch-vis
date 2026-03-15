@@ -70,6 +70,31 @@ src/
 
 Follow REQUIREMENTS.md §10 build phases. Phase 1 first. Do not skip ahead.
 
+## Project Root Hygiene
+
+The project root must stay clean. **Never write files directly to the project root** unless they are config files (package.json, tsconfig.json, vite.config.ts, vitest.config.ts, index.html) or project docs (CLAUDE.md, REQUIREMENTS.md, DESIGN.md, IMPLEMENTATION.md).
+
+### Playwright / Test Screenshots
+
+- **Never** save screenshots, snapshots, or test artefacts to the project root.
+- All Playwright MCP screenshots go to `screenshots/` (gitignored).
+- Formal Playwright test suites go to `tests/e2e/` (not the root, not `src/`).
+- When running a Playwright test session, organise output into a timestamped run folder:
+  `screenshots/YYYY-MM-DD-HHMM/` (e.g. `screenshots/2026-03-15-1430/`).
+  Name files descriptively: `01-layered-view.png`, `02-class-diagram.png`, etc.
+- Accessibility snapshots from Playwright MCP go to the same run folder as `.md` files.
+
+### Unit Tests
+
+- Vitest unit tests go under `src/<module>/__tests__/` co-located with source.
+- Integration/API tests go under `tests/`.
+
+### Generated / Temporary Files
+
+- Build output: `dist/` (gitignored)
+- Database: `data/arch-vis.db` (gitignored, recreated from seed)
+- Playwright MCP state: `.playwright-mcp/` (gitignored)
+
 ## Do Not
 
 - Do not use localStorage/sessionStorage for data persistence — use SQLite
@@ -78,3 +103,4 @@ Follow REQUIREMENTS.md §10 build phases. Phase 1 first. Do not skip ahead.
 - Do not ask for confirmation before making implementation decisions
 - Do not create separate CSS files — co-locate styles or use CSS-in-JS
 - Do not use Tailwind (we need precise control over ArchiMate notation rendering)
+- Do not dump screenshots, PNGs, or snapshot files in the project root — use `screenshots/<run-folder>/`
