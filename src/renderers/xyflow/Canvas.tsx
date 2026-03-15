@@ -978,8 +978,9 @@ export function XYFlowCanvas({
 
   if (isEmpty) {
     return (
-      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: bgColour, color: '#9CA3AF', fontSize: 12 }}>
-        Loading elements…
+      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 8, background: bgColour, color: '#9CA3AF', fontSize: 12 }}>
+        <span style={{ fontSize: 24 }}>□</span>
+        <span>No elements in this view. Drag from the palette or model tree to add elements.</span>
       </div>
     );
   }
