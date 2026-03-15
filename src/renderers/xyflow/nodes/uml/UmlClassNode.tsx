@@ -54,13 +54,15 @@ type UmlClassNodeType = Node<UmlClassNodeData, 'uml-class'>;
 // Constants
 // ═══════════════════════════════════════
 
-const MIN_WIDTH = 160;
+const MIN_WIDTH = 180;
+const MAX_WIDTH = 400;
 const HEADER_HEIGHT = 32;
 const STEREOTYPE_HEIGHT = 14;
 const ROW_HEIGHT = 16;
 const PADDING_X = 8;
 const FONT_SIZE = 11;
 const COMPARTMENT_PAD = 6;
+const CHAR_WIDTH = 6.8; // approximate monospace char width at 11px
 
 // ═══════════════════════════════════════
 // Rendering helpers
@@ -130,7 +132,19 @@ function UmlClassNodeComponent({ data, selected }: NodeProps<UmlClassNodeType>) 
   const thirdCompartmentH = thirdItems.length > 0 ? thirdItems.length * ROW_HEIGHT + COMPARTMENT_PAD * 2 : ROW_HEIGHT + COMPARTMENT_PAD;
 
   const totalHeight = headerH + attrCompartmentH + thirdCompartmentH;
-  const width = MIN_WIDTH;
+
+  // Auto-size width from content, unless a saved width is provided
+  const savedWidth = (data as Record<string, unknown>).nodeWidth as number | undefined;
+  const contentWidth = (() => {
+    const attrTexts = attributes.map(formatAttribute);
+    const methodTexts = classType === 'enum'
+      ? enumValues.map(String)
+      : methods.map(formatMethod);
+    const allTexts = [...attrTexts, ...methodTexts, label];
+    const longestLen = Math.max(0, ...allTexts.map(t => t.length));
+    return Math.round(longestLen * CHAR_WIDTH + PADDING_X * 2 + 4);
+  })();
+  const width = savedWidth ?? Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, contentWidth));
 
   const isAbstract = classType === 'abstract-class';
 

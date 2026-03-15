@@ -3,11 +3,31 @@ import type { LayoutInput, LayoutOutput, SublayerEntry } from './types';
 
 const elk = new ELK();
 
+/** Per-viewpoint ELK layout options. */
+interface ViewpointLayoutConfig {
+  direction: string;
+  nodeSpacing: number;
+  layerSpacing: number;
+}
+
+const VIEWPOINT_LAYOUT: Record<string, ViewpointLayoutConfig> = {
+  uml_class:     { direction: 'UP',    nodeSpacing: 40, layerSpacing: 80 },
+  uml_component: { direction: 'RIGHT', nodeSpacing: 60, layerSpacing: 80 },
+  uml_activity:  { direction: 'DOWN',  nodeSpacing: 30, layerSpacing: 50 },
+  uml_state:     { direction: 'RIGHT', nodeSpacing: 40, layerSpacing: 60 },
+};
+
+const DEFAULT_LAYOUT: ViewpointLayoutConfig = { direction: 'DOWN', nodeSpacing: 30, layerSpacing: 60 };
+
 export async function computeElkLayout(
   elements: LayoutInput[],
   relationships: Array<{ id: string; sourceId: string; targetId: string }>,
   sublayers: SublayerEntry[],
+  viewpointType?: string,
 ): Promise<LayoutOutput[]> {
+  const layoutCfg: ViewpointLayoutConfig = viewpointType
+    ? (VIEWPOINT_LAYOUT[viewpointType] ?? DEFAULT_LAYOUT)
+    : DEFAULT_LAYOUT;
   // Group elements by layer for hierarchical layout
   const layerGroups = new Map<string, LayoutInput[]>();
   for (const el of elements) {
@@ -50,9 +70,9 @@ export async function computeElkLayout(
     id: 'root',
     layoutOptions: {
       'elk.algorithm': 'layered',
-      'elk.direction': 'DOWN',
-      'elk.spacing.nodeNode': '30',
-      'elk.layered.spacing.nodeNodeBetweenLayers': '60',
+      'elk.direction': layoutCfg.direction,
+      'elk.spacing.nodeNode': String(layoutCfg.nodeSpacing),
+      'elk.layered.spacing.nodeNodeBetweenLayers': String(layoutCfg.layerSpacing),
       'elk.hierarchyHandling': 'INCLUDE_CHILDREN',
     },
     children,

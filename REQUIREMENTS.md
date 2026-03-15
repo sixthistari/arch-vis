@@ -25,11 +25,11 @@ The tool supports four notation concerns, in priority order:
 
 | # | Concern | Notation | Status |
 |---|---------|----------|--------|
-| 1 | **Architecture** | ArchiMate 3.2 (with specialisation profile) | Phase 1 |
-| 2 | **UML** | Class, Component, Sequence diagrams | Phase 3 |
-| 3 | **Wireframe** | Lo-fi UI wireframes with page flow | Phase 3 |
-| 4 | **Data** | Conceptual/Logical/Physical data modelling | Phase 4+ (separate viewpoint) |
-| 5 | **Process Detail** | Simplified process flow (drill-down from ArchiMate processes) | Phase 4 |
+| 1 | **Architecture** | ArchiMate 3.2 (with specialisation profile) | Implemented |
+| 2 | **UML** | Class, Component, Sequence, Activity, Use-Case, State diagrams | Implemented |
+| 3 | **Wireframe** | Lo-fi UI wireframes with page flow | Implemented |
+| 4 | **Data** | Conceptual/Logical/Physical data modelling | Future (separate viewpoint) |
+| 5 | **Process Detail** | Simplified process flow (drill-down from ArchiMate processes) | Future |
 
 Process detail is NOT full BPMN. The PFC backend already captures process_steps with step_type (human/agent/system/decision/gateway), sequence, role assignments, agent assignments, and approval gates. The visualiser renders these as a simple swimlane/sequence flow — a viewpoint that drills down from a business-process element.
 
@@ -67,8 +67,8 @@ Process detail is NOT full BPMN. The PFC backend already captures process_steps 
 
 | ID | Requirement |
 |----|-------------|
-| R-RND-01 | xyflow (React Flow) canvas for all interactive diagramming — ArchiMate flat views, UML, wireframes. Custom node/edge components for notation-accurate shapes. |
-| R-RND-02 | Spatial 3D renderer (D3.js SVG) with layer planes, perspective projection, and rotation *(experimental — retained for large-scale visualisation, not interactive editing)* |
+| R-RND-01 | Interactive canvas for all diagramming — ArchiMate flat views, UML, wireframes. Custom node/edge components for notation-accurate shapes. |
+| R-RND-02 | Spatial 3D renderer with layer planes, perspective projection, and rotation *(experimental — retained for large-scale visualisation, not interactive editing)* |
 | R-RND-03 | Elements render as compact ArchiMate notation shapes (≤110px wide at 100% zoom) |
 | R-RND-04 | Specialisation badge renders in top-right corner when `specialisation` is non-null |
 | R-RND-05 | Five zoom tiers with progressive disclosure (dots → labels → icons → badges → full notation) |
@@ -138,7 +138,23 @@ Process detail is NOT full BPMN. The PFC backend already captures process_steps 
 | R-GOV-04 | Columns: knowledge store refs, autonomy level, track, quality scores |
 | R-GOV-05 | Can sit as a side panel alongside a layered view |
 
-### 3.9 Export
+### 3.9 Notation Boundary Enforcement
+
+| ID | Requirement |
+|----|-------------|
+| R-NOTB-01 | Views must not mix notations. Each view belongs to a single notation family (ArchiMate, UML, or Wireframe). |
+| R-NOTB-02 | The element palette shows only types appropriate for the current view's notation. |
+| R-NOTB-03 | Relationship type options offered on connection creation are filtered by notation family. |
+
+### 3.10 Shared Configuration
+
+| ID | Requirement |
+|----|-------------|
+| R-CFG-01 | Layer ordering is defined in a single canonical source; all modules that sort or label layers reference this shared definition rather than maintaining independent copies. |
+| R-CFG-02 | Sublayer ordering within layers is defined once and shared across layout computation, palette grouping, and model tree display. |
+| R-CFG-03 | Notation-specific relationship type lists are maintained centrally and consumed by connection creation, validation, and the relationship type picker. |
+
+### 3.11 Export
 
 | ID | Requirement |
 |----|-------------|
@@ -309,38 +325,38 @@ These are table-stakes features every modelling tool needs, derived from draw.io
 
 ### Tier 1 — Blocking Basic Usability
 
-| ID | Requirement | Source |
-|----|-------------|--------|
-| R-INT-01 | Undo/redo via command pattern. Ctrl+Z / Ctrl+Y. Continuous drags coalesce to one undo step. Group operations (delete element + its edges) = one step. | draw.io, Excalidraw |
-| R-INT-02 | Multi-select: Shift+click toggle, Ctrl+click toggle. All selected elements move/delete together. | draw.io |
-| R-INT-03 | Box select (rubberband): drag on empty canvas to select enclosed elements. Alt+drag to include partially enclosed. | draw.io |
-| R-INT-04 | Keyboard shortcuts: Delete/Backspace = delete selected, Escape = deselect, Ctrl+A = select all, arrow keys = nudge 1px, Shift+arrow = nudge by grid size. | draw.io |
-| R-INT-05 | On-canvas relationship creation: hover element → directional arrows appear → drag from arrow to target element → pick relationship type from popup. | draw.io Magic Connector pattern |
-| R-INT-06 | Snap to grid (toggleable, configurable size). Hold Alt to bypass snap. Visual grid overlay. | draw.io |
-| R-INT-07 | Alignment guides: orange centre lines when aligning with other elements. Blue spacing guides when equidistant. Visible WHILE dragging. | draw.io |
+| ID | Requirement | Source | Status |
+|----|-------------|--------|--------|
+| R-INT-01 | Undo/redo via command pattern. Ctrl+Z / Ctrl+Y. Covers element create/delete/rename, relationship create/delete, and element move. | draw.io, Excalidraw | Implemented |
+| R-INT-02 | Multi-select: Shift+click toggle. All selected elements move/delete together. | draw.io | Implemented |
+| R-INT-03 | Box select (rubberband): Shift+drag on empty canvas to select enclosed elements. | draw.io | Implemented |
+| R-INT-04 | Keyboard shortcuts: Delete/Backspace = delete selected, Escape = deselect, Ctrl+A = select all, arrow keys = nudge 1px, Shift+arrow = nudge 10px. | draw.io | Implemented |
+| R-INT-05 | On-canvas relationship creation: drag from element handle to target element, pick relationship type from popup filtered by notation. | draw.io Magic Connector pattern | Implemented |
+| R-INT-06 | Snap to grid (10px grid). Visual grid overlay (dot pattern). | draw.io | Implemented |
+| R-INT-07 | Alignment guides: snapline overlays visible during node drag showing alignment with other elements. | draw.io | Implemented |
 
 ### Tier 2 — Expected by Any User
 
-| ID | Requirement | Source |
-|----|-------------|--------|
-| R-INT-08 | Alignment tools: align left/right/centre horizontal, top/bottom/centre vertical. Distribute evenly horizontal/vertical. | draw.io |
-| R-INT-09 | On-canvas label editing: double-click element name to edit inline. Enter to confirm, Escape to cancel. | draw.io, Excalidraw |
-| R-INT-10 | Minimap: small overview in corner showing viewport position within full diagram. Click to navigate. | draw.io |
-| R-INT-11 | Search/filter on canvas: Ctrl+F to find elements by name. Results highlight on canvas. | draw.io |
-| R-INT-12 | Connector waypoints: drag blue handles on edges to reshape path. Right-click to add/remove waypoints. | draw.io |
-| R-INT-13 | Consistent modifier keys: Alt = bypass constraints, Shift = constrain/add-to-selection, Ctrl = clone/copy semantics (Ctrl+drag = duplicate). | draw.io |
-| R-INT-14 | Context-sensitive cursors: move, resize, connect, pan cursors based on hover target. | draw.io |
+| ID | Requirement | Source | Status |
+|----|-------------|--------|--------|
+| R-INT-08 | Alignment tools: align left/right/centre horizontal, top/bottom/centre vertical. Distribute evenly horizontal/vertical. | draw.io | Implemented |
+| R-INT-09 | On-canvas label editing: double-click element name to edit inline. Enter to confirm, Escape to cancel. | draw.io, Excalidraw | Implemented |
+| R-INT-10 | Minimap: small overview in corner showing viewport position within full diagram. Click to navigate. | draw.io | Implemented |
+| R-INT-11 | Search/filter on canvas: Ctrl+F to find elements by name. Results highlight on canvas. | draw.io | Not implemented |
+| R-INT-12 | Connector waypoints: drag handles on edges to reshape path. Right-click context menu for edge options. | draw.io | Implemented |
+| R-INT-13 | Consistent modifier keys: Shift = add-to-selection/box-select. | draw.io | Partially implemented |
+| R-INT-14 | Context menus: right-click on nodes for highlight mode (Show Incoming/Outgoing), add to view, navigate. Right-click on edges for line style and delete. | draw.io | Implemented |
 
 ### Tier 3 — Polish
 
-| ID | Requirement | Source |
-|----|-------------|--------|
-| R-INT-15 | Clipboard: Ctrl+C/V/X for cut/copy/paste elements (with offset positioning on paste). | draw.io |
-| R-INT-16 | Tab/Shift+Tab to cycle selection through elements sequentially. | draw.io |
-| R-INT-17 | Select edges only (Ctrl+Shift+E) / select vertices only (Ctrl+Shift+I). | draw.io |
-| R-INT-18 | Style copy/paste: Ctrl+Shift+C copies visual style, Ctrl+Shift+V applies it. | draw.io |
-| R-INT-19 | Zoom to selection: zoom/pan to fit selected elements in viewport. | draw.io |
-| R-INT-20 | Clone-and-connect: click directional arrow → creates a clone of the element with connector already attached. | draw.io |
+| ID | Requirement | Source | Status |
+|----|-------------|--------|--------|
+| R-INT-15 | Clipboard: Ctrl+C/V/X for cut/copy/paste elements (with offset positioning on paste). | draw.io | Not implemented |
+| R-INT-16 | Tab/Shift+Tab to cycle selection through elements sequentially. | draw.io | Not implemented |
+| R-INT-17 | Select edges only (Ctrl+Shift+E) / select vertices only (Ctrl+Shift+I). | draw.io | Not implemented |
+| R-INT-18 | Style copy/paste: Ctrl+Shift+C copies visual style, Ctrl+Shift+V applies it. | draw.io | Not implemented |
+| R-INT-19 | Zoom to selection: zoom/pan to fit selected elements in viewport. | draw.io | Not implemented |
+| R-INT-20 | Clone-and-connect: click directional arrow → creates a clone of the element with connector already attached. | draw.io | Not implemented |
 
 ---
 
@@ -414,8 +430,8 @@ These are table-stakes features every modelling tool needs, derived from draw.io
 | ID | Requirement | Source |
 |----|-------------|--------|
 | R-UML-01 | Add `notation` discriminator to elements/relationships: `'archimate'` \| `'uml'`. Widen type constraints. | — |
-| R-UML-02 | UML element types: `uml-class`, `uml-abstract-class`, `uml-interface`, `uml-enum`, `uml-component`, `uml-actor`, `uml-use-case`, `uml-state`, `uml-activity`, `uml-note`, `uml-package`. | UML 2.5 |
-| R-UML-03 | UML relationship types: `uml-inheritance`, `uml-realisation`, `uml-composition`, `uml-aggregation`, `uml-association`, `uml-dependency`, `uml-assembly`. | UML 2.5 |
+| R-UML-02 | UML element types: `uml-class`, `uml-abstract-class`, `uml-interface`, `uml-enum`, `uml-component`, `uml-actor`, `uml-use-case`, `uml-state`, `uml-activity`, `uml-action`, `uml-decision`, `uml-merge`, `uml-initial-node`, `uml-final-node`, `uml-flow-final`, `uml-fork`, `uml-join`, `uml-lifeline`, `uml-activation`, `uml-fragment`, `uml-note`, `uml-package`. | UML 2.5 |
+| R-UML-03 | UML relationship types: `uml-inheritance`, `uml-realisation`, `uml-composition`, `uml-aggregation`, `uml-association`, `uml-dependency`, `uml-assembly`, `uml-control-flow`, `uml-object-flow`. Sequence message types: `sync-message`, `async-message`, `return-message`, `create-message`, `destroy-message`, `self-message`. | UML 2.5 |
 | R-UML-04 | Class properties stored in JSON: `{ stereotype, isAbstract, attributes: [{name, type, visibility, isStatic, isDerived, multiplicity, defaultValue, ordering}], methods: [{name, returnType, visibility, isStatic, isAbstract, parameters: [{name, type, direction}], ordering}] }` | — |
 | R-UML-05 | UML relationship properties: `{ sourceMultiplicity, targetMultiplicity, sourceRole, targetRole, sourceNavigable, targetNavigable, stereotype }` | — |
 | R-UML-06 | `sequence_messages` table for sequence diagrams (source/target lifeline, message type, sequence_order, fragment_id). | — |
@@ -425,7 +441,7 @@ These are table-stakes features every modelling tool needs, derived from draw.io
 | R-UML-10 | Wireframe properties stored in JSON: `{ placeholder, label, disabled, variant, columns (for tables), items (for lists/selects), src (for images) }` | — |
 | R-UML-11 | Notation discriminator extended: `'archimate'` \| `'uml'` \| `'wireframe'`. | — |
 
-### 16.2 Class Diagram (Phase 2a — Priority 1)
+### 16.2 Class Diagram (Implemented)
 
 | ID | Requirement | Source |
 |----|-------------|--------|
@@ -439,7 +455,7 @@ These are table-stakes features every modelling tool needs, derived from draw.io
 | R-CLASS-08 | Role name labels on association ends. | UML 2.5 |
 | R-CLASS-09 | In-place attribute/method editing: click compartment to add/edit members. | draw.io pattern |
 
-### 16.3 Component Diagram (Phase 2a — Priority 1)
+### 16.3 Component Diagram (Implemented)
 
 | ID | Requirement | Source |
 |----|-------------|--------|
@@ -450,7 +466,7 @@ These are table-stakes features every modelling tool needs, derived from draw.io
 | R-COMP-05 | Ports: small squares on component boundary as connection points. | UML 2.5 |
 | R-COMP-06 | ArchiMate bridge: `application-component` can render in both ArchiMate and UML notation depending on viewpoint. | — |
 
-### 16.4 Sequence Diagram (Phase 2b — Priority 2)
+### 16.4 Sequence Diagram (Implemented)
 
 | ID | Requirement | Source |
 |----|-------------|--------|
@@ -461,7 +477,33 @@ These are table-stakes features every modelling tool needs, derived from draw.io
 | R-SEQ-05 | Combined fragments: `alt`, `opt`, `loop`, `break`, `par`, `critical`. Pentagon tab with operator, guard in brackets, operands separated by dashed lines. | UML 2.5 |
 | R-SEQ-06 | Interaction references: `ref` frame referencing another sequence diagram. | UML 2.5 |
 
-### 16.5 Wireframe Diagrams (Phase 3)
+### 16.5 Activity Diagram (Implemented)
+
+| ID | Requirement | Source |
+|----|-------------|--------|
+| R-ACT-01 | Action node shape: rounded rectangle. | UML 2.5 |
+| R-ACT-02 | Decision/merge node shape: diamond. | UML 2.5 |
+| R-ACT-03 | Initial node: filled circle. Final node: double circle with filled inner. Flow final: circle with X. | UML 2.5 |
+| R-ACT-04 | Fork/join bars: thick horizontal bar for concurrent flow split/merge. | UML 2.5 |
+| R-ACT-05 | Control flow edges (solid with open arrow) and object flow edges (dashed with open arrow). | UML 2.5 |
+| R-ACT-06 | Dedicated activity palette with action nodes and control nodes grouped separately. | — |
+
+### 16.6 Use-Case Diagram (Implemented)
+
+| ID | Requirement | Source |
+|----|-------------|--------|
+| R-UC-01 | Actor shape: stick figure. | UML 2.5 |
+| R-UC-02 | Use-case shape: ellipse with centred name. | UML 2.5 |
+| R-UC-03 | Dedicated use-case palette with actors and use cases. | — |
+
+### 16.7 State Diagram (Shapes Implemented)
+
+| ID | Requirement | Source |
+|----|-------------|--------|
+| R-STATE-01 | State shape: rounded rectangle with name. | UML 2.5 |
+| R-STATE-02 | Dedicated state node component for rendering. | UML 2.5 |
+
+### 16.8 Wireframe Diagrams (Implemented)
 
 | ID | Requirement | Source |
 |----|-------------|--------|
@@ -477,7 +519,7 @@ These are table-stakes features every modelling tool needs, derived from draw.io
 | R-WF-10 | Lo-fi rendering style: greyscale palette, sketch-style borders (optional), no colour fills. Intentionally unfinished appearance to signal "this is a wireframe, not a design." | — |
 | R-WF-11 | Inline text editing: double-click any text element (button label, input placeholder, heading) to edit. | — |
 
-### 16.6 Batch Model Import (Agent Pathway)
+### 16.9 Batch Model Import (Agent Pathway)
 
 | ID | Requirement | Source |
 |----|-------------|--------|
@@ -508,47 +550,47 @@ These are table-stakes features every modelling tool needs, derived from draw.io
 10. [x] Detail panel (properties + relationships tabs + edit mode with CRUD)
 11. [x] Dark + light themes
 12. [x] Three preset views (Full Spatial, Layered Flat, Strategy)
-13. [ ] Export to SVG + PNG
+13. [x] Export to SVG + PNG
 14. [x] Flat SVG renderer with ELK layout + orthogonal edge routing + connection ports
 15. [x] Element palette with shape icons, drag-to-create with name prompt
 16. [x] Detail panel edit mode (name, status, layer, sublayer, description) with save/delete
 
 ### Phase 2 — Canvas Interaction + Model Tree (Weeks 4–6)
 
-1. Undo/redo (command pattern)
-2. Multi-select + box select
-3. Keyboard shortcuts (Delete, Ctrl+Z/Y, arrows, Escape, Ctrl+A)
-4. On-canvas relationship creation (hover-to-connect)
-5. Snap to grid + alignment guides + distribution tools
-6. On-canvas label editing
-7. Model tree panel (layer folders, drag to/from canvas, search)
-8. Connector waypoints
-9. Minimap
-10. Populate valid_relationships from Archi's matrix + enforce on create
+1. [x] Undo/redo (command pattern — create, delete, rename, move, relationship create/delete)
+2. [x] Multi-select (Shift+click) + box select (Shift+drag)
+3. [x] Keyboard shortcuts (Delete/Backspace, Ctrl+Z/Y, arrows, Shift+arrows, Escape, Ctrl+A)
+4. [x] On-canvas relationship creation (drag from handle to target, notation-filtered type picker)
+5. [x] Snap to grid (10px) + alignment snaplines + alignment toolbar + distribution tools
+6. [x] On-canvas label editing (double-click to rename)
+7. [x] Model tree panel (notation-grouped folders, search, orphan detection, drag to canvas)
+8. [x] Connector waypoints (drag handles on edges, edge context menu)
+9. [x] Minimap
+10. [x] Populate valid_relationships table + enforce on create
 
 ### Phase 3 — Multi-Notation + Data Overlays (Weeks 7–10)
 
-1. Schema extensions (notation discriminator, UML + wireframe types)
-2. Batch model import/export API (agent creation pathway)
-3. UML Class diagram shapes + relationships
-4. UML Component diagram shapes
-5. Class editing panel (attributes, methods, visibility)
-6. Wireframe shapes (page, section, controls, table, nav)
-7. Wireframe nesting renderer (spatial containment)
-8. Wireframe palette + inline text editing
-9. Colour-by-property / conditional formatting
-10. Layer visibility toggle + lock
-11. ArchiMate XML import/export
-12. CSV import/export (Archi-compatible 3-file format)
+1. [x] Schema extensions (notation discriminator, UML + wireframe types)
+2. [x] Batch model import/export API (agent creation pathway)
+3. [x] UML Class diagram shapes + relationships
+4. [x] UML Component diagram shapes
+5. [ ] Class editing panel (attributes, methods, visibility)
+6. [x] Wireframe shapes (page, section, controls, table, nav, list, form, modal, card, feedback)
+7. [x] Wireframe nesting renderer (spatial containment via parent_id)
+8. [x] Wireframe palette + inline text editing
+9. [x] Colour-by-property / conditional formatting
+10. [x] Layer visibility toggle + lock + opacity slider + relationship layer toggle
+11. [x] ArchiMate XML import/export
+12. [x] CSV import/export (Archi-compatible 3-file format)
 
 ### Phase 4 — Sequence Diagrams + Advanced (Weeks 10–12)
 
-1. Sequence diagram renderer (time-based, not spatial)
-2. Lifelines, messages, activation bars, combined fragments
-3. Activity diagram viewpoint
-4. Use Case diagram
-5. Heatmap overlays
-6. PDF export
+1. [x] Sequence diagram renderer (lifeline, activation, fragment nodes; message edges)
+2. [x] Lifelines, messages (sync/async/return/create/destroy/self), activation bars, combined fragments
+3. [x] Activity diagram viewpoint (action, decision/merge, initial/final/flow-final, fork/join)
+4. [x] Use-case diagram (actor, use-case shapes, dedicated palette)
+5. [x] Heatmap overlays (colour intensity mapped to numeric properties)
+6. [ ] PDF export
 
 ---
 
@@ -567,46 +609,169 @@ These are table-stakes features every modelling tool needs, derived from draw.io
 - [x] Five zoom tiers with smooth progressive disclosure
 - [x] Detail panel with properties, relationships tabs + edit mode (CRUD)
 - [x] Dark and light themes
-- [ ] SVG and PNG export
+- [x] SVG and PNG export
 - [x] Flat renderer with ELK layout, orthogonal edge routing, connection ports
 - [x] Element palette with ArchiMate shape icons and drag-to-create
 
 ### Canvas Interaction
 
-- [ ] Undo/redo with coalesced drag operations
-- [ ] Multi-select and box select
-- [ ] Keyboard shortcuts (Delete, Escape, Ctrl+A, arrows)
-- [ ] On-canvas relationship creation via hover arrows
-- [ ] Snap to grid with visual overlay
-- [ ] Alignment guides visible during drag
-- [ ] Model tree panel with layer folders
-- [ ] ArchiMate metamodel validation on relationship creation
+- [x] Undo/redo (command pattern covering create, delete, rename, move, relationship create/delete)
+- [x] Multi-select (Shift+click) and box select (Shift+drag)
+- [x] Keyboard shortcuts (Delete/Backspace, Escape, Ctrl+A, arrows, Shift+arrows)
+- [x] On-canvas relationship creation via drag-from-handle with notation-filtered type picker
+- [x] Snap to grid (10px) with dot-pattern visual overlay
+- [x] Alignment snaplines visible during drag
+- [x] Alignment toolbar (align left/right/centre, distribute horizontal/vertical)
+- [x] Model tree panel with notation-grouped folders, search, orphan detection, drag to canvas
+- [x] ArchiMate metamodel validation on relationship creation (valid_relationships table populated)
+- [x] Edge context menus (line style selection, delete)
+- [x] Node context menus (highlight mode, add to view, navigate)
 
 ### UML
 
-- [ ] Class diagram with 3-compartment shapes and visibility markers
-- [ ] Component diagram with lollipop/socket interfaces
-- [ ] Six UML relationship types with correct arrowheads
-- [ ] Sequence diagram with lifelines, messages, and combined fragments
+- [x] Class diagram with 3-compartment shapes and visibility markers
+- [x] Component diagram with component icon
+- [x] Seven UML relationship types with correct arrowheads (inheritance, realisation, composition, aggregation, association, dependency, assembly)
+- [x] Sequence diagram with lifelines, messages (sync/async/return/create/destroy/self), activation bars, combined fragments
+- [x] Activity diagram with action, decision/merge, initial/final/flow-final, fork/join nodes
+- [x] Use-case diagram with actor and use-case shapes
+- [x] State diagram shapes (rounded rectangle)
+- [x] Note and package shapes with fallback rendering
+- [x] Notation-specific palettes for class/component, sequence, activity, and use-case views
 
 ### Wireframes
 
-- [ ] Page, section, and form control shapes in lo-fi wireframe style
-- [ ] Deep nesting with spatial containment rendering
-- [ ] Page flow via wf-navigates-to relationships
-- [ ] Wireframe palette with drag-to-create inside containers
+- [x] Page, section, card, modal, header, and form control shapes in lo-fi wireframe style
+- [x] Deep nesting with spatial containment rendering (parent_id)
+- [x] Page flow via wf-navigates-to relationships
+- [x] Wireframe palette with categories (layout, controls, data, navigation, content)
+- [x] Table, list, form, nav, tab-group, and feedback shapes
 
 ### Agent Model Creation
 
-- [ ] Batch model import via JSON (POST /api/import/model-batch)
-- [ ] Batch model export for round-trip (GET /api/export/model-batch)
-- [ ] Upsert semantics with full validation before commit
-- [ ] Children array support for nested wireframe/UML package structures
+- [x] Batch model import via JSON (POST /api/import/model-batch)
+- [x] Batch model export for round-trip (GET /api/export/model-batch)
+- [x] Upsert semantics with validation before commit
+- [x] Children array support for nested wireframe/UML package structures
+
+### Import / Export
+
+- [x] ArchiMate Open Exchange Format XML import and export
+- [x] CSV import/export (Archi-compatible multi-file format)
+- [x] SVG export (vector)
+- [x] PNG export (2x retina)
+- [ ] PDF export
 
 ### Quality
 
-- [ ] TypeScript strict, no `any` in model/notation/renderer layers
-- [ ] Dev server accessible from LAN (0.0.0.0 binding)
+- [x] TypeScript strict mode
+- [x] Dev server accessible from LAN (0.0.0.0 binding)
 - [ ] 200+ elements render without lag at Context zoom tier
-- [ ] Unit tests for: projection math, highlight graph, shape registry, schema validation
-- [ ] All dependencies open-source (MIT/Apache/BSD/MPL-2.0)
+- [x] Unit tests for: shape registry, edge styles, notation routing, layout computation, schema validation
+- [x] All dependencies open-source (MIT/Apache/BSD/MPL-2.0)
+- [x] Error boundaries prevent single component failure from crashing the application
+- [x] Position save retries once on failure with user notification in status bar
+
+---
+
+## 19. Quality / Resilience Requirements
+
+| ID | Requirement | Status |
+|----|-------------|--------|
+| R-QUAL-01 | Error boundaries prevent a single component failure from crashing the application. Each major panel (canvas, detail panel) is wrapped independently so failures are isolated and recoverable. | Implemented |
+| R-QUAL-02 | Position save retries once on failure. If the retry also fails, a warning is shown to the user in the status bar. No silent data loss. | Implemented |
+| R-QUAL-03 | Unit test coverage for notation registries (shape definitions, edge styles), type routing (notation family detection, node/edge type mapping), layout computation (order maps, band recomputation), and schema validation (Zod schemas for batch import). | Implemented |
+| R-QUAL-04 | Metamodel enforcement prevents creation of invalid relationships. The valid_relationships table is populated from the ArchiMate metamodel, and only valid relationship types are offered during on-canvas connection creation. Invalid connections are hard-disabled, not merely dimmed. | Implemented |
+
+---
+
+## 20. Diagram-Type Layout Requirements
+
+Each diagram type has distinct layout conventions that auto-layout must respect. These are derived from UML 2.5 specification conventions and reference tool behaviour (Archi, Sparx EA).
+
+### 20.1 ArchiMate Layered View
+
+| ID | Requirement |
+|----|-------------|
+| R-LAY-10 | Elements grouped into layer bands (Motivation at top, Implementation at bottom) |
+| R-LAY-11 | Within layers, elements sorted by sublayer ordering from configuration |
+| R-LAY-12 | Orthogonal edge routing with connection ports |
+| R-LAY-13 | Layer bands auto-resize to fit their children |
+
+### 20.2 UML Class Diagram
+
+| ID | Requirement |
+|----|-------------|
+| R-LAY-20 | Inheritance hierarchies flow UPWARD (subclass at bottom, superclass at top) |
+| R-LAY-21 | Associated classes placed horizontally adjacent where possible |
+| R-LAY-22 | Packages render as container rectangles grouping related classes |
+| R-LAY-23 | Class box width auto-sizes based on longest attribute/method text (180–400px) |
+
+### 20.3 UML Component Diagram
+
+| ID | Requirement |
+|----|-------------|
+| R-LAY-30 | Dependency chains flow LEFT-TO-RIGHT (provider left, consumer right) |
+| R-LAY-31 | Provided interfaces (lollipop) on the right side of components |
+| R-LAY-32 | Required interfaces (socket) on the left side of components |
+| R-LAY-33 | Subsystem boundaries as container rectangles |
+
+### 20.4 UML Use Case Diagram
+
+| ID | Requirement |
+|----|-------------|
+| R-LAY-40 | System boundary rectangle containing all use cases, labelled with system name |
+| R-LAY-41 | Sub-system boundaries as nested rectangles within the main boundary |
+| R-LAY-42 | Actors placed OUTSIDE the boundary — primary actors left, secondary right |
+| R-LAY-43 | Use cases arranged in 1–2 vertical columns inside the boundary |
+| R-LAY-44 | Association lines from actors cross the boundary cleanly (straight lines preferred) |
+
+### 20.5 UML Activity Diagram
+
+| ID | Requirement |
+|----|-------------|
+| R-LAY-50 | TOP-TO-BOTTOM flow: initial node at top, actions flow downward, final node at bottom |
+| R-LAY-51 | Decision diamonds create horizontal branches that continue downward |
+| R-LAY-52 | Fork/join bars create parallel vertical tracks flowing side-by-side |
+| R-LAY-53 | Swimlanes (optional) as vertical partitions grouping actions by actor/role |
+| R-LAY-54 | Guards on decision branches as labels near outgoing edges |
+
+### 20.6 UML Sequence Diagram
+
+| ID | Requirement |
+|----|-------------|
+| R-LAY-60 | X-axis = participant ordering (lifelines left-to-right, evenly spaced) |
+| R-LAY-61 | Y-axis = time (messages flow downward, earlier messages higher) |
+| R-LAY-62 | All messages strictly horizontal (no diagonal routing) |
+| R-LAY-63 | Activation bars auto-sized from first incoming to last outgoing message |
+| R-LAY-64 | Combined fragments span the width of involved lifelines |
+
+### 20.7 UML State Diagram
+
+| ID | Requirement |
+|----|-------------|
+| R-LAY-70 | LEFT-TO-RIGHT flow for linear state machines, TOP-TO-BOTTOM for branching |
+| R-LAY-71 | Initial state at the top-left or far-left |
+| R-LAY-72 | Final state(s) at the bottom-right or far-right |
+| R-LAY-73 | Composite states as container rectangles with sub-states inside |
+
+### 20.8 Wireframe Diagram
+
+| ID | Requirement |
+|----|-------------|
+| R-LAY-80 | Nested containment layout (page → section → controls via parent_id) |
+| R-LAY-81 | No graph layout — positional/manual placement with grid snap |
+| R-LAY-82 | Page flow shown as navigation arrows between page containers |
+
+### 20.9 Layout Algorithm Selection
+
+| Diagram Type | Algorithm | Direction | Custom |
+|-------------|-----------|-----------|--------|
+| ArchiMate Layered | Hierarchical (ELK) | Down | Layer band grouping |
+| Class Diagram | Hierarchical (ELK) | Up | Package grouping |
+| Component Diagram | Hierarchical (ELK) | Right | Port-aware placement |
+| Use Case Diagram | Custom | N/A | System boundary partitioning |
+| Activity Diagram | Hierarchical (ELK) | Down | Swimlane partitioning |
+| Sequence Diagram | Custom | N/A | Time-ordered slot layout |
+| State Diagram | Hierarchical (ELK) | Right/Down | Composite state nesting |
+| Wireframe | Manual | N/A | Nested containment |

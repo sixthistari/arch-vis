@@ -2,7 +2,8 @@
  * Wireframe List node — ordered, unordered, action list, card list.
  */
 import { memo } from 'react';
-import { Handle, Position, type NodeProps, type Node } from '@xyflow/react';
+import { type NodeProps, type Node } from '@xyflow/react';
+import { RoutingHandles } from '../shared/RoutingHandles';
 
 export type WfListType = 'ordered' | 'unordered' | 'action' | 'card';
 
@@ -76,8 +77,7 @@ function WfListNodeComponent({ data, selected }: NodeProps<WfListNodeType>) {
             );
           })}
         </svg>
-        <Handle type="target" position={Position.Top} style={{ visibility: 'hidden' }} />
-        <Handle type="source" position={Position.Bottom} style={{ visibility: 'hidden' }} />
+        <RoutingHandles />
       </div>
     );
   }
@@ -128,8 +128,7 @@ function WfListNodeComponent({ data, selected }: NodeProps<WfListNodeType>) {
           );
         })}
       </svg>
-      <Handle type="target" position={Position.Top} style={{ visibility: 'hidden' }} />
-      <Handle type="source" position={Position.Bottom} style={{ visibility: 'hidden' }} />
+      <RoutingHandles />
     </div>
   );
 }

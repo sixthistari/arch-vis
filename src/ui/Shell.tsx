@@ -11,6 +11,7 @@ import { useUndoRedoStore } from '../interaction/undo-redo';
 import { importArchimateXml, importCsv } from '../api/client';
 import { DataOverlayControls } from './DataOverlayControls';
 import { NodeContextMenu } from './ContextMenu';
+import { ErrorBoundary } from './ErrorBoundary';
 import { usePanelStore } from '../store/panel';
 import { useInteractionStore } from '../store/interaction';
 import { useModelStore } from '../store/model';
@@ -185,6 +186,7 @@ export function Shell(): React.ReactElement {
   const relationships = useModelStore(s => s.relationships);
   const deleteElement = useModelStore(s => s.deleteElement);
   const currentView = useViewStore(s => s.currentView);
+  const positionSaveError = useViewStore(s => s.positionSaveError);
 
   const selectedElement = useMemo(
     () => selectedId ? elements.find(el => el.id === selectedId) : undefined,
@@ -367,7 +369,9 @@ export function Shell(): React.ReactElement {
         React.createElement('div', {
           style: { flex: 1, position: 'relative', overflow: 'hidden' },
         },
-          React.createElement(Canvas, null),
+          React.createElement(ErrorBoundary, { name: 'Canvas' },
+            React.createElement(Canvas, null),
+          ),
         ),
 
         // Bottom panel (collapsible)
@@ -405,26 +409,28 @@ export function Shell(): React.ReactElement {
           React.createElement('div', {
             style: { flex: 1, overflow: 'auto' },
           },
-            selectedElement
-              ? React.createElement(DetailPanel, {
-                  element: selectedElement,
-                  relationships: selectedRelationships,
-                  elements,
-                  onClose: handleCloseDetail,
-                  onNavigate: handleNavigate,
-                  onDelete: handleDelete,
-                })
-              : React.createElement('div', {
-                  style: {
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    height: '100%',
-                    color: 'var(--text-muted)',
-                    fontSize: 11,
-                    fontStyle: 'italic',
-                  },
-                }, 'Select an element to view properties'),
+            React.createElement(ErrorBoundary, { name: 'Detail Panel' },
+              selectedElement
+                ? React.createElement(DetailPanel, {
+                    element: selectedElement,
+                    relationships: selectedRelationships,
+                    elements,
+                    onClose: handleCloseDetail,
+                    onNavigate: handleNavigate,
+                    onDelete: handleDelete,
+                  })
+                : React.createElement('div', {
+                    style: {
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      height: '100%',
+                      color: 'var(--text-muted)',
+                      fontSize: 11,
+                      fontStyle: 'italic',
+                    },
+                  }, 'Select an element to view properties'),
+            ),
           ),
         ),
         // Toggle button visible when collapsed
@@ -480,6 +486,14 @@ export function Shell(): React.ReactElement {
     },
       React.createElement('span', null, 'arch-vis \u2014 ArchiMate Architecture Visualiser'),
       React.createElement('span', null, 'Shift+drag: box select  |  Shift+click: multi-select  |  Del: delete  |  Double-click: rename  |  Arrow keys: nudge (Shift\u00D710)  |  Ctrl+A: select all  |  Esc: deselect  |  Ctrl+Z: undo  |  Ctrl+Y: redo'),
+      positionSaveError ? React.createElement('span', {
+        title: positionSaveError,
+        style: {
+          color: '#F59E0B',
+          fontWeight: 600,
+          marginLeft: 'auto',
+        },
+      }, '\u26A0 Position save failed') : null,
     ),
   );
 }

@@ -4,43 +4,13 @@
  * Extracted from Canvas.tsx for modularity.
  */
 import type { Element, SublayerConfig } from '../../model/types';
+import {
+  LAYER_ORDER as FALLBACK_LAYER_ORDER,
+  SUBLAYER_ORDER as FALLBACK_SUBLAYER_ORDER,
+  LAYER_LABELS as FALLBACK_LAYER_LABELS,
+} from '../../shared/layer-config';
 
-// ═══════════════════════════════════════
-// Layer ordering for auto-layout
-// ═══════════════════════════════════════
-
-// Fallback layer order when sublayerConfig is not available
-export const FALLBACK_LAYER_ORDER: Record<string, number> = {
-  motivation: 0,
-  strategy: 1,
-  business: 2,
-  business_upper: 2,
-  business_lower: 3,
-  application: 4,
-  data: 5,
-  technology: 6,
-  implementation: 7,
-};
-
-// Fallback sublayer order (archimate_type → sort order within its layer)
-export const FALLBACK_SUBLAYER_ORDER: Record<string, number> = {
-  'stakeholder': 0, 'driver': 10, 'assessment': 20, 'goal': 30, 'outcome': 40,
-  'principle': 50, 'constraint': 50, 'requirement': 60, 'meaning': 35, 'value': 45,
-  'value-stream': 0, 'course-of-action': 10, 'capability': 20, 'resource': 30,
-  'business-actor': 0, 'business-role': 0, 'business-collaboration': 5,
-  'business-service': 10, 'business-interface': 15,
-  'business-process': 20, 'business-function': 20, 'business-interaction': 20,
-  'business-event': 25, 'business-object': 30, 'contract': 30, 'representation': 30, 'product': 35,
-  'application-service': 0, 'application-interface': 5,
-  'application-process': 10, 'application-function': 10, 'application-interaction': 10,
-  'application-event': 15, 'application-component': 20, 'application-collaboration': 20,
-  'data-object': 30,
-  'technology-service': 0, 'technology-interface': 5,
-  'technology-process': 10, 'technology-function': 10, 'technology-interaction': 10,
-  'technology-event': 15, 'node': 20, 'device': 20, 'system-software': 25,
-  'technology-collaboration': 20, 'communication-network': 30, 'path': 30, 'artifact': 35,
-  'gap': 0, 'plateau': 10, 'implementation-event': 15, 'deliverable': 20, 'work-package': 30,
-};
+export { FALLBACK_LAYER_ORDER, FALLBACK_SUBLAYER_ORDER };
 
 /** Derive layer and sublayer ordering from sublayer config YAML (loaded via API). */
 export function buildOrderMaps(config: SublayerConfig | null): {
@@ -52,12 +22,7 @@ export function buildOrderMaps(config: SublayerConfig | null): {
     return {
       layerOrder: FALLBACK_LAYER_ORDER,
       sublayerOrder: FALLBACK_SUBLAYER_ORDER,
-      layerLabels: {
-        motivation: 'Motivation', strategy: 'Strategy', business: 'Business',
-        business_upper: 'Business — Functions & Processes', business_lower: 'Business — Services & Information',
-        application: 'Application', technology: 'Technology',
-        data: 'Data & Artifacts', implementation: 'Implementation & Migration',
-      },
+      layerLabels: FALLBACK_LAYER_LABELS,
     };
   }
 

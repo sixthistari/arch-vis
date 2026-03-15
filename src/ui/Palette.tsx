@@ -1,6 +1,8 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { getLayerColours } from '../notation/colors';
 import { getShapeDefinition } from '../notation/registry';
+import { getUnifiedEdgeStyle } from '../notation/edge-styles';
+import { NOTATION_RELATIONSHIP_TYPES } from '../shared/layer-config';
 import { useThemeStore } from '../store/theme';
 import { useModelStore } from '../store/model';
 import { useViewStore } from '../store/view';
@@ -637,6 +639,83 @@ const WIREFRAME_GROUPS: SimpleGroup[] = [
   { key: 'content', label: 'Content', types: ['wf-text', 'wf-image', 'wf-icon', 'wf-placeholder'] },
 ];
 
+// ── Relationship mini SVG preview ────────────────────────────────
+const REL_SVG_W = 40;
+const REL_SVG_H = 12;
+
+/**
+ * Render a mini SVG showing a relationship's line style and markers.
+ */
+function renderRelationshipPreview(relType: string, stroke: string): React.ReactElement {
+  const style = getUnifiedEdgeStyle(relType);
+  const y = REL_SVG_H / 2;
+  const xStart = 4;
+  const xEnd = REL_SVG_W - 4;
+  const children: React.ReactElement[] = [];
+
+  // Main line
+  children.push(React.createElement('line', {
+    key: 'line',
+    x1: xStart, y1: y, x2: xEnd, y2: y,
+    stroke,
+    strokeWidth: style.width,
+    strokeDasharray: style.strokeStyle === 'dashed' ? style.dashArray : undefined,
+  }));
+
+  // Source marker
+  if (style.sourceMarker) {
+    switch (style.sourceMarker) {
+      case 'filled-diamond':
+      case 'uml-filled-diamond': {
+        const d = `M${xStart},${y} L${xStart + 3},${y - 2.5} L${xStart + 6},${y} L${xStart + 3},${y + 2.5} Z`;
+        children.push(React.createElement('path', { key: 'sm', d, fill: stroke, stroke, strokeWidth: 0.5 }));
+        break;
+      }
+      case 'open-diamond':
+      case 'uml-hollow-diamond': {
+        const d = `M${xStart},${y} L${xStart + 3},${y - 2.5} L${xStart + 6},${y} L${xStart + 3},${y + 2.5} Z`;
+        children.push(React.createElement('path', { key: 'sm', d, fill: 'var(--bg-primary, #fff)', stroke, strokeWidth: 0.7 }));
+        break;
+      }
+      case 'filled-circle': {
+        children.push(React.createElement('circle', { key: 'sm', cx: xStart + 2, cy: y, r: 2, fill: stroke }));
+        break;
+      }
+    }
+  }
+
+  // Target marker
+  if (style.targetMarker) {
+    switch (style.targetMarker) {
+      case 'filled-arrow':
+      case 'uml-filled-arrow': {
+        const d = `M${xEnd},${y} L${xEnd - 4},${y - 2.5} L${xEnd - 4},${y + 2.5} Z`;
+        children.push(React.createElement('path', { key: 'tm', d, fill: stroke, stroke, strokeWidth: 0.3 }));
+        break;
+      }
+      case 'open-arrow':
+      case 'uml-open-arrow': {
+        const d = `M${xEnd - 4},${y - 2.5} L${xEnd},${y} L${xEnd - 4},${y + 2.5}`;
+        children.push(React.createElement('path', { key: 'tm', d, fill: 'none', stroke, strokeWidth: 0.8 }));
+        break;
+      }
+      case 'open-triangle':
+      case 'uml-hollow-triangle': {
+        const d = `M${xEnd - 4},${y - 2.5} L${xEnd},${y} L${xEnd - 4},${y + 2.5} Z`;
+        children.push(React.createElement('path', { key: 'tm', d, fill: 'var(--bg-primary, #fff)', stroke, strokeWidth: 0.7 }));
+        break;
+      }
+    }
+  }
+
+  return React.createElement('svg', {
+    width: REL_SVG_W,
+    height: REL_SVG_H,
+    viewBox: `0 0 ${REL_SVG_W} ${REL_SVG_H}`,
+    style: { flexShrink: 0 },
+  }, ...children);
+}
+
 export function Palette(): React.ReactElement {
   const theme = useThemeStore(s => s.theme);
   const sublayerConfig = useModelStore(s => s.sublayerConfig);
@@ -675,8 +754,18 @@ export function Palette(): React.ReactElement {
     : isWireframe ? 'Wireframe Elements'
     : 'Elements';
 
+  // Determine notation key for relationship types
+  const notationKey: 'archimate' | 'uml' | 'wireframe' =
+    (isUml || isUmlSequence || isUmlActivity || isUmlUseCase) ? 'uml'
+    : isWireframe ? 'wireframe'
+    : 'archimate';
+  const relationshipTypes = NOTATION_RELATIONSHIP_TYPES[notationKey];
+  const relBorderColour = notationKey === 'uml' ? '#4A90D9'
+    : notationKey === 'wireframe' ? '#8E8E93'
+    : '#888';
+
   // Render a simple (non-ArchiMate) group for UML / wireframe palettes
-  const renderSimpleGroup = (group: SimpleGroup, borderColour: string, chipBg: string, dropLayer: string, miniShapeRenderer?: (type: string, stroke: string) => React.ReactElement) => {
+  const renderSimpleGroup = (group: SimpleGroup, borderColour: string, _chipBg: string, dropLayer: string, miniShapeRenderer?: (type: string, stroke: string) => React.ReactElement) => {
     const isExpanded = expandedGroups.has(group.key);
     return React.createElement('div', {
       key: group.key,
@@ -899,6 +988,76 @@ export function Palette(): React.ReactElement {
           ),
         );
       }),
+    ),
+
+    // ── Relationships section (informational) ──────────────────────
+    !collapsed && React.createElement('div', {
+      style: {
+        padding: '0 6px 6px',
+        borderTop: '1px solid var(--border-primary)',
+        marginTop: 4,
+      },
+    },
+      React.createElement('div', {
+        key: 'rel-group',
+        style: {
+          marginBottom: 4,
+          borderLeft: `3px solid ${relBorderColour}`,
+          borderRadius: 2,
+        },
+      },
+        // Group header
+        React.createElement('div', {
+          onClick: () => toggleGroup('__relationships__'),
+          style: {
+            padding: '3px 6px',
+            cursor: 'pointer',
+            fontSize: 10,
+            fontWeight: 500,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            userSelect: 'none' as const,
+            background: `${relBorderColour}18`,
+            borderRadius: '0 2px 2px 0',
+          },
+        },
+          'Relationships',
+          React.createElement('span', {
+            style: { fontSize: 7, opacity: 0.5 },
+          }, expandedGroups.has('__relationships__') ? '\u25BC' : '\u25B6'),
+        ),
+        // Relationship type list
+        expandedGroups.has('__relationships__') && React.createElement('div', {
+          style: {
+            padding: '4px 6px',
+            display: 'flex',
+            flexDirection: 'column' as const,
+            gap: 2,
+          },
+        },
+          ...relationshipTypes.map(rel =>
+            React.createElement('div', {
+              key: rel.value,
+              style: {
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '1px 0',
+              },
+            },
+              renderRelationshipPreview(rel.value, relBorderColour),
+              React.createElement('span', {
+                style: {
+                  fontSize: 9,
+                  opacity: 0.8,
+                  whiteSpace: 'nowrap' as const,
+                },
+              }, rel.label),
+            ),
+          ),
+        ),
+      ),
     ),
   );
 }

@@ -1,9 +1,31 @@
 import React, { useState, useCallback } from 'react';
 import { toPng, toSvg } from 'html-to-image';
-import { exportArchimateXml, exportCsv } from '../api/client';
+import { exportArchimateXml, exportCsv, exportModelBatch } from '../api/client';
+import { useViewStore } from '../store/view';
+
+/** Filter out minimap, controls, and panel overlays from image export. */
+function exportFilter(node: HTMLElement): boolean {
+  if (!(node instanceof HTMLElement)) return true;
+  const cls = node.classList;
+  if (!cls) return true;
+  if (cls.contains('react-flow__minimap')) return false;
+  if (cls.contains('react-flow__controls')) return false;
+  if (cls.contains('react-flow__panel')) return false;
+  return true;
+}
+
+/** Sanitise a view name into a safe filename slug. */
+function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'diagram';
+}
 
 export function ExportMenu(): React.ReactElement {
   const [open, setOpen] = useState(false);
+  const currentView = useViewStore(s => s.currentView);
+  const viewSlug = slugify(currentView?.name ?? 'architecture-diagram');
 
   function getFlowElement(): HTMLElement | null {
     return document.querySelector('.react-flow') as HTMLElement | null;
@@ -13,31 +35,36 @@ export function ExportMenu(): React.ReactElement {
     const el = getFlowElement();
     if (!el) return;
     try {
-      const dataUrl = await toSvg(el, { backgroundColor: undefined });
+      const dataUrl = await toSvg(el, {
+        filter: exportFilter,
+      });
       const a = document.createElement('a');
       a.href = dataUrl;
-      a.download = 'architecture-diagram.svg';
+      a.download = `${viewSlug}.svg`;
       a.click();
     } catch (err) {
       console.error('SVG export failed:', err);
     }
     setOpen(false);
-  }, []);
+  }, [viewSlug]);
 
   const exportPNG = useCallback(async () => {
     const el = getFlowElement();
     if (!el) return;
     try {
-      const dataUrl = await toPng(el, { pixelRatio: 2 });
+      const dataUrl = await toPng(el, {
+        pixelRatio: 2,
+        filter: exportFilter,
+      });
       const a = document.createElement('a');
       a.href = dataUrl;
-      a.download = 'architecture-diagram.png';
+      a.download = `${viewSlug}.png`;
       a.click();
     } catch (err) {
       console.error('PNG export failed:', err);
     }
     setOpen(false);
-  }, []);
+  }, [viewSlug]);
 
   const exportXml = useCallback(async () => {
     try {
@@ -74,6 +101,23 @@ export function ExportMenu(): React.ReactElement {
     setOpen(false);
   }, []);
 
+  const exportJson = useCallback(async () => {
+    try {
+      const data = await exportModelBatch(currentView?.id);
+      const json = JSON.stringify(data, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${viewSlug}-model.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('JSON export failed:', err);
+    }
+    setOpen(false);
+  }, [currentView?.id, viewSlug]);
+
   return (
     <div style={{ position: 'relative' }}>
       <button
@@ -106,11 +150,12 @@ export function ExportMenu(): React.ReactElement {
           }}
           onMouseLeave={() => setOpen(false)}
         >
-          <button onClick={exportSVG} style={menuItemStyle()}>Export SVG</button>
-          <button onClick={exportPNG} style={menuItemStyle()}>Export PNG</button>
+          <button onClick={exportSVG} style={menuItemStyle()} title="Vector image, print quality">Export SVG</button>
+          <button onClick={exportPNG} style={menuItemStyle()} title="Rasterised image, 2x retina">Export PNG</button>
           <div style={{ borderTop: '1px solid var(--border-primary)' }} />
-          <button onClick={exportXml} style={menuItemStyle()}>Export ArchiMate XML</button>
-          <button onClick={exportCsvFiles} style={menuItemStyle()}>Export CSV (Archi)</button>
+          <button onClick={exportJson} style={menuItemStyle()} title="Full model backup as JSON">Export JSON</button>
+          <button onClick={exportXml} style={menuItemStyle()} title="ArchiMate Open Exchange format">Export ArchiMate XML</button>
+          <button onClick={exportCsvFiles} style={menuItemStyle()} title="Archi-compatible CSV files">Export CSV (Archi)</button>
         </div>
       )}
     </div>

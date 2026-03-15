@@ -11,27 +11,7 @@ import { useViewStore } from '../store/view';
 import { useInteractionStore } from '../store/interaction';
 import { useThemeStore } from '../store/theme';
 import type { Element } from '../model/types';
-
-// ═══════════════════════════════════════
-// ArchiMate layer grouping (existing)
-// ═══════════════════════════════════════
-
-const LAYER_ORDER = [
-  'motivation', 'strategy', 'business', 'business_upper', 'business_lower',
-  'application', 'data', 'technology', 'implementation',
-];
-
-const LAYER_LABELS: Record<string, string> = {
-  motivation: 'Motivation',
-  strategy: 'Strategy',
-  business: 'Business',
-  business_upper: 'Business — Functions',
-  business_lower: 'Business — Services',
-  application: 'Application',
-  data: 'Data & Artefacts',
-  technology: 'Technology',
-  implementation: 'Implementation',
-};
+import { LAYER_SEQUENCE_FULL, LAYER_LABELS } from '../shared/layer-config';
 
 // ═══════════════════════════════════════
 // UML sub-grouping
@@ -319,7 +299,7 @@ export function ModelTree({ onClose }: ModelTreeProps) {
 
     const seen = new Set<string>();
     const result: string[] = [];
-    for (const l of LAYER_ORDER) {
+    for (const l of LAYER_SEQUENCE_FULL) {
       if (map.has(l)) { result.push(l); seen.add(l); }
     }
     for (const l of map.keys()) {

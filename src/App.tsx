@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { ThemeProvider } from './theme/provider';
 import { Shell } from './ui/Shell';
+import { ErrorBoundary } from './ui/ErrorBoundary';
 import { useModelStore } from './store/model';
 import { useViewStore } from './store/view';
 import { useThemeStore } from './store/theme';
@@ -13,6 +14,7 @@ export function App(): React.ReactElement {
   const loadViewList = useViewStore(s => s.loadViewList);
   const switchView = useViewStore(s => s.switchView);
   const viewList = useViewStore(s => s.viewList);
+  const currentView = useViewStore(s => s.currentView);
 
   useEffect(() => {
     const init = async () => {
@@ -22,15 +24,15 @@ export function App(): React.ReactElement {
     init();
   }, [loadAll, loadViewList]);
 
-  // Auto-select first view once loaded
+  // Auto-select first view once loaded — only when no view is active yet
   useEffect(() => {
-    if (viewList.length > 0) {
+    if (viewList.length > 0 && !currentView) {
       const defaultView = viewList.find(v => v.id === 'view-flat-layered') ?? viewList.find(v => v.render_mode === 'flat') ?? viewList[0];
       if (defaultView) {
         switchView(defaultView.id);
       }
     }
-  }, [viewList, switchView]);
+  }, [viewList, switchView, currentView]);
 
   if (error) {
     return React.createElement(ThemeProvider, { theme },
@@ -71,6 +73,8 @@ export function App(): React.ReactElement {
   }
 
   return React.createElement(ThemeProvider, { theme },
-    React.createElement(Shell, null),
+    React.createElement(ErrorBoundary, { name: 'Application' },
+      React.createElement(Shell, null),
+    ),
   );
 }

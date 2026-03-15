@@ -7,7 +7,8 @@
  * - Content area (children rendered by xyflow parent-child)
  */
 import { memo } from 'react';
-import { Handle, Position, type NodeProps, type Node } from '@xyflow/react';
+import { type NodeProps, type Node } from '@xyflow/react';
+import { RoutingHandles } from '../shared/RoutingHandles';
 import { useEditableNode } from '../../hooks/useEditableNode';
 import { EditableInput } from '../../hooks/EditableInput';
 
@@ -110,8 +111,7 @@ function WfPageNodeComponent({ id, data, selected }: NodeProps<WfPageNodeType>) 
         <rect x={1} y={CHROME_H} width={pageWidth - 2} height={pageHeight - CHROME_H - 1} fill="none" stroke="none" />
       </svg>
 
-      <Handle type="target" position={Position.Top} style={{ visibility: 'hidden' }} />
-      <Handle type="source" position={Position.Bottom} style={{ visibility: 'hidden' }} />
+      <RoutingHandles />
     </div>
   );
 }

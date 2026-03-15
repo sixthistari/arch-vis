@@ -11,6 +11,9 @@ import { getNotation, getNodeType } from '../../model/notation';
 import { heatmapColour } from '../../store/data-overlay';
 import { computeGridLayout, FALLBACK_LAYER_ORDER, FALLBACK_SUBLAYER_ORDER } from './layout-computation';
 import { computeLayerBands, BAND_PAD, type LayerBandInfo } from './layer-bands';
+import { computeUcdLayout, type UcdBoundary } from '../../layout/ucd-layout';
+import type { Relationship } from '../../model/types';
+import type { UcdBoundaryNodeData } from './nodes/uml/UcdBoundaryNode';
 
 // ═══════════════════════════════════════
 // Data overlay colour maps
@@ -54,8 +57,16 @@ export function elementsToNodes(
   layerLabels: Record<string, string> = {},
   onLabelChange?: (id: string, newLabel: string) => void,
   overlay?: OverlayConfig,
+  relationships?: Relationship[],
+  viewpointType?: string,
 ): Node[] {
   const posMap = new Map(viewElements.map(ve => [ve.element_id, ve]));
+
+  // ── Detect UCD view and use specialised layout ─────────────────────────
+  const isUcd = viewpointType === 'uml_usecase' || (
+    !viewpointType && elements.length > 0 &&
+    elements.every(el => el.archimate_type === 'uml-actor' || el.archimate_type === 'uml-use-case')
+  );
 
   // Find elements that need auto-layout (no saved position or at 0,0)
   const needsLayout = elements.filter(el => {
@@ -63,10 +74,45 @@ export function elementsToNodes(
     return !ve || (ve.x === 0 && ve.y === 0);
   });
 
-  // Compute grid positions for elements that need layout
-  const gridPositions = needsLayout.length > 0
-    ? computeGridLayout(needsLayout, layerOrder, sublayerOrder)
-    : null;
+  // Compute layout positions for elements that need layout
+  let gridPositions: Map<string, { x: number; y: number }> | null = null;
+  let ucdBoundary: UcdBoundary | null = null;
+
+  if (needsLayout.length > 0) {
+    if (isUcd) {
+      const ucdResult = computeUcdLayout(needsLayout, relationships ?? []);
+      gridPositions = ucdResult.positions;
+      ucdBoundary = ucdResult.boundary;
+    } else {
+      gridPositions = computeGridLayout(needsLayout, layerOrder, sublayerOrder);
+    }
+  }
+
+  // For UCD views with saved positions, compute boundary from existing positions
+  if (isUcd && !ucdBoundary) {
+    const useCaseEls = elements.filter(e => e.archimate_type === 'uml-use-case');
+    if (useCaseEls.length > 0) {
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      for (const uc of useCaseEls) {
+        const ve = posMap.get(uc.id);
+        if (!ve) continue;
+        const x = ve.x, y = ve.y;
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x + 140 > maxX) maxX = x + 140;
+        if (y + 50 > maxY) maxY = y + 50;
+      }
+      if (minX < Infinity) {
+        const pad = 40;
+        ucdBoundary = {
+          x: minX - pad,
+          y: minY - pad - 20, // extra room for title
+          width: maxX - minX + pad * 2,
+          height: maxY - minY + pad * 2 + 20,
+        };
+      }
+    }
+  }
 
   // Build all positions map (saved + grid) for layer band computation
   const allPositions = new Map<string, { x: number; y: number }>();
@@ -238,8 +284,28 @@ export function elementsToNodes(
       const props = (el.properties ?? {}) as Record<string, unknown>;
       const attrCount = Array.isArray(props.attributes) ? props.attributes.length : 0;
       const methCount = Array.isArray(props.methods) ? props.methods.length : 0;
-      width = ve?.width ?? 180;
-      height = ve?.height ?? Math.max(80, 40 + (attrCount + methCount) * 18);
+      const litCount = Array.isArray(props.literals) ? props.literals.length : 0;
+      // Estimate width from content length (approx 6.8px per monospace char at 11px)
+      const allMembers: string[] = [];
+      if (Array.isArray(props.attributes)) {
+        for (const a of props.attributes as Array<{ name?: string; type?: string }>) {
+          allMembers.push(`+ ${a.name ?? ''}${a.type ? ' : ' + a.type : ''}`);
+        }
+      }
+      if (Array.isArray(props.methods)) {
+        for (const m of props.methods as Array<{ name?: string; returnType?: string }>) {
+          allMembers.push(`+ ${m.name ?? ''}()${m.returnType ? ' : ' + m.returnType : ''}`);
+        }
+      }
+      if (Array.isArray(props.literals)) {
+        for (const l of props.literals as string[]) allMembers.push(String(l));
+      }
+      allMembers.push(el.name);
+      const longestLen = Math.max(0, ...allMembers.map(s => s.length));
+      const contentWidth = Math.round(longestLen * 6.8 + 20);
+      const autoWidth = Math.min(400, Math.max(180, contentWidth));
+      width = ve?.width ?? autoWidth;
+      height = ve?.height ?? Math.max(80, 40 + (attrCount + methCount + litCount) * 18);
     } else if (nodeType === 'uml-use-case') {
       if (el.archimate_type === 'uml-actor') {
         width = ve?.width ?? 60;
@@ -381,5 +447,28 @@ export function elementsToNodes(
   }
   const sortedElements = [...elementNodes].sort((a, b) => getDepth(a.id) - getDepth(b.id));
 
-  return [...bandNodes, ...sortedElements];
+  // ── UCD system boundary node ───────────────────────────────────────────
+  const ucdBoundaryNodes: Node[] = [];
+  if (isUcd && ucdBoundary && ucdBoundary.width > 0) {
+    ucdBoundaryNodes.push({
+      id: '__ucd-boundary',
+      type: 'ucd-boundary',
+      position: { x: ucdBoundary.x, y: ucdBoundary.y },
+      data: {
+        label: 'System',
+        boundaryWidth: ucdBoundary.width,
+        boundaryHeight: ucdBoundary.height,
+        theme,
+      } as UcdBoundaryNodeData,
+      selectable: true,
+      draggable: true,
+      connectable: false,
+      width: ucdBoundary.width,
+      height: ucdBoundary.height,
+      zIndex: -1,
+      style: { zIndex: -1 },
+    });
+  }
+
+  return [...bandNodes, ...ucdBoundaryNodes, ...sortedElements];
 }

@@ -60,7 +60,7 @@ interface SeedView {
   /** Explicit element inclusion list — overrides auto-filter when present. */
   element_ids?: string[];
   /** Explicit element positions — overrides element_ids when present. */
-  element_positions?: Array<{ id: string; x: number; y: number }>;
+  element_positions?: Array<{ id: string; x: number; y: number; width?: number; height?: number }>;
 }
 
 // ---------------------------------------------------------------------------
@@ -184,7 +184,7 @@ export default function seed(): void {
       INSERT INTO view_elements (view_id, element_id) VALUES (@view_id, @element_id)
     `);
     const insertVEPos = db.prepare(`
-      INSERT INTO view_elements (view_id, element_id, x, y) VALUES (@view_id, @element_id, @x, @y)
+      INSERT INTO view_elements (view_id, element_id, x, y, width, height) VALUES (@view_id, @element_id, @x, @y, @width, @height)
     `);
     const insertVR = db.prepare(`
       INSERT INTO view_relationships (view_id, relationship_id) VALUES (@view_id, @relationship_id)
@@ -214,7 +214,7 @@ export default function seed(): void {
         for (const ep of v.element_positions) {
           if (allIds.has(ep.id)) {
             elementIds.add(ep.id);
-            positionMap.set(ep.id, { x: ep.x, y: ep.y });
+            positionMap.set(ep.id, { x: ep.x, y: ep.y, ...(ep.width != null && { width: ep.width }), ...(ep.height != null && { height: ep.height }) });
           }
         }
       } else if (v.element_ids && v.element_ids.length > 0) {
@@ -257,9 +257,9 @@ export default function seed(): void {
       }
 
       for (const eid of elementIds) {
-        const pos = positionMap.get(eid);
+        const pos = positionMap.get(eid) as { x: number; y: number; width?: number; height?: number } | undefined;
         if (pos) {
-          insertVEPos.run({ view_id: v.id, element_id: eid, x: pos.x, y: pos.y });
+          insertVEPos.run({ view_id: v.id, element_id: eid, x: pos.x, y: pos.y, width: pos.width ?? null, height: pos.height ?? null });
         } else {
           insertVE.run({ view_id: v.id, element_id: eid });
         }

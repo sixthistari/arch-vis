@@ -2,7 +2,8 @@
  * Wireframe Feedback node — alerts, empty states, toast, loading skeleton.
  */
 import { memo } from 'react';
-import { Handle, Position, type NodeProps, type Node } from '@xyflow/react';
+import { type NodeProps, type Node } from '@xyflow/react';
+import { RoutingHandles } from '../shared/RoutingHandles';
 
 export type WfFeedbackType = 'alert' | 'empty-state' | 'toast' | 'skeleton';
 export type WfAlertVariant = 'info' | 'warning' | 'error' | 'success';
@@ -68,8 +69,7 @@ function WfFeedbackNodeComponent({ data, selected }: NodeProps<WfFeedbackNodeTyp
             </text>
           )}
         </svg>
-        <Handle type="target" position={Position.Top} style={{ visibility: 'hidden' }} />
-        <Handle type="source" position={Position.Bottom} style={{ visibility: 'hidden' }} />
+        <RoutingHandles />
       </div>
     );
   }
@@ -108,8 +108,7 @@ function WfFeedbackNodeComponent({ data, selected }: NodeProps<WfFeedbackNodeTyp
             </g>
           )}
         </svg>
-        <Handle type="target" position={Position.Top} style={{ visibility: 'hidden' }} />
-        <Handle type="source" position={Position.Bottom} style={{ visibility: 'hidden' }} />
+        <RoutingHandles />
       </div>
     );
   }
@@ -131,8 +130,7 @@ function WfFeedbackNodeComponent({ data, selected }: NodeProps<WfFeedbackNodeTyp
             ✕
           </text>
         </svg>
-        <Handle type="target" position={Position.Top} style={{ visibility: 'hidden' }} />
-        <Handle type="source" position={Position.Bottom} style={{ visibility: 'hidden' }} />
+        <RoutingHandles />
       </div>
     );
   }
@@ -158,8 +156,7 @@ function WfFeedbackNodeComponent({ data, selected }: NodeProps<WfFeedbackNodeTyp
           <animate attributeName="opacity" values="0.5;1;0.5" dur="1.5s" begin="0.6s" repeatCount="indefinite" />
         </rect>
       </svg>
-      <Handle type="target" position={Position.Top} style={{ visibility: 'hidden' }} />
-      <Handle type="source" position={Position.Bottom} style={{ visibility: 'hidden' }} />
+      <RoutingHandles />
     </div>
   );
 }

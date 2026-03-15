@@ -4,6 +4,7 @@ import { UmlClassNode } from './uml/UmlClassNode';
 import { UmlComponentNode } from './uml/UmlComponentNode';
 import { UmlStateNode } from './uml/UmlStateNode';
 import { UmlUseCaseNode } from './uml/UmlUseCaseNode';
+import { UcdBoundaryNode } from './uml/UcdBoundaryNode';
 import { UmlActivityNode } from './uml/UmlActivityNode';
 import { UmlLifelineNode, UmlActivationNode, UmlFragmentNode } from './uml/UmlSequenceNodes';
 import { SequenceLifelineNode } from './sequence/SequenceLifelineNode';
@@ -27,6 +28,7 @@ export const nodeTypes: NodeTypes = {
   'uml-class': UmlClassNode,
   'uml-component': UmlComponentNode,
   'uml-use-case': UmlUseCaseNode,
+  'ucd-boundary': UcdBoundaryNode,
   'uml-state': UmlStateNode,
   'uml-activity': UmlActivityNode,
   'uml-lifeline': UmlLifelineNode,
@@ -58,6 +60,8 @@ export { UmlComponentNode } from './uml/UmlComponentNode';
 export type { UmlComponentNodeData } from './uml/UmlComponentNode';
 export { UmlUseCaseNode } from './uml/UmlUseCaseNode';
 export type { UmlUseCaseNodeData } from './uml/UmlUseCaseNode';
+export { UcdBoundaryNode } from './uml/UcdBoundaryNode';
+export type { UcdBoundaryNodeData } from './uml/UcdBoundaryNode';
 export { UmlStateNode } from './uml/UmlStateNode';
 export type { UmlStateNodeData } from './uml/UmlStateNode';
 export { UmlActivityNode } from './uml/UmlActivityNode';

@@ -151,6 +151,32 @@ export function getNodeType(archimateType: ArchimateType): string {
   }
 }
 
+/** Determine which notation family a viewpoint type targets. */
+export function getViewNotation(viewpointType: string): 'archimate' | 'uml' | 'wireframe' | 'any' {
+  switch (viewpointType) {
+    case 'layered':
+    case 'knowledge_cognition':
+    case 'domain_slice':
+    case 'governance_matrix':
+    case 'process_detail':
+    case 'infrastructure':
+    case 'information':
+    case 'application_landscape':
+      return 'archimate';
+    case 'uml_class':
+    case 'uml_component':
+    case 'uml_activity':
+    case 'uml_usecase':
+    case 'uml_sequence':
+      return 'uml';
+    case 'wireframe':
+      return 'wireframe';
+    case 'custom':
+    default:
+      return 'any';
+  }
+}
+
 /** Map relationship type to the xyflow edge type string. */
 export function getEdgeType(relationshipType: string): string {
   // UML sequence message types → dedicated sequence-message edge

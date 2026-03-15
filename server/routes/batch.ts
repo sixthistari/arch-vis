@@ -13,15 +13,9 @@ const router = Router();
 
 // ─── Layer ordering for grid layout ──────────────────────────────────────────
 
-const LAYER_ORDER = [
-  'motivation',
-  'strategy',
-  'business',
-  'application',
-  'technology',
-  'data',
-  'implementation',
-];
+import { LAYER_SEQUENCE } from '../../src/shared/layer-config';
+
+const LAYER_ORDER = LAYER_SEQUENCE;
 
 const UML_TYPES = new Set([
   'uml-class', 'uml-abstract-class', 'uml-interface', 'uml-enum',
@@ -82,6 +76,16 @@ router.post('/import/model-batch', (req: Request, res: Response) => {
     const result = db.transaction(() => {
       const nameToId = new Map<string, string>();
       const insertedElementIds: string[] = [];
+      const overwriteWarnings: string[] = [];
+
+      const lookupExistingElement = db.prepare(
+        'SELECT id, source FROM elements WHERE id = ?'
+      );
+      const lookupExistingRelationship = db.prepare(
+        'SELECT id, source FROM relationships WHERE id = ?'
+      );
+
+      const batchSource = 'api';
 
       const insertElement = db.prepare(`
         INSERT INTO elements
@@ -100,6 +104,16 @@ router.post('/import/model-batch', (req: Request, res: Response) => {
 
       function processElement(el: BatchElementInputParsed, parentId: string | null): string {
         const id = el.id ?? `el-${crypto.randomUUID()}`;
+
+        if (el.id) {
+          const existing = lookupExistingElement.get(el.id) as { id: string; source: string } | undefined;
+          if (existing && existing.source !== batchSource) {
+            overwriteWarnings.push(
+              `Overwrote existing element '${existing.id}' created by '${existing.source}'`
+            );
+          }
+        }
+
         insertElement.run(
           id,
           el.name,
@@ -172,6 +186,16 @@ router.post('/import/model-batch', (req: Request, res: Response) => {
         }
 
         const id = rel.id ?? `rel-${crypto.randomUUID()}`;
+
+        if (rel.id) {
+          const existing = lookupExistingRelationship.get(rel.id) as { id: string; source: string } | undefined;
+          if (existing && existing.source !== batchSource) {
+            warnings.push(
+              `Overwrote existing relationship '${existing.id}' created by '${existing.source}'`
+            );
+          }
+        }
+
         insertRelationship.run(
           id,
           rel.archimate_type,
@@ -238,12 +262,14 @@ router.post('/import/model-batch', (req: Request, res: Response) => {
         }
       }
 
+      const allWarnings = [...overwriteWarnings, ...warnings];
+
       return {
         success: true,
         elementsCreated: insertedElementIds.length,
         relationshipsCreated,
         viewId,
-        ...(warnings.length > 0 ? { warnings } : {}),
+        ...(allWarnings.length > 0 ? { warnings: allWarnings } : {}),
       };
     })();
 

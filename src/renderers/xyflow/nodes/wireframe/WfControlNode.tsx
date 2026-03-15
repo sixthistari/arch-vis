@@ -5,7 +5,8 @@
  * avatar, badge/tag, stat-card, progress bar, icon button.
  */
 import { memo } from 'react';
-import { Handle, Position, type NodeProps, type Node } from '@xyflow/react';
+import { type NodeProps, type Node } from '@xyflow/react';
+import { RoutingHandles } from '../shared/RoutingHandles';
 import { useEditableNode } from '../../hooks/useEditableNode';
 import { EditableInput } from '../../hooks/EditableInput';
 
@@ -91,8 +92,7 @@ function WfControlNodeComponent({ id, data, selected }: NodeProps<WfControlNodeT
           )}
           {editing && renderEditInput(w, h)}
         </svg>
-        <Handle type="target" position={Position.Top} style={{ visibility: 'hidden' }} />
-        <Handle type="source" position={Position.Bottom} style={{ visibility: 'hidden' }} />
+        <RoutingHandles />
       </div>
     );
   }
@@ -108,8 +108,7 @@ function WfControlNodeComponent({ id, data, selected }: NodeProps<WfControlNodeT
             {placeholder ?? label}
           </text>
         </svg>
-        <Handle type="target" position={Position.Top} style={{ visibility: 'hidden' }} />
-        <Handle type="source" position={Position.Bottom} style={{ visibility: 'hidden' }} />
+        <RoutingHandles />
       </div>
     );
   }
@@ -125,8 +124,7 @@ function WfControlNodeComponent({ id, data, selected }: NodeProps<WfControlNodeT
             🔍 {placeholder ?? 'Search...'}
           </text>
         </svg>
-        <Handle type="target" position={Position.Top} style={{ visibility: 'hidden' }} />
-        <Handle type="source" position={Position.Bottom} style={{ visibility: 'hidden' }} />
+        <RoutingHandles />
       </div>
     );
   }
@@ -144,8 +142,7 @@ function WfControlNodeComponent({ id, data, selected }: NodeProps<WfControlNodeT
           )}
           {editing && renderEditInput(controlWidth, h, 16)}
         </svg>
-        <Handle type="target" position={Position.Top} style={{ visibility: 'hidden' }} />
-        <Handle type="source" position={Position.Bottom} style={{ visibility: 'hidden' }} />
+        <RoutingHandles />
       </div>
     );
   }
@@ -163,8 +160,7 @@ function WfControlNodeComponent({ id, data, selected }: NodeProps<WfControlNodeT
           )}
           {editing && renderEditInput(controlWidth, h, 10)}
         </svg>
-        <Handle type="target" position={Position.Top} style={{ visibility: 'hidden' }} />
-        <Handle type="source" position={Position.Bottom} style={{ visibility: 'hidden' }} />
+        <RoutingHandles />
       </div>
     );
   }
@@ -182,8 +178,7 @@ function WfControlNodeComponent({ id, data, selected }: NodeProps<WfControlNodeT
           )}
           {editing && renderEditInput(controlWidth, h, 10)}
         </svg>
-        <Handle type="target" position={Position.Top} style={{ visibility: 'hidden' }} />
-        <Handle type="source" position={Position.Bottom} style={{ visibility: 'hidden' }} />
+        <RoutingHandles />
       </div>
     );
   }
@@ -206,8 +201,7 @@ function WfControlNodeComponent({ id, data, selected }: NodeProps<WfControlNodeT
           )}
           {editing && renderEditInput(w, h)}
         </svg>
-        <Handle type="target" position={Position.Top} style={{ visibility: 'hidden' }} />
-        <Handle type="source" position={Position.Bottom} style={{ visibility: 'hidden' }} />
+        <RoutingHandles />
       </div>
     );
   }
@@ -224,8 +218,7 @@ function WfControlNodeComponent({ id, data, selected }: NodeProps<WfControlNodeT
           <circle cx={r} cy={r - 4} r={5} fill={WF_MUTED} />
           <ellipse cx={r} cy={r + 10} rx={9} ry={6} fill={WF_MUTED} />
         </svg>
-        <Handle type="target" position={Position.Top} style={{ visibility: 'hidden' }} />
-        <Handle type="source" position={Position.Bottom} style={{ visibility: 'hidden' }} />
+        <RoutingHandles />
       </div>
     );
   }
@@ -245,8 +238,7 @@ function WfControlNodeComponent({ id, data, selected }: NodeProps<WfControlNodeT
           )}
           {editing && renderEditInput(w, h, 9)}
         </svg>
-        <Handle type="target" position={Position.Top} style={{ visibility: 'hidden' }} />
-        <Handle type="source" position={Position.Bottom} style={{ visibility: 'hidden' }} />
+        <RoutingHandles />
       </div>
     );
   }
@@ -281,8 +273,7 @@ function WfControlNodeComponent({ id, data, selected }: NodeProps<WfControlNodeT
             {value ?? '—'}
           </text>
         </svg>
-        <Handle type="target" position={Position.Top} style={{ visibility: 'hidden' }} />
-        <Handle type="source" position={Position.Bottom} style={{ visibility: 'hidden' }} />
+        <RoutingHandles />
       </div>
     );
   }
@@ -317,8 +308,7 @@ function WfControlNodeComponent({ id, data, selected }: NodeProps<WfControlNodeT
           <rect x={0} y={barY} width={w} height={barH} rx={barH / 2} fill="#E5E7EB" stroke="none" />
           <rect x={2} y={barY} width={fillW} height={barH} rx={barH / 2} fill="#6B7280" stroke="none" />
         </svg>
-        <Handle type="target" position={Position.Top} style={{ visibility: 'hidden' }} />
-        <Handle type="source" position={Position.Bottom} style={{ visibility: 'hidden' }} />
+        <RoutingHandles />
       </div>
     );
   }
@@ -331,8 +321,7 @@ function WfControlNodeComponent({ id, data, selected }: NodeProps<WfControlNodeT
         <svg width={w} height={4} overflow="visible">
           <line x1={0} y1={2} x2={w} y2={2} stroke={WF_BORDER} strokeWidth={0.8} />
         </svg>
-        <Handle type="target" position={Position.Top} style={{ visibility: 'hidden' }} />
-        <Handle type="source" position={Position.Bottom} style={{ visibility: 'hidden' }} />
+        <RoutingHandles />
       </div>
     );
   }
@@ -344,8 +333,7 @@ function WfControlNodeComponent({ id, data, selected }: NodeProps<WfControlNodeT
         {!editing && <text x={0} y={14} fontSize={10} fill={WF_TEXT}>{label}</text>}
         {editing && renderEditInput(controlWidth, 20, 10)}
       </svg>
-      <Handle type="target" position={Position.Top} style={{ visibility: 'hidden' }} />
-      <Handle type="source" position={Position.Bottom} style={{ visibility: 'hidden' }} />
+      <RoutingHandles />
     </div>
   );
 }

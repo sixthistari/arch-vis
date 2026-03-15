@@ -14,8 +14,10 @@ import { XYFlowCanvas } from '../renderers/xyflow/Canvas';
 import * as api from '../api/client';
 import type { ViewElement } from '../model/types';
 import type { Element } from '../model/types';
-import { useUndoRedoStore, renameElementCommand } from '../interaction/undo-redo';
+import { useUndoRedoStore, renameElementCommand, createRelationshipCommand } from '../interaction/undo-redo';
 import type { Command } from '../interaction/undo-redo';
+import type { Relationship } from '../model/types';
+import { getNotation, getViewNotation } from '../model/notation';
 
 // Lazy-load legacy spatial renderer only when needed
 const LegacySpatialCanvas = React.lazy(() =>
@@ -112,11 +114,33 @@ export function Canvas(): React.ReactElement {
     await run(cmd);
   }, [elements, loadAll, clearSelection, run]);
 
-  // Bulk delete relationships (from xyflow Delete key)
+  // Bulk delete relationships (from xyflow Delete key) — routed through undo-redo
   const handleRelationshipsDelete = useCallback(async (relationshipIds: string[]) => {
-    await Promise.all(relationshipIds.map(id => api.deleteRelationship(id)));
-    await loadAll();
-  }, [loadAll]);
+    const targets = relationshipIds
+      .map(id => relationships.find(r => r.id === id))
+      .filter((r): r is Relationship => Boolean(r));
+    if (targets.length === 0) return;
+    const cmd: Command = {
+      description: `Delete ${targets.length} relationship(s)`,
+      execute: async () => {
+        await Promise.all(targets.map(r => api.deleteRelationship(r.id)));
+        await loadAll();
+      },
+      undo: async () => {
+        await Promise.all(targets.map(r => api.createRelationship({
+          id: r.id,
+          archimate_type: r.archimate_type,
+          source_id: r.source_id,
+          target_id: r.target_id,
+          label: r.label ?? undefined,
+          description: r.description ?? undefined,
+          specialisation: r.specialisation ?? undefined,
+        })));
+        await loadAll();
+      },
+    };
+    await run(cmd);
+  }, [relationships, loadAll, run]);
 
   // Inline label change from double-click edit — routed through undo-redo
   const handleLabelChange = useCallback(async (elementId: string, newLabel: string) => {
@@ -125,20 +149,29 @@ export function Canvas(): React.ReactElement {
     await run(renameElementCommand(elementId, oldEl.name, newLabel, loadAll));
   }, [elements, loadAll, run]);
 
-  // On-canvas relationship creation: called when user drags from element handle to target
+  // On-canvas relationship creation: called when user drags from element handle to target — routed through undo-redo
   const handleCreateRelationship = useCallback(async (sourceId: string, targetId: string, relType: string) => {
-    await api.createRelationship({
-      id: `rel-${crypto.randomUUID()}`,
-      archimate_type: relType as import('../model/types').RelationshipType,
-      source_id: sourceId,
-      target_id: targetId,
-    });
-    await loadAll();
-  }, [loadAll]);
+    await run(createRelationshipCommand(
+      {
+        id: `rel-${crypto.randomUUID()}`,
+        archimate_type: relType as import('../model/types').RelationshipType,
+        source_id: sourceId,
+        target_id: targetId,
+      },
+      async () => { await loadAll(); },
+    ));
+  }, [loadAll, run]);
 
   // Palette drag-to-create: called by XYFlowCanvas with flow-space coords
   const handleDropElement = useCallback(async (archimateType: string, layer: string, x: number, y: number) => {
     if (!currentView) return;
+    // Notation boundary check — reject cross-notation drops
+    const elementNotation = getNotation(archimateType);
+    const viewNotation = getViewNotation(currentView.viewpoint_type);
+    if (viewNotation !== 'any' && elementNotation !== viewNotation) {
+      window.alert(`Cannot add a ${elementNotation} element to a ${viewNotation} view`);
+      return;
+    }
     const name = window.prompt(`Name for new ${archimateType}:`);
     if (!name?.trim()) return;
     const el = await api.createElement({
@@ -164,6 +197,16 @@ export function Canvas(): React.ReactElement {
   // Model tree drag-to-canvas: add an existing element to the current view
   const handleDropTreeElement = useCallback(async (elementId: string, x: number, y: number) => {
     if (!currentView) return;
+    // Notation boundary check — reject cross-notation drops
+    const el = elements.find(e => e.id === elementId);
+    if (el) {
+      const elementNotation = getNotation(el.archimate_type);
+      const viewNotation = getViewNotation(currentView.viewpoint_type);
+      if (viewNotation !== 'any' && elementNotation !== viewNotation) {
+        window.alert(`Cannot add a ${elementNotation} element to a ${viewNotation} view`);
+        return;
+      }
+    }
     await api.updateViewElements(currentView.id, [{
       view_id: currentView.id,
       element_id: elementId,
@@ -175,7 +218,7 @@ export function Canvas(): React.ReactElement {
       style_overrides: null,
     }]);
     await loadAll();
-  }, [currentView, loadAll]);
+  }, [currentView, elements, loadAll]);
 
   // Determine render mode
   const renderMode = currentView?.render_mode ?? 'flat';
@@ -228,6 +271,7 @@ export function Canvas(): React.ReactElement {
           onClearSelection: clearSelection,
           onNodeContextMenu: showContextMenu,
           validRelationships,
+          viewpointType: currentView.viewpoint_type,
         }),
   );
 }

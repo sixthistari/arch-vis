@@ -43,7 +43,7 @@ import React from 'react';
 import { buildOrderMaps } from './layout-computation';
 import { recomputeBands } from './layer-bands';
 import { elementsToNodes, type OverlayConfig } from './node-conversion';
-import { relationshipsToEdges, detectPortSide } from './edge-routing-integration';
+import { relationshipsToEdges, detectPortSide, type NodePositionEntry } from './edge-routing-integration';
 import { computeElkLayout } from '../../layout/elk';
 import type { LayoutInput, SublayerEntry } from '../../layout/types';
 
@@ -76,6 +76,7 @@ interface XYFlowCanvasProps {
   onClearSelection?: () => void;
   onNodeContextMenu?: (elementId: string, x: number, y: number) => void;
   validRelationships?: ValidRelationship[];
+  viewpointType?: string;
 }
 
 // ── Bridge: captures screenToFlowPosition inside the ReactFlow provider ───
@@ -110,6 +111,7 @@ export function XYFlowCanvas({
   onClearSelection,
   onNodeContextMenu,
   validRelationships = [],
+  viewpointType,
 }: XYFlowCanvasProps) {
   // Derive layout order maps from sublayer config (or fallback to hardcoded)
   const { layerOrder, sublayerOrder, layerLabels } = React.useMemo(
@@ -172,7 +174,8 @@ export function XYFlowCanvas({
 
   // Build position map with ABSOLUTE positions for edge handle computation.
   // Child nodes have positions relative to their parent — we resolve to absolute.
-  function buildPositionMap(nodes: Node[]): Map<string, { x: number; y: number; w: number; h: number }> {
+  // Includes excludedSides for non-rectangular shapes (e.g. chevrons exclude l/r).
+  function buildPositionMap(nodes: Node[]): Map<string, NodePositionEntry> {
     const nodeMap = new Map<string, Node>();
     for (const n of nodes) nodeMap.set(n.id, n);
 
@@ -184,11 +187,17 @@ export function XYFlowCanvas({
       return { x: pp.x + n.position.x, y: pp.y + n.position.y };
     }
 
-    const map = new Map<string, { x: number; y: number; w: number; h: number }>();
+    const map = new Map<string, NodePositionEntry>();
     for (const n of nodes) {
       if (n.type !== 'layer-band') {
         const abs = absolutePos(n);
-        map.set(n.id, { x: abs.x, y: abs.y, w: n.width ?? 130, h: n.height ?? 80 });
+        const entry: NodePositionEntry = { x: abs.x, y: abs.y, w: n.width ?? 130, h: n.height ?? 80 };
+        // Chevron shapes (value-stream) exclude left/right handles
+        const archType = (n.data as Record<string, unknown>)?.archimateType as string | undefined;
+        if (archType === 'value-stream') {
+          entry.excludedSides = ['l', 'r'];
+        }
+        map.set(n.id, entry);
       }
     }
     return map;
@@ -198,13 +207,13 @@ export function XYFlowCanvas({
   const viewChanged = currentViewRef.current !== viewId;
   if (viewChanged) {
     currentViewRef.current = viewId;
-    nodesRef.current = elementsToNodes(elements, viewElements, theme, layerOrder, sublayerOrder, layerLabels, onLabelChange, overlayConfig);
+    nodesRef.current = elementsToNodes(elements, viewElements, theme, layerOrder, sublayerOrder, layerLabels, onLabelChange, overlayConfig, relationships, viewpointType);
     edgesRef.current = relationshipsToEdges(relationships, buildPositionMap(nodesRef.current), theme);
   }
 
   // Initial load — if ref is empty, compute
   if (nodesRef.current.length === 0 && elements.length > 0) {
-    nodesRef.current = elementsToNodes(elements, viewElements, theme, layerOrder, sublayerOrder, layerLabels, onLabelChange, overlayConfig);
+    nodesRef.current = elementsToNodes(elements, viewElements, theme, layerOrder, sublayerOrder, layerLabels, onLabelChange, overlayConfig, relationships, viewpointType);
     edgesRef.current = relationshipsToEdges(relationships, buildPositionMap(nodesRef.current), theme);
   }
 
@@ -221,10 +230,14 @@ export function XYFlowCanvas({
       return p ? { ...ve, x: p.x, y: p.y } : ve;
     });
 
-    nodesRef.current = elementsToNodes(elements, liveVE, theme, layerOrder, sublayerOrder, layerLabels, onLabelChange, overlayConfig);
+    nodesRef.current = elementsToNodes(elements, liveVE, theme, layerOrder, sublayerOrder, layerLabels, onLabelChange, overlayConfig, relationships, viewpointType);
     edgesRef.current = relationshipsToEdges(relationships, buildPositionMap(nodesRef.current), theme);
     forceRender(n => n + 1);
-  }, [elements, overlayConfig]); // eslint-disable-line react-hooks/exhaustive-deps
+    // Intentionally excludes viewElements, theme, layerOrder, sublayerOrder, layerLabels,
+    // onLabelChange, relationships, buildPositionMap — these either trigger their own
+    // rebuild paths (view switch block above) or are stable/ref-like values.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [elements, overlayConfig]);
 
   const nodes = nodesRef.current;
   const edges = edgesRef.current;
@@ -278,7 +291,10 @@ export function XYFlowCanvas({
     }));
 
     return computeOrthogonalRoutes(routeEdges, routeElements);
-  }, [nodes, edges]); // eslint-disable-line react-hooks/exhaustive-deps
+    // buildPositionMap is a pure function of its argument (nodes), not of component state.
+    // assignPorts, detectPortSide, computeOrthogonalRoutes are module-level stable references.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nodes, edges]);
   // ───────────────────────────────────────────────────────────────────────────
 
   const onNodesChange: OnNodesChange = useCallback((changes) => {
@@ -578,7 +594,10 @@ export function XYFlowCanvas({
         return { element_id: n.id, x: abs.x, y: abs.y };
       });
     onPositionChangeRef.current?.(moved);
-  }, [layerLabels, theme]); // eslint-disable-line react-hooks/exhaustive-deps
+    // nodesRef, onPositionChangeRef are refs (stable identity). resolveAbsolutePos and
+    // recomputeBands are stable — defined in component body as pure helpers or imported.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [layerLabels, theme]);
 
   // Palette drag-to-create
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -762,7 +781,7 @@ export function XYFlowCanvas({
             onClick={() => {
               // Force auto-layout: zero all saved positions so elementsToNodes uses grid layout
               const resetVE = viewElements.map(ve => ({ ...ve, x: 0, y: 0 }));
-              nodesRef.current = elementsToNodes(elements, resetVE, theme, layerOrder, sublayerOrder, layerLabels, onLabelChange, overlayConfig);
+              nodesRef.current = elementsToNodes(elements, resetVE, theme, layerOrder, sublayerOrder, layerLabels, onLabelChange, overlayConfig, relationships, viewpointType);
               edgesRef.current = relationshipsToEdges(relationships, buildPositionMap(nodesRef.current), theme);
               forceRender(n => n + 1);
               // Save the new absolute positions
@@ -831,7 +850,7 @@ export function XYFlowCanvas({
                 }
               }
               try {
-                const result = await computeElkLayout(layoutInputs, rels, sublayers);
+                const result = await computeElkLayout(layoutInputs, rels, sublayers, viewpointType);
                 // Apply positions from ELK to nodes
                 const elkPosMap = new Map(result.map(r => [r.id, { x: r.wx, y: r.wy }]));
                 nodesRef.current = nodesRef.current.map(n => {

@@ -6,7 +6,8 @@
  * with optional title bar.
  */
 import { memo } from 'react';
-import { Handle, Position, type NodeProps, type Node } from '@xyflow/react';
+import { type NodeProps, type Node } from '@xyflow/react';
+import { RoutingHandles } from '../shared/RoutingHandles';
 import { useEditableNode } from '../../hooks/useEditableNode';
 import { EditableInput } from '../../hooks/EditableInput';
 
@@ -155,10 +156,7 @@ function WfSectionNodeComponent({ id, data, selected }: NodeProps<WfSectionNodeT
         )}
       </svg>
 
-      <Handle type="target" position={Position.Top} style={{ visibility: 'hidden' }} />
-      <Handle type="source" position={Position.Bottom} style={{ visibility: 'hidden' }} />
-      <Handle type="target" position={Position.Left} style={{ visibility: 'hidden' }} />
-      <Handle type="source" position={Position.Right} style={{ visibility: 'hidden' }} />
+      <RoutingHandles />
     </div>
   );
 }

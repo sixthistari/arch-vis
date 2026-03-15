@@ -5,7 +5,8 @@
  * breadcrumbs, pagination, stepper/wizard.
  */
 import { memo } from 'react';
-import { Handle, Position, type NodeProps, type Node } from '@xyflow/react';
+import { type NodeProps, type Node } from '@xyflow/react';
+import { RoutingHandles } from '../shared/RoutingHandles';
 import { useEditableNode } from '../../hooks/useEditableNode';
 import { EditableInput } from '../../hooks/EditableInput';
 
@@ -103,8 +104,7 @@ function WfNavNodeComponent({ id, data, selected }: NodeProps<WfNavNodeType>) {
             );
           })}
         </svg>
-        <Handle type="target" position={Position.Top} style={{ visibility: 'hidden' }} />
-        <Handle type="source" position={Position.Bottom} style={{ visibility: 'hidden' }} />
+        <RoutingHandles />
       </div>
     );
   }
@@ -138,8 +138,7 @@ function WfNavNodeComponent({ id, data, selected }: NodeProps<WfNavNodeType>) {
             );
           })}
         </svg>
-        <Handle type="target" position={Position.Left} style={{ visibility: 'hidden' }} />
-        <Handle type="source" position={Position.Right} style={{ visibility: 'hidden' }} />
+        <RoutingHandles />
       </div>
     );
   }
@@ -177,8 +176,7 @@ function WfNavNodeComponent({ id, data, selected }: NodeProps<WfNavNodeType>) {
             );
           })}
         </svg>
-        <Handle type="target" position={Position.Top} style={{ visibility: 'hidden' }} />
-        <Handle type="source" position={Position.Bottom} style={{ visibility: 'hidden' }} />
+        <RoutingHandles />
       </div>
     );
   }
@@ -204,8 +202,7 @@ function WfNavNodeComponent({ id, data, selected }: NodeProps<WfNavNodeType>) {
             ))}
           </text>
         </svg>
-        <Handle type="target" position={Position.Top} style={{ visibility: 'hidden' }} />
-        <Handle type="source" position={Position.Bottom} style={{ visibility: 'hidden' }} />
+        <RoutingHandles />
       </div>
     );
   }
@@ -239,8 +236,7 @@ function WfNavNodeComponent({ id, data, selected }: NodeProps<WfNavNodeType>) {
           <rect x={btnW + items.length * btnW} y={2} width={btnW} height={h - 4} rx={3} stroke={WF_BORDER} fill="white" strokeWidth={0.8} />
           <text x={btnW + items.length * btnW + btnW / 2} y={h / 2 + 1} textAnchor="middle" dominantBaseline="central" fontSize={10} fill={WF_MUTED}>›</text>
         </svg>
-        <Handle type="target" position={Position.Top} style={{ visibility: 'hidden' }} />
-        <Handle type="source" position={Position.Bottom} style={{ visibility: 'hidden' }} />
+        <RoutingHandles />
       </div>
     );
   }
@@ -283,8 +279,7 @@ function WfNavNodeComponent({ id, data, selected }: NodeProps<WfNavNodeType>) {
           );
         })}
       </svg>
-      <Handle type="target" position={Position.Top} style={{ visibility: 'hidden' }} />
-      <Handle type="source" position={Position.Bottom} style={{ visibility: 'hidden' }} />
+      <RoutingHandles />
     </div>
   );
 }
