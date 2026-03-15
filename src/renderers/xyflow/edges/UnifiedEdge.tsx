@@ -329,22 +329,38 @@ function UnifiedEdgeComponent(props: EdgeProps<UnifiedEdgeType>) {
     return { relType: formatRelType(relType), srcName, tgtName, label: data?.label };
   }, [tooltip, relType, data?.label, props.source, props.target, getNode]);
 
+  // ── Sequence message — Y computed from sequence number ─────────────────
+  // Messages are positioned relative to the source node's top (header bottom),
+  // not from xyflow's handle Y, because lifeline handles are at fixed positions.
+  const SEQ_HEADER_HEIGHT = 36;
+  const SEQ_FIRST_MSG_OFFSET = 40;
+  const MESSAGE_SPACING = 40;
+  const seqNum = data?.sequenceNumber ?? 1;
+
+  // Compute the source node's top-Y from edge props — xyflow gives us handle Y,
+  // but for sequence messages we derive message Y from the node position instead.
+  const srcNode = (edgeStyle.isMessage || edgeStyle.isSelfMessage) ? getNode(props.source) : null;
+  const msgBaseY = srcNode
+    ? (srcNode.position?.y ?? sourceY) + SEQ_HEADER_HEIGHT + SEQ_FIRST_MSG_OFFSET
+    : sourceY;
+  const msgY = msgBaseY + (seqNum - 1) * MESSAGE_SPACING;
+  const seqColour = selected ? '#F59E0B' : strokeColour;
+  const seqTextColour = isDark ? '#D1D5DB' : '#374151';
+
   // ── Sequence message — self-message arc ──────────────────────────────
   if (edgeStyle.isSelfMessage) {
-    const colour = selected ? '#F59E0B' : '#374151';
     const displayLabel = data ? buildSequenceLabel(data) : '';
     const x0 = sourceX;
-    const y0 = sourceY;
     const xRight = x0 + SELF_LOOP_WIDTH;
-    const yBottom = y0 + SELF_LOOP_HEIGHT;
-    const d = `M${x0},${y0} L${xRight},${y0} L${xRight},${yBottom} L${x0},${yBottom}`;
+    const yBottom = msgY + SELF_LOOP_HEIGHT;
+    const d = `M${x0},${msgY} L${xRight},${msgY} L${xRight},${yBottom} L${x0},${yBottom}`;
 
     return (
       <g>
-        <path d={d} fill="none" stroke={colour} strokeWidth={edgeStyle.width} strokeDasharray={edgeStyle.dashArray || undefined} />
-        {renderArrowhead(x0, yBottom, 'left', edgeStyle.filledArrow ?? true, colour)}
+        <path d={d} fill="none" stroke={seqColour} strokeWidth={edgeStyle.width} strokeDasharray={edgeStyle.dashArray || undefined} />
+        {renderArrowhead(x0, yBottom, 'left', edgeStyle.filledArrow ?? true, seqColour)}
         {displayLabel && (
-          <text x={xRight + 4} y={y0 + SELF_LOOP_HEIGHT / 2} fontSize={10} fill="#374151"
+          <text x={xRight + 4} y={msgY + SELF_LOOP_HEIGHT / 2} fontSize={10} fill={seqTextColour}
             fontFamily="Inter, system-ui, sans-serif" dominantBaseline="central" style={{ pointerEvents: 'none' }}>
             {displayLabel}
           </text>
@@ -355,20 +371,19 @@ function UnifiedEdgeComponent(props: EdgeProps<UnifiedEdgeType>) {
 
   // ── Sequence message — straight horizontal line with inline arrowhead ──
   if (edgeStyle.isMessage) {
-    const colour = selected ? '#F59E0B' : '#374151';
     const displayLabel = data ? buildSequenceLabel(data) : '';
     const direction: 'right' | 'left' = targetX >= sourceX ? 'right' : 'left';
-    const d = `M${sourceX},${sourceY} L${targetX},${targetY}`;
+    const d = `M${sourceX},${msgY} L${targetX},${msgY}`;
     const labelX = (sourceX + targetX) / 2;
-    const labelY = Math.min(sourceY, targetY) - 6;
+    const labelY = msgY - 6;
 
     return (
       <g>
-        <path d={d} fill="none" stroke={colour} strokeWidth={edgeStyle.width} strokeDasharray={edgeStyle.dashArray || undefined} />
-        {renderArrowhead(targetX, targetY, direction, edgeStyle.filledArrow ?? false, colour)}
-        {data?.messageType === 'destroy' && renderDestroyMarker(targetX, targetY, colour)}
+        <path d={d} fill="none" stroke={seqColour} strokeWidth={edgeStyle.width} strokeDasharray={edgeStyle.dashArray || undefined} />
+        {renderArrowhead(targetX, msgY, direction, edgeStyle.filledArrow ?? false, seqColour)}
+        {data?.messageType === 'destroy' && renderDestroyMarker(targetX, msgY, seqColour)}
         {displayLabel && (
-          <text x={labelX} y={labelY} textAnchor="middle" fontSize={10} fill="#374151"
+          <text x={labelX} y={labelY} textAnchor="middle" fontSize={10} fill={seqTextColour}
             fontFamily="Inter, system-ui, sans-serif" style={{ pointerEvents: 'none' }}>
             {displayLabel}
           </text>
