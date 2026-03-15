@@ -166,11 +166,14 @@ export function relationshipsToEdges(
     // Sort by opposite Y position (ascending = top first)
     group.sort((a, b) => a.oppositeY - b.oppositeY);
 
+    // Centre the handle assignments: if fewer edges than handles, offset so
+    // they're centred rather than starting from the top. E.g. 1 edge → index 2
+    // (50%), 2 edges → indices 1,3 (30%,70%), 3 edges → indices 1,2,3.
+    const startIdx = Math.max(0, Math.floor((handles.length - group.length) / 2));
+
     for (let slot = 0; slot < group.length; slot++) {
       const entry = group[slot]!;
-      // Assign handles in Y-sorted order: slot 0 → handle index 0 (topmost),
-      // slot 1 → index 1, etc. For more edges than handles, wrap around.
-      const handleIdx = slot % handles.length;
+      const handleIdx = (startIdx + slot) % handles.length;
       const handleId = handles[handleIdx]!;
 
       if (role === 'src') {

@@ -21,12 +21,13 @@ interface RoutingHandlesProps {
 const PERCENTAGES = [15, 30, 50, 70, 85];
 
 const hiddenStyle: React.CSSProperties = {
-  width: 6,
-  height: 6,
+  width: 8,
+  height: 8,
+  minWidth: 8,
+  minHeight: 8,
   background: 'transparent',
   border: 'none',
   opacity: 0,
-  pointerEvents: 'none',
 };
 
 const SIDE_CONFIG: { side: Side; position: Position; prefix: string; axis: 'left' | 'top' }[] = [
