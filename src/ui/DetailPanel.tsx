@@ -499,14 +499,14 @@ function renderUmlMembers(element: Element, isEnum: boolean): React.ReactElement
     const name = String(m.name ?? '');
     if (isEnum && isMeth) {
       return React.createElement('div', {
-        key: name,
+        key: `enum-${name}`,
         style: { color: 'var(--text-primary)', fontSize: 11, paddingLeft: 8, marginBottom: 2 },
       }, name);
     }
     const typeStr = isMeth ? String(m.returnType ?? '') : String(m.type ?? '');
     const display = `${vis} ${name}${isMeth ? '()' : ''}${typeStr ? ': ' + typeStr : ''}`;
     return React.createElement('div', {
-      key: name + vis + typeStr,
+      key: `${vis}-${name}-${typeStr}`,
       style: {
         color: 'var(--text-primary)',
         fontSize: 11,
@@ -618,7 +618,7 @@ function renderUmlMemberEditor(
     }, '\u00D7'));
 
     return React.createElement('div', {
-      key: index,
+      key: `${item.name}-${item.visibility}-${index}`,
       style: { display: 'flex', gap: 4, marginBottom: 4, alignItems: 'center' },
     }, ...children);
   };

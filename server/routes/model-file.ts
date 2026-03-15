@@ -107,12 +107,12 @@ router.post('/import/model-full', (req: Request, res: Response) => {
   const body = req.body as Partial<ModelFileFormat>;
 
   if (!body.version || body.version !== 1) {
-    res.status(400).json({ error: 'Invalid or unsupported model file version.' });
+    res.status(400).json({ error: 'Invalid or unsupported model file version.', code: 'VALIDATION_ERROR' });
     return;
   }
 
   if (!Array.isArray(body.elements)) {
-    res.status(400).json({ error: 'Model file must contain an elements array.' });
+    res.status(400).json({ error: 'Model file must contain an elements array.', code: 'VALIDATION_ERROR' });
     return;
   }
 
@@ -208,7 +208,7 @@ router.post('/import/model-full', (req: Request, res: Response) => {
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    res.status(400).json({ error: message });
+    res.status(400).json({ error: message, code: 'VALIDATION_ERROR' });
   }
 });
 

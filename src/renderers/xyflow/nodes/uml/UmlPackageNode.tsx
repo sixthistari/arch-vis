@@ -9,6 +9,8 @@ import { memo } from 'react';
 import { type NodeProps, type Node, NodeResizer } from '@xyflow/react';
 import { useNodeBehaviour } from '../../hooks/useNodeBehaviour';
 import { RoutingHandles } from '../shared/RoutingHandles';
+import { EditableLabel } from '../shared/EditableLabel';
+import { getContainerColours } from '../../../../notation/theme-colours';
 
 export interface UmlPackageNodeData {
   label: string;
@@ -30,7 +32,6 @@ export const UmlPackageNode = memo(function UmlPackageNode({
   selected,
 }: NodeProps<UmlPackageNodeType>) {
   const { label, theme = 'dark', dimmed, onLabelChange } = data;
-  const isDark = theme === 'dark';
 
   const {
     editing, editValue, setEditValue, inputRef,
@@ -39,10 +40,7 @@ export const UmlPackageNode = memo(function UmlPackageNode({
     opacity,
   } = useNodeBehaviour({ id, label, dimmed, onLabelChange });
 
-  const stroke = selected ? '#F59E0B' : (isDark ? '#94A3B8' : '#475569');
-  const fill = isDark ? 'rgba(30, 41, 59, 0.25)' : 'rgba(241, 245, 249, 0.35)';
-  const textColour = isDark ? '#E5E7EB' : '#1F2937';
-  const tabBg = isDark ? 'rgba(30, 41, 59, 0.6)' : 'rgba(241, 245, 249, 0.6)';
+  const { stroke, fill, text: textColour, tabBg } = getContainerColours(theme, selected);
 
   return (
     <div
@@ -86,27 +84,16 @@ export const UmlPackageNode = memo(function UmlPackageNode({
         onDoubleClick={handleDoubleClick}
       >
         {editing ? (
-          <input
-            ref={inputRef}
-            value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') commitEdit();
-              if (e.key === 'Escape') cancelEdit();
-            }}
-            onBlur={commitEdit}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              outline: 'none',
-              color: textColour,
-              fontSize: 11,
-              fontWeight: 600,
-              fontFamily: 'Inter, system-ui, sans-serif',
-              width: '100%',
-              padding: 0,
-              textAlign: 'center',
-            }}
+          <EditableLabel
+            editing={editing}
+            label={label}
+            editValue={editValue}
+            setEditValue={setEditValue}
+            inputRef={inputRef}
+            commitEdit={commitEdit}
+            cancelEdit={cancelEdit}
+            colour={textColour}
+            textAlign="center"
           />
         ) : (
           <span

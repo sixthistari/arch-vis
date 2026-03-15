@@ -181,7 +181,7 @@ router.post('/import/csv', (req: Request, res: Response) => {
     const body = req.body as { elements?: string; relations?: string; properties?: string };
 
     if (!body.elements) {
-      res.status(400).json({ error: 'elements CSV string is required' });
+      res.status(400).json({ error: 'elements CSV string is required', code: 'VALIDATION_ERROR' });
       return;
     }
 
@@ -299,7 +299,7 @@ router.post('/import/csv', (req: Request, res: Response) => {
     res.json(result);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    res.status(400).json({ error: message });
+    res.status(400).json({ error: message, code: 'VALIDATION_ERROR' });
   }
 });
 

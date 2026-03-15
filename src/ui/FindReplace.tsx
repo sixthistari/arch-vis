@@ -13,7 +13,7 @@ interface FindReplaceProps {
   theme: 'dark' | 'light';
 }
 
-export function FindReplace({ onClose, theme }: FindReplaceProps): React.ReactElement {
+export function FindReplace({ onClose, theme: _theme }: FindReplaceProps): React.ReactElement {
   const [findText, setFindText] = useState('');
   const [replaceText, setReplaceText] = useState('');
   const [caseSensitive, setCaseSensitive] = useState(false);
@@ -72,12 +72,10 @@ export function FindReplace({ onClose, theme }: FindReplaceProps): React.ReactEl
     if (e.key === 'Escape') onClose();
   }, [onClose]);
 
-  const isDark = theme === 'dark';
-  const bg = isDark ? '#1E293B' : '#FFFFFF';
-  const border = isDark ? '#334155' : '#D1D5DB';
-  const text = isDark ? '#E2E8F0' : '#1E293B';
-  const muted = isDark ? '#64748B' : '#94A3B8';
-  const inputBg = isDark ? '#0F172A' : '#F8FAFC';
+  const border = 'var(--border-primary)';
+  const text = 'var(--text-primary)';
+  const muted = 'var(--text-muted)';
+  const inputBg = 'var(--bg-tertiary)';
 
   const inputStyle: React.CSSProperties = {
     background: inputBg,
@@ -91,7 +89,7 @@ export function FindReplace({ onClose, theme }: FindReplaceProps): React.ReactEl
   };
 
   const btnStyle: React.CSSProperties = {
-    background: isDark ? '#334155' : '#E2E8F0',
+    background: 'var(--bg-secondary)',
     border: 'none',
     borderRadius: 4,
     color: text,
@@ -106,8 +104,8 @@ export function FindReplace({ onClose, theme }: FindReplaceProps): React.ReactEl
       top: 50,
       right: 20,
       zIndex: 10000,
-      background: bg,
-      border: `1px solid ${border}`,
+      background: 'var(--panel-bg)',
+      border: `1px solid var(--panel-border)`,
       borderRadius: 8,
       padding: 14,
       boxShadow: '0 8px 32px rgba(0,0,0,0.3)',

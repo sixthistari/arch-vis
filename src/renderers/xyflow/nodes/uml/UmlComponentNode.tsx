@@ -10,6 +10,7 @@
 import { memo } from 'react';
 import { type NodeProps, type Node } from '@xyflow/react';
 import { RoutingHandles } from '../shared/RoutingHandles';
+import { getUmlColours } from '../../../../notation/theme-colours';
 
 export interface UmlPort {
   id: string;
@@ -125,10 +126,7 @@ function renderPort(port: UmlPort, width: number, height: number, stroke: string
 
 function UmlComponentNodeComponent({ data, selected }: NodeProps<UmlComponentNodeType>) {
   const { label, stereotype, ports = [], theme = 'dark', dimmed } = data;
-  const isDark = theme === 'dark';
-  const stroke = selected ? '#F59E0B' : (isDark ? '#94A3B8' : '#475569');
-  const fill = isDark ? '#1E293B' : '#FFFFFF';
-  const textFill = isDark ? '#E5E7EB' : '#1F2937';
+  const { stroke, fill, text: textFill } = getUmlColours(theme, selected);
   const opacity = dimmed ? 0.1 : 1;
 
   const displayStereotype = stereotype ?? '«component»';

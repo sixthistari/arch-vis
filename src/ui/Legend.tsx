@@ -85,6 +85,7 @@ export function Legend({ elements, theme }: LegendProps): React.ReactElement {
     React.createElement('button', {
       onClick: () => setOpen(o => !o),
       title: open ? 'Hide legend' : 'Show legend',
+      'aria-expanded': open,
       style: {
         background: bg,
         border: `1px solid ${border}`,

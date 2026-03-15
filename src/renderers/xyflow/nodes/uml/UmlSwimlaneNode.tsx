@@ -9,6 +9,7 @@ import { memo } from 'react';
 import { type NodeProps, type Node, NodeResizer } from '@xyflow/react';
 import { useNodeBehaviour } from '../../hooks/useNodeBehaviour';
 import { RoutingHandles } from '../shared/RoutingHandles';
+import { EditableLabel } from '../shared/EditableLabel';
 
 export interface UmlSwimlaneNodeData {
   label: string;
@@ -93,32 +94,19 @@ function UmlSwimlaneNodeComponent({ id, data, selected }: NodeProps<UmlSwimlaneN
           }}
           onDoubleClick={handleDoubleClick}
         >
-          {editing ? (
-            <input
-              ref={inputRef}
-              value={editValue}
-              onChange={(e) => setEditValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') commitEdit();
-                if (e.key === 'Escape') cancelEdit();
-              }}
-              onBlur={commitEdit}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                outline: 'none',
-                color: textColour,
-                fontSize: 12,
-                fontWeight: 700,
-                fontFamily: 'Inter, system-ui, sans-serif',
-                width: '100%',
-                textAlign: 'center',
-                padding: 0,
-              }}
-            />
-          ) : (
-            label
-          )}
+          <EditableLabel
+            editing={editing}
+            label={label}
+            editValue={editValue}
+            setEditValue={setEditValue}
+            inputRef={inputRef}
+            commitEdit={commitEdit}
+            cancelEdit={cancelEdit}
+            colour={textColour}
+            fontSize={12}
+            fontWeight={700}
+            textAlign="center"
+          />
         </div>
       </div>
 

@@ -10,6 +10,7 @@
 import { memo } from 'react';
 import { type NodeProps, type Node } from '@xyflow/react';
 import { RoutingHandles } from '../shared/RoutingHandles';
+import { compartmentHeight } from '../../../../notation/theme-colours';
 
 // ═══════════════════════════════════════
 // Data types
@@ -121,10 +122,8 @@ function DmEntityNodeComponent({ data, selected }: NodeProps<DmEntityNodeType>) 
   const hasPkSection = pkAttrs.length > 0;
 
   // Compute content height
-  const pkSectionH = hasPkSection ? pkAttrs.length * ROW_HEIGHT + COMPARTMENT_PAD * 2 : 0;
-  const attrSectionH = nonPkAttrs.length > 0
-    ? nonPkAttrs.length * ROW_HEIGHT + COMPARTMENT_PAD * 2
-    : ROW_HEIGHT + COMPARTMENT_PAD;
+  const pkSectionH = hasPkSection ? compartmentHeight(pkAttrs.length, ROW_HEIGHT, COMPARTMENT_PAD) : 0;
+  const attrSectionH = compartmentHeight(nonPkAttrs.length, ROW_HEIGHT, COMPARTMENT_PAD);
   const totalHeight = HEADER_HEIGHT + pkSectionH + attrSectionH;
 
   // Auto-size width from content
@@ -137,7 +136,9 @@ function DmEntityNodeComponent({ data, selected }: NodeProps<DmEntityNodeType>) 
   // Header icon for physical tables
   const headerIcon = isPhysical ? '\u{1F5C4} ' : ''; // file cabinet emoji for tables
 
-  let yPos = HEADER_HEIGHT;
+  // Compute y-offsets for each section without mutating during render
+  const pkSectionTop = HEADER_HEIGHT;
+  const nonPkSectionTop = HEADER_HEIGHT + pkSectionH;
 
   return (
     <div style={{ opacity }}>
@@ -170,7 +171,7 @@ function DmEntityNodeComponent({ data, selected }: NodeProps<DmEntityNodeType>) 
 
         {/* PK section (if present) */}
         {hasPkSection && pkAttrs.map((attr, i) => {
-          const rowY = yPos + COMPARTMENT_PAD + i * ROW_HEIGHT + ROW_HEIGHT * 0.7;
+          const rowY = pkSectionTop + COMPARTMENT_PAD + i * ROW_HEIGHT + ROW_HEIGHT * 0.7;
           return (
             <text
               key={`pk-${i}`}
@@ -186,18 +187,15 @@ function DmEntityNodeComponent({ data, selected }: NodeProps<DmEntityNodeType>) 
         })}
 
         {/* PK divider */}
-        {hasPkSection && (() => {
-          yPos += pkSectionH;
-          return (
-            <line x1={0} y1={yPos} x2={width} y2={yPos}
-              stroke={stroke} strokeWidth={0.7} strokeDasharray="3 2" />
-          );
-        })()}
+        {hasPkSection && (
+          <line x1={0} y1={nonPkSectionTop} x2={width} y2={nonPkSectionTop}
+            stroke={stroke} strokeWidth={0.7} strokeDasharray="3 2" />
+        )}
 
         {/* Non-PK attributes */}
         {nonPkAttrs.length > 0 ? (
           nonPkAttrs.map((attr, i) => {
-            const rowY = yPos + COMPARTMENT_PAD + i * ROW_HEIGHT + ROW_HEIGHT * 0.7;
+            const rowY = nonPkSectionTop + COMPARTMENT_PAD + i * ROW_HEIGHT + ROW_HEIGHT * 0.7;
             const fillColour = attr.isFK ? colours.fkColour
               : attr.isIndex ? colours.ixColour
               : colours.text;
@@ -215,7 +213,7 @@ function DmEntityNodeComponent({ data, selected }: NodeProps<DmEntityNodeType>) 
           })
         ) : (
           <text
-            x={PADDING_X} y={yPos + COMPARTMENT_PAD + ROW_HEIGHT * 0.6}
+            x={PADDING_X} y={nonPkSectionTop + COMPARTMENT_PAD + ROW_HEIGHT * 0.6}
             fontSize={FONT_SIZE - 1} fill={colours.text} fillOpacity={0.4}
             fontFamily="Inter, system-ui, sans-serif"
             style={{ pointerEvents: 'none' }}

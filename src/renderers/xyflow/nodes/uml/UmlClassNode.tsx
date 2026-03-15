@@ -13,6 +13,7 @@
 import { memo } from 'react';
 import { type NodeProps, type Node } from '@xyflow/react';
 import { RoutingHandles } from '../shared/RoutingHandles';
+import { getUmlColours, compartmentHeight } from '../../../../notation/theme-colours';
 
 // ═══════════════════════════════════════
 // Data types
@@ -110,11 +111,7 @@ function UmlClassNodeComponent({ data, selected }: NodeProps<UmlClassNodeType>) 
     dimmed,
   } = data;
 
-  const isDark = theme === 'dark';
-  const stroke = selected ? '#F59E0B' : (isDark ? '#94A3B8' : '#475569');
-  const fill = isDark ? '#1E293B' : '#FFFFFF';
-  const textFill = isDark ? '#E5E7EB' : '#1F2937';
-  const headerFill = isDark ? '#334155' : '#F1F5F9';
+  const { stroke, fill, text: textFill, headerFill } = getUmlColours(theme, selected);
   const opacity = dimmed ? 0.1 : 1;
 
   // Auto-derive stereotype from classType
@@ -128,8 +125,8 @@ function UmlClassNodeComponent({ data, selected }: NodeProps<UmlClassNodeType>) 
 
   // Third compartment: methods for class/interface, enum values for enum
   const thirdItems = classType === 'enum' ? enumValues : methods;
-  const attrCompartmentH = attributes.length > 0 ? attributes.length * ROW_HEIGHT + COMPARTMENT_PAD * 2 : ROW_HEIGHT + COMPARTMENT_PAD;
-  const thirdCompartmentH = thirdItems.length > 0 ? thirdItems.length * ROW_HEIGHT + COMPARTMENT_PAD * 2 : ROW_HEIGHT + COMPARTMENT_PAD;
+  const attrCompartmentH = compartmentHeight(attributes.length, ROW_HEIGHT, COMPARTMENT_PAD);
+  const thirdCompartmentH = compartmentHeight(thirdItems.length, ROW_HEIGHT, COMPARTMENT_PAD);
 
   const totalHeight = headerH + attrCompartmentH + thirdCompartmentH;
 

@@ -82,31 +82,33 @@ export function EdgeContextMenu({
     return () => document.removeEventListener('keydown', handler);
   }, [onClose]);
 
-  const sourceEl = relationship ? elements.find(e => e.id === relationship.source_id) : null;
-  const targetEl = relationship ? elements.find(e => e.id === relationship.target_id) : null;
-
   // Valid types for current direction
   const validSetForward = React.useMemo(() => {
+    const sourceEl = relationship ? elements.find(e => e.id === relationship.source_id) : null;
+    const targetEl = relationship ? elements.find(e => e.id === relationship.target_id) : null;
     if (!sourceEl || !targetEl) return new Set<string>();
     return buildValidSet(sourceEl.archimate_type, targetEl.archimate_type, validRelationships);
-  }, [sourceEl, targetEl, validRelationships]);
+  }, [relationship, elements, validRelationships]);
 
   // Valid types for reversed direction
   const reverseValid = React.useMemo(() => {
+    const sourceEl = relationship ? elements.find(e => e.id === relationship.source_id) : null;
+    const targetEl = relationship ? elements.find(e => e.id === relationship.target_id) : null;
     if (!sourceEl || !targetEl) return false;
     const reverseSet = buildValidSet(targetEl.archimate_type, sourceEl.archimate_type, validRelationships);
     return relationship ? reverseSet.has(relationship.archimate_type) : false;
-  }, [sourceEl, targetEl, relationship, validRelationships]);
+  }, [relationship, elements, validRelationships]);
 
   // Get notation-specific relationship type list
   const relTypeOptions = React.useMemo(() => {
+    const sourceEl = relationship ? elements.find(e => e.id === relationship.source_id) : null;
     if (!sourceEl) return NOTATION_RELATIONSHIP_TYPES.archimate;
     const n = getNotation(sourceEl.archimate_type);
     if (n === 'uml') return NOTATION_RELATIONSHIP_TYPES.uml;
     if (n === 'wireframe') return NOTATION_RELATIONSHIP_TYPES.wireframe;
     if (n === 'data') return NOTATION_RELATIONSHIP_TYPES.data;
     return NOTATION_RELATIONSHIP_TYPES.archimate;
-  }, [sourceEl]);
+  }, [relationship, elements]);
 
   // Split into valid and invalid, excluding the current type
   const { validTypes, invalidTypes } = React.useMemo(() => {

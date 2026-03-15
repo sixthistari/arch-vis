@@ -6,6 +6,18 @@ import { useViewStore } from '../store/view';
 // TabBar — shows open view tabs above the canvas
 // ═══════════════════════════════════════
 
+const tabBarStyleTag = document.createElement('style');
+tabBarStyleTag.textContent = `
+  .tabbar-close-btn:hover {
+    color: var(--text-primary) !important;
+    background: var(--bg-tertiary) !important;
+  }
+`;
+if (!document.head.querySelector('[data-tabbar-styles]')) {
+  tabBarStyleTag.setAttribute('data-tabbar-styles', '');
+  document.head.appendChild(tabBarStyleTag);
+}
+
 export function TabBar(): React.ReactElement {
   const openTabs = usePanelStore(s => s.openTabs);
   const activeTabId = usePanelStore(s => s.activeTabId);
@@ -35,6 +47,7 @@ export function TabBar(): React.ReactElement {
 
   return React.createElement('div', {
     'data-panel': 'tab-bar',
+    role: 'tablist',
     style: {
       display: 'flex',
       alignItems: 'flex-end',
@@ -51,6 +64,8 @@ export function TabBar(): React.ReactElement {
       const isActive = tab.viewId === activeTabId;
       return React.createElement('div', {
         key: tab.viewId,
+        role: 'tab',
+        'aria-selected': isActive,
         onClick: () => handleTabClick(tab.viewId),
         style: {
           display: 'flex',
@@ -85,6 +100,7 @@ export function TabBar(): React.ReactElement {
           },
         }, tab.viewName),
         React.createElement('button', {
+          className: 'tabbar-close-btn',
           onClick: (e: React.MouseEvent) => handleClose(e, tab.viewId),
           title: 'Close tab',
           style: {
@@ -97,14 +113,6 @@ export function TabBar(): React.ReactElement {
             padding: '0 2px',
             borderRadius: 2,
             flexShrink: 0,
-          },
-          onMouseEnter: (e: React.MouseEvent<HTMLButtonElement>) => {
-            e.currentTarget.style.color = 'var(--text-primary)';
-            e.currentTarget.style.background = 'var(--bg-tertiary)';
-          },
-          onMouseLeave: (e: React.MouseEvent<HTMLButtonElement>) => {
-            e.currentTarget.style.color = 'var(--text-muted)';
-            e.currentTarget.style.background = 'none';
           },
         }, '\u00D7'),
       );

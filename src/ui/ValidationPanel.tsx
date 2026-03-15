@@ -384,7 +384,7 @@ export function ValidationPanel({ onClose }: ValidationPanelProps): React.ReactE
       : React.createElement('ul', { style: listStyle },
           filteredIssues.map((issue, idx) =>
             React.createElement('li', {
-              key: idx,
+              key: `${issue.severity}-${issue.relationshipId ?? issue.elementIds[0] ?? ''}-${idx}`,
               style: issueStyle,
               onClick: () => handleIssueClick(issue),
               title: `Click to select ${issue.elementIds.length > 1 ? 'first affected element' : 'affected element'}`,

@@ -239,7 +239,7 @@ router.post('/import/archimate-xml', (req: Request, res: Response) => {
     } else if (req.body && typeof req.body.xml === 'string') {
       xmlString = req.body.xml as string;
     } else {
-      res.status(400).json({ error: 'Request body must contain XML string or { xml: "..." }' });
+      res.status(400).json({ error: 'Request body must contain XML string or { xml: "..." }', code: 'VALIDATION_ERROR' });
       return;
     }
 
@@ -277,7 +277,7 @@ router.post('/import/archimate-xml', (req: Request, res: Response) => {
     res.json(result);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    res.status(400).json({ error: message });
+    res.status(400).json({ error: message, code: 'VALIDATION_ERROR' });
   }
 });
 

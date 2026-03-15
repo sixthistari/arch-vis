@@ -417,7 +417,7 @@ export function XYFlowCanvas({
   }, [onNodeClick]);
 
   /** Resolve a node's absolute position (handles parent-child nesting). */
-  function resolveAbsolutePos(nodeId: string): { x: number; y: number } {
+  const resolveAbsolutePos = useCallback((nodeId: string): { x: number; y: number } => {
     const nodeMap = new Map<string, Node>();
     for (const n of nodesRef.current) nodeMap.set(n.id, n);
 
@@ -432,7 +432,7 @@ export function XYFlowCanvas({
     const node = nodeMap.get(nodeId);
     if (!node) return { x: 0, y: 0 };
     return abs(node);
-  }
+  }, []);
 
   // Capture drag start positions for undo coalescing
   const handleNodeDragStart: NodeMouseHandler = useCallback((_event, node) => {

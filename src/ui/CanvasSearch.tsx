@@ -4,7 +4,7 @@
  * Filters nodes by name, highlights matches, and cycles through
  * them with Enter/Shift+Enter. Escape closes the search bar.
  */
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 
 export interface CanvasSearchProps {
   /** All searchable node entries: id + label. */
@@ -26,19 +26,22 @@ export function CanvasSearch({ nodes, onFocusNode, onClose, theme }: CanvasSearc
     inputRef.current?.focus();
   }, []);
 
-  const matches = React.useMemo(() => {
+  const matches = useMemo(() => {
     if (!query.trim()) return [];
     const q = query.toLowerCase();
     return nodes.filter(n => n.label.toLowerCase().includes(q));
   }, [query, nodes]);
 
-  // Reset match index when query changes
+  // Stable identity for the first match ID — avoids re-running when match objects change but first match stays the same
+  const firstMatchId = matches.length > 0 ? matches[0]!.id : '';
+
+  // Reset match index when the first match changes (i.e. query changed or nodes changed)
   useEffect(() => {
     setMatchIndex(0);
-    if (matches.length > 0) {
-      onFocusNode(matches[0]!.id);
+    if (firstMatchId) {
+      onFocusNode(firstMatchId);
     }
-  }, [matches.length > 0 ? matches[0]?.id : '']); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [firstMatchId, onFocusNode]);
 
   const cycleMatch = useCallback((direction: 1 | -1) => {
     if (matches.length === 0) return;
@@ -104,12 +107,14 @@ export function CanvasSearch({ nodes, onFocusNode, onClose, theme }: CanvasSearc
         disabled={matches.length === 0}
         style={navBtnStyle(isDark)}
         title="Previous match (Shift+Enter)"
+        aria-label="Previous match"
       >&#x25B2;</button>
       <button
         onClick={() => cycleMatch(1)}
         disabled={matches.length === 0}
         style={navBtnStyle(isDark)}
         title="Next match (Enter)"
+        aria-label="Next match"
       >&#x25BC;</button>
       <button
         onClick={onClose}
@@ -119,6 +124,7 @@ export function CanvasSearch({ nodes, onFocusNode, onClose, theme }: CanvasSearc
           padding: '0 4px',
         }}
         title="Close (Escape)"
+        aria-label="Close search"
       >&times;</button>
     </div>
   );

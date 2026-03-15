@@ -63,7 +63,6 @@ export function Canvas(): React.ReactElement {
   );
 
   const formatPainter = useInteractionStore(s => s.formatPainter);
-  const deactivateFormatPainter = useInteractionStore(s => s.deactivateFormatPainter);
 
   // Handle node click → select (or apply format painter)
   const handleNodeClick = useCallback((elementId: string) => {
@@ -81,7 +80,7 @@ export function Canvas(): React.ReactElement {
       return;
     }
     select(elementId);
-  }, [select, formatPainter, currentView, viewElements, savePositions, deactivateFormatPainter]);
+  }, [select, formatPainter, currentView, viewElements, savePositions]);
 
   // Handle position change → persist to SQLite
   const handlePositionChange = useCallback((positions: { element_id: string; x: number; y: number }[]) => {

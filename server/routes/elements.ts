@@ -42,7 +42,7 @@ router.get('/elements', (req: Request, res: Response) => {
 router.post('/elements', (req: Request, res: Response) => {
   const parsed = CreateElementSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.format() });
+    res.status(400).json({ error: parsed.error.issues.map(i => i.message).join('; '), code: 'VALIDATION_ERROR' });
     return;
   }
 
@@ -85,7 +85,7 @@ router.put('/elements/:id', (req: Request, res: Response) => {
 
   const parsed = UpdateElementSchema.safeParse({ ...req.body, id });
   if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.format() });
+    res.status(400).json({ error: parsed.error.issues.map(i => i.message).join('; '), code: 'VALIDATION_ERROR' });
     return;
   }
 
@@ -120,7 +120,7 @@ router.put('/elements/:id', (req: Request, res: Response) => {
   }
 
   if (fields.length === 0) {
-    res.status(400).json({ error: 'No fields to update' });
+    res.status(400).json({ error: 'No fields to update', code: 'VALIDATION_ERROR' });
     return;
   }
 
@@ -164,7 +164,7 @@ router.get('/elements/:id/views', (req: Request, res: Response) => {
 router.post('/elements/bulk-specialisation', (req: Request, res: Response) => {
   const { oldValue, newValue } = req.body as { oldValue?: string; newValue?: string | null };
   if (typeof oldValue !== 'string' || !oldValue) {
-    res.status(400).json({ error: 'oldValue is required' });
+    res.status(400).json({ error: 'oldValue is required', code: 'VALIDATION_ERROR' });
     return;
   }
   const stmt = db.prepare('UPDATE elements SET specialisation = ?, updated_at = datetime(\'now\') WHERE specialisation = ?');
@@ -188,7 +188,7 @@ router.delete('/elements/:id', (req: Request, res: Response) => {
     res.status(404).json({ error: 'Element not found' });
     return;
   }
-  res.json({ deleted: id });
+  res.status(204).send();
 });
 
 export default router;

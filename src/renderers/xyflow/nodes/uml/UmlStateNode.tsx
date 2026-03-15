@@ -12,6 +12,7 @@
 import { memo } from 'react';
 import { Handle, Position, type NodeProps, type Node, NodeResizer } from '@xyflow/react';
 import { RoutingHandles } from '../shared/RoutingHandles';
+import { getUmlColours } from '../../../../notation/theme-colours';
 
 export interface StateActivity {
   trigger: 'entry' | 'exit' | 'do';
@@ -38,10 +39,7 @@ const PSEUDO_SIZE = 14;
 
 function UmlStateNodeComponent({ data, selected }: NodeProps<UmlStateNodeType>) {
   const { label, stateType, activities = [], theme = 'dark', dimmed, isVertical } = data;
-  const isDark = theme === 'dark';
-  const stroke = selected ? '#F59E0B' : (isDark ? '#94A3B8' : '#475569');
-  const fill = isDark ? '#1E293B' : '#FFFFFF';
-  const textFill = isDark ? '#E5E7EB' : '#1F2937';
+  const { stroke, fill, text: textFill } = getUmlColours(theme, selected);
   const opacity = dimmed ? 0.1 : 1;
 
   // ── Initial state: filled circle ──

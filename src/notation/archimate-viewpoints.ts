@@ -187,7 +187,6 @@ export const ARCHIMATE_VIEWPOINTS: ArchiMateViewpoint[] = [
       ...APPLICATION_ACTIVE,
       'application-service',
       ...TECHNOLOGY_ALL,
-      'artifact',
       'communication-network',
       'location',
     ],

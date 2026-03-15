@@ -41,7 +41,7 @@ router.get('/relationships', (req: Request, res: Response) => {
 router.post('/relationships', (req: Request, res: Response) => {
   const parsed = CreateRelationshipSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.format() });
+    res.status(400).json({ error: parsed.error.issues.map(i => i.message).join('; '), code: 'VALIDATION_ERROR' });
     return;
   }
 
@@ -52,11 +52,11 @@ router.post('/relationships', (req: Request, res: Response) => {
   const targetEl = db.prepare('SELECT archimate_type FROM elements WHERE id = ?').get(body.target_id) as { archimate_type: string } | undefined;
 
   if (!sourceEl) {
-    res.status(400).json({ error: `Source element '${body.source_id}' not found` });
+    res.status(400).json({ error: `Source element '${body.source_id}' not found`, code: 'VALIDATION_ERROR' });
     return;
   }
   if (!targetEl) {
-    res.status(400).json({ error: `Target element '${body.target_id}' not found` });
+    res.status(400).json({ error: `Target element '${body.target_id}' not found`, code: 'VALIDATION_ERROR' });
     return;
   }
 
@@ -68,6 +68,7 @@ router.post('/relationships', (req: Request, res: Response) => {
   if (!validRel) {
     res.status(400).json({
       error: `Invalid relationship: '${body.archimate_type}' is not allowed from '${sourceEl.archimate_type}' to '${targetEl.archimate_type}'`,
+      code: 'VALIDATION_ERROR',
     });
     return;
   }
@@ -102,7 +103,7 @@ router.put('/relationships/:id', (req: Request, res: Response) => {
 
   const parsed = UpdateRelationshipSchema.safeParse({ ...req.body, id });
   if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.format() });
+    res.status(400).json({ error: parsed.error.issues.map(i => i.message).join('; '), code: 'VALIDATION_ERROR' });
     return;
   }
 
@@ -136,7 +137,7 @@ router.put('/relationships/:id', (req: Request, res: Response) => {
   }
 
   if (fields.length === 0) {
-    res.status(400).json({ error: 'No fields to update' });
+    res.status(400).json({ error: 'No fields to update', code: 'VALIDATION_ERROR' });
     return;
   }
 
@@ -153,11 +154,11 @@ router.put('/relationships/:id', (req: Request, res: Response) => {
     const targetEl = db.prepare('SELECT archimate_type FROM elements WHERE id = ?').get(newTargetId) as { archimate_type: string } | undefined;
 
     if (!sourceEl) {
-      res.status(400).json({ error: `Source element '${newSourceId}' not found` });
+      res.status(400).json({ error: `Source element '${newSourceId}' not found`, code: 'VALIDATION_ERROR' });
       return;
     }
     if (!targetEl) {
-      res.status(400).json({ error: `Target element '${newTargetId}' not found` });
+      res.status(400).json({ error: `Target element '${newTargetId}' not found`, code: 'VALIDATION_ERROR' });
       return;
     }
 
@@ -169,6 +170,7 @@ router.put('/relationships/:id', (req: Request, res: Response) => {
     if (!validRel) {
       res.status(400).json({
         error: `Invalid relationship: '${newType}' is not allowed from '${sourceEl.archimate_type}' to '${targetEl.archimate_type}'`,
+        code: 'VALIDATION_ERROR',
       });
       return;
     }
@@ -191,7 +193,7 @@ router.delete('/relationships/:id', (req: Request, res: Response) => {
     res.status(404).json({ error: 'Relationship not found' });
     return;
   }
-  res.json({ deleted: id });
+  res.status(204).send();
 });
 
 export default router;

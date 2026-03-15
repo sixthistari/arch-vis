@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import db from '../db.js';
+import { CreateViewSchema } from '../../src/model/types.js';
 
 interface ViewRow {
   id: string;
@@ -36,12 +37,21 @@ interface ViewRelationshipRow {
   style_overrides: string | null;
 }
 
+function safeJsonParse(value: string | null): unknown {
+  if (!value) return null;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+}
+
 function parseView(row: ViewRow) {
   return {
     ...row,
-    filter_layers: row.filter_layers ? JSON.parse(row.filter_layers) as unknown : null,
-    filter_specialisations: row.filter_specialisations ? JSON.parse(row.filter_specialisations) as unknown : null,
-    rotation_default: row.rotation_default ? JSON.parse(row.rotation_default) as unknown : null,
+    filter_layers: safeJsonParse(row.filter_layers),
+    filter_specialisations: safeJsonParse(row.filter_specialisations),
+    rotation_default: safeJsonParse(row.rotation_default),
     is_preset: row.is_preset === 1,
   };
 }
@@ -49,15 +59,15 @@ function parseView(row: ViewRow) {
 function parseViewElement(row: ViewElementRow) {
   return {
     ...row,
-    style_overrides: row.style_overrides ? JSON.parse(row.style_overrides) as unknown : null,
+    style_overrides: safeJsonParse(row.style_overrides),
   };
 }
 
 function parseViewRelationship(row: ViewRelationshipRow) {
   return {
     ...row,
-    route_points: row.route_points ? JSON.parse(row.route_points) as unknown : null,
-    style_overrides: row.style_overrides ? JSON.parse(row.style_overrides) as unknown : null,
+    route_points: safeJsonParse(row.route_points),
+    style_overrides: safeJsonParse(row.style_overrides),
   };
 }
 
@@ -71,7 +81,12 @@ router.get('/views', (_req: Request, res: Response) => {
 
 // POST /api/views — create a new view
 router.post('/views', (req: Request, res: Response) => {
-  const body = req.body as Record<string, unknown>;
+  const parsed = CreateViewSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.issues.map(i => i.message).join('; '), code: 'VALIDATION_ERROR' });
+    return;
+  }
+  const body = parsed.data;
 
   const stmt = db.prepare(`
     INSERT INTO views (id, name, viewpoint_type, description, render_mode,
@@ -161,7 +176,7 @@ router.delete('/views/:id/elements', (req: Request, res: Response) => {
   const body = req.body as { element_ids?: string[] };
   const elementIds = body.element_ids;
   if (!Array.isArray(elementIds) || elementIds.length === 0) {
-    res.status(400).json({ error: 'element_ids array required' });
+    res.status(400).json({ error: 'element_ids array required', code: 'VALIDATION_ERROR' });
     return;
   }
 
@@ -173,14 +188,14 @@ router.delete('/views/:id/elements', (req: Request, res: Response) => {
   });
   batchDelete(elementIds);
 
-  res.json({ removed: elementIds.length });
+  res.status(204).send();
 });
 
 // DELETE /api/views/:id/elements/:elementId — remove a single view_element
 router.delete('/views/:id/elements/:elementId', (req: Request, res: Response) => {
   const { id, elementId } = req.params;
   db.prepare('DELETE FROM view_elements WHERE view_id = ? AND element_id = ?').run(id, elementId);
-  res.json({ removed: elementId });
+  res.status(204).send();
 });
 
 // POST /api/views/:id/duplicate — atomically duplicate a view with all elements and relationships
@@ -244,7 +259,7 @@ router.post('/views/:id/duplicate', (req: Request, res: Response) => {
 // DELETE /api/views/:id — delete a view (cascade handles view_elements and view_relationships)
 router.delete('/views/:id', (req: Request, res: Response) => {
   db.prepare('DELETE FROM views WHERE id = ?').run(req.params.id);
-  res.json({ deleted: req.params.id });
+  res.status(204).send();
 });
 
 export default router;

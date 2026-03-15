@@ -66,7 +66,7 @@ const LAYER_GAP = 60;
 router.post('/import/model-batch', (req: Request, res: Response) => {
   const parsed = BatchImportBodySchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.format() });
+    res.status(400).json({ error: parsed.error.issues.map(i => i.message).join('; '), code: 'VALIDATION_ERROR' });
     return;
   }
 
@@ -276,7 +276,7 @@ router.post('/import/model-batch', (req: Request, res: Response) => {
     res.json(result);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    res.status(400).json({ error: message });
+    res.status(400).json({ error: message, code: 'VALIDATION_ERROR' });
   }
 });
 
