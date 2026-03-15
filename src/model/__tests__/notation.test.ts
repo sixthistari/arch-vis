@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getNotation, getNodeType, getEdgeType } from '../notation';
+import { getNotation, getNodeType, getEdgeType, getViewNotation } from '../notation';
 
 describe('getNotation', () => {
   it('returns "uml" for uml- prefixed types', () => {
@@ -22,6 +22,13 @@ describe('getNotation', () => {
     expect(getNotation('node')).toBe('archimate');
     expect(getNotation('stakeholder')).toBe('archimate');
     expect(getNotation('junction')).toBe('archimate');
+  });
+
+  it('returns "process-flow" for pf- prefixed types', () => {
+    expect(getNotation('pf-start')).toBe('process-flow');
+    expect(getNotation('pf-human-task')).toBe('process-flow');
+    expect(getNotation('pf-decision')).toBe('process-flow');
+    expect(getNotation('pf-swimlane')).toBe('process-flow');
   });
 
   it('returns "any" for annotation', () => {
@@ -121,6 +128,42 @@ describe('getNodeType', () => {
   it('annotation maps to annotation', () => {
     expect(getNodeType('annotation' as any)).toBe('annotation');
   });
+
+  // Process flow types
+  it.each([
+    ['pf-human-task', 'pf-task'],
+    ['pf-agent-task', 'pf-task'],
+    ['pf-system-call', 'pf-task'],
+  ])('process-flow task: %s maps to %s', (input, expected) => {
+    expect(getNodeType(input as any)).toBe(expected);
+  });
+
+  it.each([
+    ['pf-start', 'pf-pseudo'],
+    ['pf-end', 'pf-pseudo'],
+    ['pf-timer', 'pf-pseudo'],
+  ])('process-flow pseudo: %s maps to %s', (input, expected) => {
+    expect(getNodeType(input as any)).toBe(expected);
+  });
+
+  it.each([
+    ['pf-decision', 'pf-decision'],
+    ['pf-gateway', 'pf-decision'],
+  ])('process-flow decision: %s maps to %s', (input, expected) => {
+    expect(getNodeType(input as any)).toBe(expected);
+  });
+
+  it('pf-approval-gate maps to pf-gate', () => {
+    expect(getNodeType('pf-approval-gate' as any)).toBe('pf-gate');
+  });
+
+  it('pf-swimlane maps to pf-swimlane', () => {
+    expect(getNodeType('pf-swimlane' as any)).toBe('pf-swimlane');
+  });
+
+  it('pf-subprocess maps to pf-subprocess', () => {
+    expect(getNodeType('pf-subprocess' as any)).toBe('pf-subprocess');
+  });
 });
 
 describe('getEdgeType', () => {
@@ -148,6 +191,13 @@ describe('getEdgeType', () => {
     expect(getEdgeType(input)).toBe('wireframe');
   });
 
+  // Process flow types
+  it.each([
+    'pf-sequence-flow', 'pf-conditional-flow', 'pf-error-flow',
+  ])('%s maps to pf-edge', (input) => {
+    expect(getEdgeType(input)).toBe('pf-edge');
+  });
+
   // ArchiMate types
   it.each([
     'composition', 'aggregation', 'assignment', 'realisation',
@@ -155,5 +205,61 @@ describe('getEdgeType', () => {
     'specialisation', 'association',
   ])('%s maps to archimate', (input) => {
     expect(getEdgeType(input)).toBe('archimate');
+  });
+});
+
+describe('getViewNotation', () => {
+  it.each([
+    'layered',
+    'knowledge_cognition',
+    'domain_slice',
+    'governance_matrix',
+    'infrastructure',
+    'information',
+    'application_landscape',
+  ])('archimate viewpoint: %s returns "archimate"', (viewpointType) => {
+    expect(getViewNotation(viewpointType)).toBe('archimate');
+  });
+
+  it.each([
+    'process_detail',
+    'process_flow',
+  ])('process-flow viewpoint: %s returns "process-flow"', (viewpointType) => {
+    expect(getViewNotation(viewpointType)).toBe('process-flow');
+  });
+
+  it.each([
+    'uml_class',
+    'uml_component',
+    'uml_activity',
+    'uml_usecase',
+    'uml_sequence',
+  ])('uml viewpoint: %s returns "uml"', (viewpointType) => {
+    expect(getViewNotation(viewpointType)).toBe('uml');
+  });
+
+  it('wireframe viewpoint returns "wireframe"', () => {
+    expect(getViewNotation('wireframe')).toBe('wireframe');
+  });
+
+  it.each([
+    'data_conceptual',
+    'data_logical',
+    'data_physical',
+  ])('data viewpoint: %s returns "data"', (viewpointType) => {
+    expect(getViewNotation(viewpointType)).toBe('data');
+  });
+
+  it('custom viewpoint returns "any"', () => {
+    expect(getViewNotation('custom')).toBe('any');
+  });
+
+  it.each([
+    'unknown_viewpoint',
+    '',
+    'something_random',
+    'archimate',
+  ])('unknown viewpoint: "%s" returns "any" (default)', (viewpointType) => {
+    expect(getViewNotation(viewpointType)).toBe('any');
   });
 });

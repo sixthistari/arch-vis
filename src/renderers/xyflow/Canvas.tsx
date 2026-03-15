@@ -245,13 +245,15 @@ export function XYFlowCanvas({
     return map;
   }
 
-  // Detect view switch → recompute from scratch
+  // Detect view switch → recompute from scratch and fit to view
   const viewChanged = currentViewRef.current !== viewId;
   if (viewChanged) {
     currentViewRef.current = viewId;
     nodesRef.current = elementsToNodes(elements, viewElements, theme, layerOrder, sublayerOrder, layerLabels, stableOnLabelChange, overlayConfig, relationships, viewpointType);
     edgesRef.current = relationshipsToEdges(relationships, buildPositionMap(nodesRef.current), theme);
     prevResetKeyRef.current = positionResetKey;
+    // Fit canvas to new view content after React renders
+    setTimeout(() => fitViewRef.current?.(), 100);
   }
 
   // Detect position reset (after undo/redo) → rebuild from viewElements
@@ -892,14 +894,7 @@ export function XYFlowCanvas({
   const bgColour = isDark ? '#0F172A' : '#FFFFFF';
   const gridColour = isDark ? '#1E293B' : '#F1F5F9';
 
-  // Don't render until we have data
-  if (elements.length === 0) {
-    return (
-      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: bgColour, color: '#9CA3AF', fontSize: 12 }}>
-        Loading elements…
-      </div>
-    );
-  }
+  const isEmpty = elements.length === 0;
 
   // ── Apply memoised routes + connected-edge highlighting ──────────────────
   // Memoised to avoid creating new edge objects on every render.
@@ -980,6 +975,14 @@ export function XYFlowCanvas({
     return displayEdges;
   }, [displayEdges, displayNodes, showRelationships, hiddenLayers]);
   // ────────────────────────────────────────────────────────────────────────
+
+  if (isEmpty) {
+    return (
+      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: bgColour, color: '#9CA3AF', fontSize: 12 }}>
+        Loading elements…
+      </div>
+    );
+  }
 
   return (
     <div

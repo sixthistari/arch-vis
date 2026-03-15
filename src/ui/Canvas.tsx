@@ -50,9 +50,19 @@ export function Canvas(): React.ReactElement {
     [viewElements],
   );
 
+  const viewNotation = currentView ? getViewNotation(currentView.viewpoint_type) : 'any';
+
   const visibleElements = useMemo(
-    () => elements.filter(el => viewElementIds.has(el.id)),
-    [elements, viewElementIds],
+    () => elements.filter(el => {
+      if (!viewElementIds.has(el.id)) return false;
+      // Filter out elements whose notation doesn't match the view's notation family
+      if (viewNotation !== 'any') {
+        const elNotation = getNotation(el.archimate_type);
+        if (elNotation !== 'any' && elNotation !== viewNotation) return false;
+      }
+      return true;
+    }),
+    [elements, viewElementIds, viewNotation],
   );
 
   const visibleRelationships = useMemo(

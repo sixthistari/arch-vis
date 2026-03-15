@@ -197,6 +197,8 @@ export default function seed(): void {
       uml_usecase: ['uml-actor', 'uml-use-case'],
       uml_sequence: ['uml-lifeline', 'uml-activation', 'uml-fragment'],
       uml_activity: ['uml-activity', 'uml-state', 'uml-action', 'uml-decision', 'uml-merge', 'uml-fork', 'uml-join', 'uml-initial-node', 'uml-final-node', 'uml-flow-final'],
+      process_flow: ['pf-start', 'pf-end', 'pf-human-task', 'pf-agent-task', 'pf-system-call', 'pf-decision', 'pf-gateway', 'pf-approval-gate', 'pf-timer', 'pf-swimlane', 'pf-subprocess'],
+      process_detail: ['pf-start', 'pf-end', 'pf-human-task', 'pf-agent-task', 'pf-system-call', 'pf-decision', 'pf-gateway', 'pf-approval-gate', 'pf-timer', 'pf-swimlane', 'pf-subprocess'],
     };
 
     for (const v of viewsFile.views) {
@@ -237,6 +239,18 @@ export default function seed(): void {
             params[`umlType${i}`] = t;
           });
         } else {
+          // ArchiMate viewpoints exclude UML, wireframe, and data-model elements
+          const archimateViewpoints = [
+            'layered', 'knowledge_cognition', 'domain_slice', 'governance_matrix',
+            'process_detail', 'infrastructure', 'information', 'application_landscape',
+          ];
+          if (archimateViewpoints.includes(v.viewpoint_type)) {
+            conditions.push("archimate_type NOT LIKE 'uml-%'");
+            conditions.push("archimate_type NOT LIKE 'wf-%'");
+            conditions.push("archimate_type NOT LIKE 'dm-%'");
+            conditions.push("archimate_type NOT LIKE 'pf-%'");
+          }
+
           if (v.filter_domain) {
             conditions.push('domain_id = @domain');
             params['domain'] = v.filter_domain;

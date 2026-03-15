@@ -9,8 +9,9 @@ function assertNever(x: never): never {
 }
 
 /** Determine which notation family an archimate_type belongs to. */
-export function getNotation(archimateType: string): 'archimate' | 'uml' | 'wireframe' | 'data' | 'any' {
+export function getNotation(archimateType: string): 'archimate' | 'uml' | 'wireframe' | 'data' | 'process-flow' | 'any' {
   if (archimateType === 'annotation') return 'any';
+  if (archimateType.startsWith('pf-')) return 'process-flow';
   if (archimateType.startsWith('dm-')) return 'data';
   if (archimateType.startsWith('uml-')) return 'uml';
   if (archimateType.startsWith('wf-')) return 'wireframe';
@@ -105,6 +106,44 @@ export function getNodeType(archimateType: ArchimateType): string {
     case 'dm-index':
       return 'dm-entity';
 
+    // Process flow types
+    case 'pf-human-task':
+    case 'pf-agent-task':
+    case 'pf-system-call':
+      return 'pf-task';
+    case 'pf-start':
+    case 'pf-end':
+    case 'pf-timer':
+      return 'pf-pseudo';
+    case 'pf-decision':
+    case 'pf-gateway':
+      return 'pf-decision';
+    case 'pf-approval-gate':
+      return 'pf-gate';
+    case 'pf-swimlane':
+      return 'pf-swimlane';
+    case 'pf-subprocess':
+      return 'pf-subprocess';
+
+    // Process flow types
+    case 'pf-human-task':
+    case 'pf-agent-task':
+    case 'pf-system-call':
+      return 'pf-task';
+    case 'pf-start':
+    case 'pf-end':
+    case 'pf-timer':
+      return 'pf-pseudo';
+    case 'pf-decision':
+    case 'pf-gateway':
+      return 'pf-decision';
+    case 'pf-approval-gate':
+      return 'pf-gate';
+    case 'pf-swimlane':
+      return 'pf-swimlane';
+    case 'pf-subprocess':
+      return 'pf-subprocess';
+
     // ArchiMate core types
     case 'stakeholder':
     case 'driver':
@@ -173,13 +212,12 @@ export function getNodeType(archimateType: ArchimateType): string {
 }
 
 /** Determine which notation family a viewpoint type targets. */
-export function getViewNotation(viewpointType: string): 'archimate' | 'uml' | 'wireframe' | 'data' | 'any' {
+export function getViewNotation(viewpointType: string): 'archimate' | 'uml' | 'wireframe' | 'data' | 'process-flow' | 'any' {
   switch (viewpointType) {
     case 'layered':
     case 'knowledge_cognition':
     case 'domain_slice':
     case 'governance_matrix':
-    case 'process_detail':
     case 'infrastructure':
     case 'information':
     case 'application_landscape':
@@ -196,6 +234,9 @@ export function getViewNotation(viewpointType: string): 'archimate' | 'uml' | 'w
     case 'data_logical':
     case 'data_physical':
       return 'data';
+    case 'process_detail':
+    case 'process_flow':
+      return 'process-flow';
     case 'custom':
     default:
       return 'any';
@@ -211,6 +252,7 @@ export function getEdgeType(relationshipType: string): string {
   ].includes(relationshipType)) {
     return 'sequence-message';
   }
+  if (relationshipType.startsWith('pf-')) return 'pf-edge';
   if (relationshipType.startsWith('uml-')) return 'uml-edge';
   if (relationshipType.startsWith('wf-')) return 'wireframe';
   if (relationshipType.startsWith('dm-')) return 'data-edge';

@@ -330,6 +330,86 @@ function FileMenu(): React.ReactElement {
   );
 }
 
+function ViewMenu(): React.ReactElement {
+  const [open, setOpen] = useState(false);
+  const leftPanelOpen = usePanelStore(s => s.leftPanelOpen);
+  const rightPanelOpen = usePanelStore(s => s.rightPanelOpen);
+  const bottomPanelOpen = usePanelStore(s => s.bottomPanelOpen);
+  const fullScreen = usePanelStore(s => s.fullScreen);
+  const toggleLeftPanel = usePanelStore(s => s.toggleLeftPanel);
+  const toggleRightPanel = usePanelStore(s => s.toggleRightPanel);
+  const toggleBottomPanel = usePanelStore(s => s.toggleBottomPanel);
+  const toggleFullScreen = usePanelStore(s => s.toggleFullScreen);
+
+  const itemStyle: React.CSSProperties = {
+    display: 'block',
+    width: '100%',
+    background: 'transparent',
+    color: 'var(--text-primary)',
+    border: 'none',
+    padding: '8px 14px',
+    cursor: 'pointer',
+    fontSize: 11,
+    textAlign: 'left',
+  };
+
+  const checkMark = (active: boolean) => active ? '\u2713 ' : '    ';
+
+  const toggle = (fn: () => void) => () => { fn(); };
+
+  const divider = React.createElement('div', {
+    style: { height: 1, background: 'var(--border-primary)', margin: '2px 0' },
+  });
+
+  return React.createElement('div', { style: { position: 'relative' } },
+    React.createElement('button', {
+      onClick: () => setOpen(!open),
+      style: {
+        background: 'var(--button-bg)',
+        color: 'var(--button-text)',
+        border: '1px solid var(--border-primary)',
+        borderRadius: 4,
+        padding: '3px 10px',
+        cursor: 'pointer',
+        fontSize: 11,
+      },
+    }, 'View'),
+    open && React.createElement('div', {
+      style: {
+        position: 'absolute',
+        top: '100%',
+        left: 0,
+        marginTop: 4,
+        background: 'var(--panel-bg)',
+        border: '1px solid var(--panel-border)',
+        borderRadius: 4,
+        overflow: 'hidden',
+        zIndex: 100,
+        minWidth: 220,
+        fontFamily: 'monospace',
+      },
+      onMouseLeave: () => setOpen(false),
+    },
+      React.createElement('button', { onClick: toggle(toggleLeftPanel), style: itemStyle },
+        checkMark(leftPanelOpen), 'Model Tree & Views',
+      ),
+      React.createElement('button', { onClick: toggle(toggleRightPanel), style: itemStyle },
+        checkMark(rightPanelOpen), 'Palette & Controls',
+      ),
+      React.createElement('button', { onClick: toggle(toggleBottomPanel), style: itemStyle },
+        checkMark(bottomPanelOpen), 'Properties Panel',
+      ),
+      divider,
+      React.createElement('button', { onClick: toggle(toggleFullScreen), style: itemStyle },
+        checkMark(fullScreen), 'Full Screen',
+        React.createElement('span', {
+          style: { float: 'right', color: 'var(--text-muted)', fontSize: 10, marginLeft: 16 },
+        }, 'F11'),
+      ),
+    ),
+  );
+}
+
 function notationLabel(viewpointType: string | undefined): string {
   if (!viewpointType) return '';
   if (viewpointType.startsWith('uml')) return 'UML';
@@ -348,7 +428,6 @@ export function Shell(): React.ReactElement {
   const bottomPanelOpen = usePanelStore(s => s.bottomPanelOpen);
   const bottomPanelHeight = usePanelStore(s => s.bottomPanelHeight);
   const toggleLeftPanel = usePanelStore(s => s.toggleLeftPanel);
-  const toggleRightPanel = usePanelStore(s => s.toggleRightPanel);
   const toggleBottomPanel = usePanelStore(s => s.toggleBottomPanel);
   const fullScreen = usePanelStore(s => s.fullScreen);
   const toggleFullScreen = usePanelStore(s => s.toggleFullScreen);
@@ -492,16 +571,6 @@ export function Shell(): React.ReactElement {
     clearSelection();
   }, [deleteElement, clearSelection]);
 
-  const toggleBtnStyle = (active: boolean): React.CSSProperties => ({
-    background: active ? 'var(--button-active-bg, #3B82F6)' : 'var(--button-bg)',
-    color: active ? '#FFFFFF' : 'var(--button-text)',
-    border: '1px solid var(--border-primary)',
-    borderRadius: 4,
-    padding: '2px 8px',
-    cursor: 'pointer',
-    fontSize: 11,
-  });
-
   const notation = notationLabel(currentView?.viewpoint_type);
 
   return React.createElement('div', {
@@ -566,17 +635,8 @@ export function Shell(): React.ReactElement {
         }, notation) : null,
         // File menu
         React.createElement(FileMenu, null),
-        // Panel toggles
-        React.createElement('button', {
-          onClick: toggleLeftPanel,
-          title: 'Toggle left panel',
-          style: toggleBtnStyle(leftPanelOpen),
-        }, 'Left'),
-        React.createElement('button', {
-          onClick: toggleRightPanel,
-          title: 'Toggle right panel',
-          style: toggleBtnStyle(rightPanelOpen),
-        }, 'Right'),
+        // View menu (show/hide panels, full screen)
+        React.createElement(ViewMenu, null),
       ),
       React.createElement('div', {
         style: { display: 'flex', gap: 8, alignItems: 'center' },
