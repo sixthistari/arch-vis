@@ -1,6 +1,6 @@
 # arch-vis — Logical Design
 
-**Version:** 2.0 | March 2026
+**Version:** 2.1 | March 2026
 
 This document describes the technology-agnostic logical architecture of arch-vis. It defines data models, algorithms, patterns, and contracts that could be implemented on any stack. For implementation-specific details (UI framework, state management library, rendering toolkit), see IMPLEMENTATION.md.
 
@@ -1204,3 +1204,211 @@ Both are undoable via the command pattern.
 ### 27.6 Z-Order (§21.3 #3.12)
 
 Add `z_index INTEGER DEFAULT 0` to `view_elements`. Context menu actions: Bring to Front, Send to Back, Bring Forward, Send Backward. xyflow renders nodes in z_index order.
+
+---
+
+## 28. Embeddable Library Architecture (R-LIB-01 – R-2WAY-03)
+
+### 28.1 Package Structure
+
+arch-vis is library-first: designed to be embedded into host applications, with standalone mode as one consumer of the library.
+
+```
+arch-vis/
+  packages/
+    core/          # Model, schema, CRUD operations (pure TS, no React)
+                   #   - SQLite operations (or pluggable backend)
+                   #   - Zod schemas, type definitions
+                   #   - Programmatic API (direct function calls)
+                   #   - Graph model (Graphology)
+    canvas/        # XYFlowCanvas, notation renderers, layout (React)
+                   #   - Shape registry, edge styles, colours
+                   #   - Node/edge components
+                   #   - Layout engines (ELK, dagre)
+                   #   - Edge routing
+    shell/         # Shell variants (React)
+                   #   - FullShell: menu bar, model tree, detail panel, all toolbars
+                   #   - WorkbenchShell: compact palette, minimal chrome
+                   #   - Shared components: palette, minimap, controls
+    standalone/    # Entry point: Express + FullShell + core
+                   #   - Express routes (thin wrappers over core functions)
+                   #   - Vite dev server
+                   #   - SQLite database management
+```
+
+### 28.2 Dependency Direction
+
+```
+standalone → shell → canvas → core
+                              ↑
+                    host-app ──┘  (imports core + canvas directly)
+```
+
+- `core` has zero React dependencies. Pure TypeScript.
+- `canvas` depends on `core` (types, notation data) and React/xyflow.
+- `shell` depends on `canvas` (composes the canvas with panels/menus).
+- `standalone` depends on everything — it's the default composition.
+- Host applications import `core` and `canvas` directly, optionally `shell` components.
+
+### 28.3 Programmatic API (R-LIB-04)
+
+The `core` package exposes functions directly — no HTTP required:
+
+```typescript
+// Host app or agent calls these directly
+import {
+  createElement, updateElement, deleteElement,
+  createRelationship, fetchElements,
+  importModelBatch, exportModelBatch,
+} from '@arch-vis/core';
+
+// Same functions, wrapped in Express routes for standalone mode
+app.post('/api/elements', (req, res) => {
+  const el = await createElement(req.body);
+  res.json(el);
+});
+```
+
+The Express API in standalone mode is a ~50-line routing file that delegates to `core` functions. Agents and host apps bypass HTTP entirely.
+
+### 28.4 Canvas Mode Switching (R-MODE-01 – R-MODE-06)
+
+The `XYFlowCanvas` component is mode-agnostic — it renders nodes, edges, handles interaction. The shell controls what surrounds it.
+
+```
+CanvasMode = 'full' | 'workbench'
+```
+
+**WorkbenchShell** layout (embedded in host chat workbench):
+
+```
+┌──────────────────────────────────────┐
+│ XYFlowCanvas (fills available space) │
+│  ┌────────┐                          │
+│  │Compact │    [fit] [zoom] [minimap]│
+│  │Palette │                          │
+│  └────────┘                          │
+└──────────────────────────────────────┘
+```
+
+**FullShell** layout (expanded or standalone):
+
+```
+┌────────────────────────────────────────────────┐
+│ Menu Bar                                        │
+├──────┬──────────────────────────┬──────────────┤
+│Model │ XYFlowCanvas             │ Detail Panel │
+│Tree  │                          │              │
+│      │                          │              │
+├──────┴──────────────────────────┴──────────────┤
+│ Palette │ Alignment │ Layer Visibility │ Status │
+└────────────────────────────────────────────────┘
+```
+
+**Shell expansion** is a layout swap — same React app, same state, same store:
+
+1. User clicks "Full Modeller" in workbench shell
+2. `WorkbenchShell` unmounts, `FullShell` mounts
+3. Canvas component is preserved (or reconstructed from same store state)
+4. Host chat panel collapses to a floating overlay or sidebar
+5. "Back to Workbench" reverses the transition
+
+No window change. No context loss. The AI agent session is still alive because the host app never navigated away.
+
+### 28.5 Provenance Provider Interface (R-HOST-03, R-PROV-08)
+
+arch-vis defines a contract; the host application supplies the implementation.
+
+```typescript
+interface ProvenanceProvider {
+  /** Resolve sessions that created or modified this element. */
+  getElementProvenance(elementId: string): Promise<ProvenanceEntry[]>;
+
+  /** Build a URL to view the full session in the host application. */
+  getSessionUrl(sessionId: string): string;
+
+  /** Build a URL to open the host chat with this element as context (interrogate). */
+  getInterrogateUrl(sessionId: string, elementId: string): string;
+}
+
+interface ProvenanceEntry {
+  session_id: string;
+  agent_id: string | null;
+  agent_name: string | null;
+  summary: string;
+  created_at: string;
+  confidence: number | null;
+  decisions: string[];   // key decisions from this session
+}
+```
+
+The provider is passed as a prop to the shell or canvas. When null (standalone mode), the provenance tab shows only the local fields (`created_by`, `source_session_id`, `confidence`) without session drill-through.
+
+### 28.6 Provenance Popover Design (R-PPOV-01 – R-PPOV-06)
+
+**Trigger:** A small provenance indicator (chain-link icon or AI badge) renders on nodes that have `source_session_id` set. Position: bottom-left corner of the node shape, outside the main label area.
+
+**Popover content** (fetched lazily on click via `ProvenanceProvider.getElementProvenance`):
+
+```
+┌─────────────────────────────────────────┐
+│ Created by: Agent Helix                  │
+│ Date: 2026-03-12  Confidence: 0.85       │
+│ Status: Provisional ⚠                    │
+├─────────────────────────────────────────┤
+│ Related Sessions:                        │
+│                                          │
+│ 📋 Payment Service Requirements          │
+│    "Identified 3 application components  │
+│     for payment processing..."           │
+│    [View Session] [Interrogate]          │
+│                                          │
+│ 📋 Security Review — PCI Scope           │
+│    "Confirmed payment-gateway needs      │
+│     PCI DSS compliance boundary..."      │
+│    [View Session] [Interrogate]          │
+└─────────────────────────────────────────┘
+```
+
+- "View Session" → `ProvenanceProvider.getSessionUrl(sessionId)` → opens in host app
+- "Interrogate" → `ProvenanceProvider.getInterrogateUrl(sessionId, elementId)` → opens host chat with element context pre-loaded, so the user can ask "why does this element exist?" or "what requirements drove this?"
+
+### 28.7 Provisional Element Rendering (R-AGENT-03)
+
+Elements with `status: 'provisional'` render with:
+
+- A dashed outer border (instead of solid) on the node shape
+- A small "PROV" badge in the status badge position (bottom-left, below the specialisation badge area)
+- Slightly reduced fill opacity (80% vs 100%) to visually distinguish from approved elements
+
+This is a notation-level rendering concern — all node renderers check `element.status` and apply the provisional style. No special element type needed.
+
+### 28.8 Agent as Peer — Data Flow
+
+```
+┌─────────────┐     ┌──────────────┐     ┌──────────┐
+│ Human User   │     │ arch-vis      │     │ AI Agent  │
+│ (canvas UI)  │────▶│ core API      │◀────│ (chat)    │
+│              │     │ (SQLite)      │     │           │
+│              │◀────│               │────▶│           │
+└─────────────┘     └──────────────┘     └──────────┘
+         ↕                                      ↕
+    Canvas interaction                   Chat session
+    (drag, rename, connect)              (natural language → API calls)
+```
+
+Both human and agent call the same functions. Both provide `created_by`. The model doesn't distinguish between them architecturally — the difference is in provenance metadata and governance workflow (provisional → approved).
+
+### 28.9 Read-Only Mode (R-2WAY-02)
+
+The canvas accepts a `readOnly: boolean` prop. When true:
+
+- Palette is hidden
+- Inline label editing is disabled
+- Delete key is ignored
+- Connection handles are hidden
+- Drag-to-move is disabled (or allowed for pan-only, no position save)
+- Selection and navigation still work (click to select, detail panel opens)
+- Provenance popovers still work
+
+This supports the use case of an agent loading an approved model into the chat workbench for discussion without risk of accidental modification.

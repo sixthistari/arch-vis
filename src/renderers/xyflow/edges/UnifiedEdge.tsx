@@ -296,7 +296,7 @@ function UnifiedEdgeComponent(props: EdgeProps<UnifiedEdgeType>) {
   const waypoints = (data?.waypoints as Waypoint[] | undefined) ?? [];
   const routedWaypoints = (data?.routedWaypoints as { x: number; y: number }[] | undefined) ?? [];
   const isDark = (data?.theme ?? 'dark') === 'dark';
-  const strokeColour = selected || highlighted ? '#F59E0B' : (isDark ? '#94A3B8' : '#475569');
+  const strokeColour = selected || highlighted ? '#F59E0B' : (edgeStyle.color ?? (isDark ? '#94A3B8' : '#475569'));
   const opacity = dimmed ? 0.04 : 1;
   const strokeWidth = highlighted && !selected ? edgeStyle.width * 2.0 : edgeStyle.width;
 

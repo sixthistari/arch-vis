@@ -17,3 +17,4 @@ test-screenshots/
 snapshot-*.md
 .playwright-mcp/
 .mcp.json
+manuals/

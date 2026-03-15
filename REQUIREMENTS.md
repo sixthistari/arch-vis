@@ -1,6 +1,6 @@
 # arch-vis — Requirements
 
-**Version:** 1.0 | March 2026
+**Version:** 1.1 | March 2026
 
 ---
 
@@ -12,10 +12,12 @@ An ArchiMate-aligned modelling and visualisation tool that:
 - Renders interactive architecture diagrams as projections of a relational model
 - Supports spatial 3D layer-plane views with rotation and relationship highlighting
 - Persists to SQLite with full CRUD
+- **Library-first architecture**: designed to be embedded into host applications (EA workbenches, AI chat tools) as an importable library, while also functioning as a standalone tool
 
-Two foundational principles:
+Three foundational principles:
 1. **Diagrams are views of a model, not the model itself.** Every element on the canvas is a record in the database. Views are projections.
 2. **No deviation from ArchiMate.** Every entity type traces to a base ArchiMate element. AI/Knowledge specialisations are subtypes with additional properties — not a parallel notation.
+3. **Agents are peers, not owners.** AI agents that create or modify architecture elements use the same API as human users. The model (SQLite) is always the source of truth — agents are co-workers with provenance trails, not data sources.
 
 ---
 
@@ -29,7 +31,7 @@ The tool supports four notation concerns, in priority order:
 | 2 | **UML** | Class, Component, Sequence, Activity, Use-Case, State diagrams | Implemented |
 | 3 | **Wireframe** | Lo-fi UI wireframes with page flow | Implemented |
 | 4 | **Data** | Conceptual/Logical/Physical data modelling | Future (separate viewpoint) |
-| 5 | **Process Detail** | Simplified process flow (drill-down from ArchiMate processes) | Future |
+| 5 | **Process Detail** | Simplified process flow (drill-down from ArchiMate processes) | Implemented |
 
 Process detail is NOT full BPMN. The PFC backend already captures process_steps with step_type (human/agent/system/decision/gateway), sequence, role assignments, agent assignments, and approval gates. The visualiser renders these as a simple swimlane/sequence flow — a viewpoint that drills down from a business-process element.
 
@@ -275,20 +277,26 @@ Specialised associations (AI/Knowledge):
 
 ## 8. Reasoning/Provenance Display
 
-The reasoning log lives in PFC (sessions table). The visualiser consumes summaries.
+The reasoning log lives in PFC (sessions table). The visualiser consumes summaries. Provenance is managed in the PFC schema — arch-vis stores only the `source_session_id` as an opaque foreign key that the host application resolves.
 
 ### What the visualiser shows:
 
-- **Detail panel → Reasoning tab:** List of sessions where this element was discussed
-- Per session: `summary`, `decisions_made` relevant to this element, `confidence` from the element record
-- "View full session" link: opens `{PFC_BASE_URL}/session/{session_id}` in new tab
-- **Reasoning path on canvas:** NOT shown by default. A future viewpoint could render a decision trail (sequence of decisions that created/modified an element), but this is not Phase 1.
+| ID | Requirement |
+|----|-------------|
+| R-PROV-01 | **Detail panel → Provenance tab:** List of sessions where this element was discussed or modified |
+| R-PROV-02 | Per session: `summary`, `decisions_made` relevant to this element, `confidence` from the element record |
+| R-PROV-03 | "View full session" link: opens `{PFC_BASE_URL}/session/{session_id}` in new tab (host provides URL template) |
+| R-PROV-04 | **On-canvas provenance popover:** Click or hover an element's provenance indicator to see a popover showing: which chat sessions created/modified it, a one-line summary of each session, and a "drill in" link to each session in the host application |
+| R-PROV-05 | Provenance popover shows agent identity (who created it), creation date, confidence score, and provisional/approved status |
+| R-PROV-06 | Popover "interrogate" action: link back to the host chat session with the element pre-loaded as context, allowing the user to ask the agent why this element exists or is structured as it is |
+| R-PROV-07 | Elements created by AI agents default to `status: 'provisional'`. Promotion to `'active'` is an explicit governance action |
+| R-PROV-08 | Provenance data is fetched via a pluggable provider interface — the host application supplies the resolver, arch-vis defines the contract |
 
 ### What the visualiser does NOT do:
 
-- Does not render chat transcripts
-- Does not store reasoning data — it reads from PFC
-- Does not duplicate the sessions table
+- Does not render chat transcripts — it shows summaries and links
+- Does not store reasoning/session data — it reads from the host via the provenance provider
+- Does not duplicate the sessions table — `source_session_id` is a foreign key into the host's schema
 
 ---
 
@@ -1048,3 +1056,69 @@ Benchmarked against **Archi** (ArchiMate, 172pp manual) and **Sparx EA** (UML/da
 - 5.3 Magic connector
 - 13.5 Impact analysis
 - 3.12 Z-order (bring to front / send to back)
+
+---
+
+## 22. Embeddable Library Architecture
+
+arch-vis is **library-first, standalone-second**. It is designed primarily as an embeddable component for host applications (AI chat workbenches, EA governance tools, PFC/Helix), while also functioning as a standalone modelling tool for direct use.
+
+### 22.1 Deployment Modes
+
+| ID | Requirement |
+|----|-------------|
+| R-LIB-01 | arch-vis is structured as importable packages: `core` (model, schema, CRUD — pure TypeScript, no React), `canvas` (xyflow canvas, notation, layout — React), `shell` (full/workbench shells — React), `standalone` (Express + shell + core — the current app) |
+| R-LIB-02 | Host applications import `core` and `canvas` packages directly. They provide their own shell or use `shell` components. The standalone app is all packages wired together with a default Express server. |
+| R-LIB-03 | **No code duplication** between modes. Workbench mode and full modeller mode share the same canvas component, same notation renderers, same layout engines, same API layer. Differences are in shell configuration only. |
+| R-LIB-04 | The `core` package exposes a **programmatic API** (direct function calls, SDK-style) — not REST-only. The Express routes in the standalone app are thin wrappers over these same functions. Agents and host apps call functions directly without HTTP overhead. |
+
+### 22.2 Canvas Modes
+
+| ID | Requirement |
+|----|-------------|
+| R-MODE-01 | The canvas supports two shell modes: `full` (current modeller — all panels, menus, detail panel, full palette) and `workbench` (embedded in host application — compact palette, minimal chrome, no menu bar) |
+| R-MODE-02 | Both modes use the **identical** `XYFlowCanvas` component. The difference is in the surrounding shell — which panels, toolbars, and menus are shown. |
+| R-MODE-03 | Workbench mode includes: compact element palette (notation-filtered), pan/zoom/fit controls, minimap (optional), and basic node interaction (drag, rename, delete, connect). |
+| R-MODE-04 | Workbench mode omits: menu bar, model tree panel, full detail panel (or shows a minimal variant), layer visibility panel, data overlay panel. |
+| R-MODE-05 | **Shell expansion:** The workbench shell supports a "Full Modeller" toggle that swaps to the full shell layout in-place — no window change, no context loss. The host application's chat panel remains accessible (collapses to a sidebar or overlay). |
+| R-MODE-06 | The full modeller shell supports a "Back to Workbench" action that returns to the compact layout, restoring the host chat context. |
+
+### 22.3 Host Integration
+
+| ID | Requirement |
+|----|-------------|
+| R-HOST-01 | The canvas component accepts model data via props or a store — no assumption about where data comes from. SQLite is one backend; the host may provide its own. |
+| R-HOST-02 | All callbacks (element create, update, delete, relationship CRUD) are exposed as props. The host application wires these to its own persistence and governance layer. |
+| R-HOST-03 | The provenance provider is a pluggable interface: the host supplies a function that resolves `source_session_id` to session metadata (summary, agent identity, chat link). arch-vis calls this provider to populate the provenance tab and on-canvas popovers. |
+| R-HOST-04 | The host application can push model changes into the canvas (e.g. an AI agent creates elements) — the canvas reactively updates from the store. |
+| R-HOST-05 | The host application provides a URL template for "drill into session" links. arch-vis substitutes `{session_id}` in the template to generate navigation links. |
+
+### 22.4 Agent Integration
+
+| ID | Requirement |
+|----|-------------|
+| R-AGENT-01 | AI agents create and modify elements using the same API as human users. There is no separate "agent API" — agents are peers. |
+| R-AGENT-02 | Agent-created elements carry provenance metadata: `created_by` (agent identity), `source: 'chat'`, `source_session_id` (links to the chat session), `confidence` (agent's certainty). |
+| R-AGENT-03 | Agent-created elements default to `status: 'provisional'`. They appear on the canvas with a visual indicator (e.g. dashed border, provisional badge) distinguishing them from approved elements. |
+| R-AGENT-04 | Promotion workflow: a human (or authorised governance agent) explicitly sets `status: 'active'` to approve a provisional element. This is a standard `updateElement` call — no special promotion API. |
+| R-AGENT-05 | The batch import API (`POST /api/import/model-batch`) is the primary agent creation pathway. It supports `created_by` and `source_session_id` on each element. |
+| R-AGENT-06 | Agents with appropriate roles/permissions can create diagrams. Not any agent can write to the model — permission is managed by the host application, not arch-vis. |
+
+### 22.5 Provenance Popover (On-Canvas)
+
+| ID | Requirement |
+|----|-------------|
+| R-PPOV-01 | Elements with provenance data show a small indicator icon (e.g. chain-link or AI badge) in a consistent position on the node shape. |
+| R-PPOV-02 | Clicking the provenance indicator opens a popover (not a modal) displaying: agent identity, creation date, confidence score, provisional/approved status, and a list of related chat sessions with one-line summaries. |
+| R-PPOV-03 | Each session entry in the popover is a clickable link that navigates to the full session in the host application (using the URL template from R-HOST-05). |
+| R-PPOV-04 | The popover includes an "Interrogate" action — a link that opens the host chat with this element pre-loaded as context, allowing the user to ask the agent why this element exists or how it was derived. |
+| R-PPOV-05 | The popover data is fetched lazily (on click, not on render) via the provenance provider (R-HOST-03). |
+| R-PPOV-06 | The popover works in both `full` and `workbench` shell modes.  |
+
+### 22.6 Two-Way Model Access
+
+| ID | Requirement |
+|----|-------------|
+| R-2WAY-01 | The host application can load an existing approved model into the canvas for review and discussion (read-only or read-write depending on permissions). |
+| R-2WAY-02 | The canvas supports a read-only mode where navigation, zoom, and selection work but editing controls (palette, inline edit, delete) are disabled. |
+| R-2WAY-03 | An agent can query the model (fetch elements by filter) to analyse and discuss architecture in the chat — the model is bidirectionally accessible. |

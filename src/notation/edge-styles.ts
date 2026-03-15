@@ -35,6 +35,8 @@ export interface UnifiedEdgeStyle {
   inlineArrow?: boolean;
   /** Filled or open arrowhead for inline rendering. */
   filledArrow?: boolean;
+  /** Override stroke colour (e.g. red for error flows). */
+  color?: string;
 }
 
 const STYLES: Record<string, UnifiedEdgeStyle> = {
@@ -204,6 +206,7 @@ const STYLES: Record<string, UnifiedEdgeStyle> = {
   'pf-error-flow': {
     strokeStyle: 'dashed', dashArray: '6 3', width: 1.2,
     sourceMarker: null, targetMarker: 'filled-arrow',
+    color: '#EF4444',
   },
 };
 

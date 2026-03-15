@@ -91,6 +91,8 @@ interface XYFlowCanvasProps {
   viewpointType?: string;
   /** Incrementing key that forces a full position rebuild from viewElements (used after undo/redo). */
   positionResetKey?: number;
+  /** Called when a node's parent swimlane changes (drag into / out of swimlane). */
+  onParentChange?: (elementId: string, newParentId: string | null) => void;
 }
 
 // ── Bridge: captures screenToFlowPosition inside the ReactFlow provider ───
@@ -138,6 +140,7 @@ export function XYFlowCanvas({
   validRelationships = [],
   viewpointType,
   positionResetKey,
+  onParentChange,
 }: XYFlowCanvasProps) {
   // Derive layout order maps from sublayer config (or fallback to hardcoded)
   const { layerOrder, sublayerOrder, layerLabels } = React.useMemo(
@@ -462,6 +465,47 @@ export function XYFlowCanvas({
     }
   }, []);
 
+  /**
+   * Find the smallest pf-swimlane node whose bounds contain the given centre point.
+   * Returns null if no swimlane overlaps.
+   */
+  const findOverlappingSwimlane = useCallback((cx: number, cy: number, excludeId: string): Node | null => {
+    let best: Node | null = null;
+    let bestArea = Infinity;
+    for (const n of nodesRef.current) {
+      if (n.id === excludeId) continue;
+      const archType = (n.data as Record<string, unknown>)?.archimateType as string | undefined;
+      if (archType !== 'pf-swimlane') continue;
+      const abs = resolveAbsolutePos(n.id);
+      const w = n.width ?? 300;
+      const h = n.height ?? 200;
+      if (cx >= abs.x && cx <= abs.x + w && cy >= abs.y && cy <= abs.y + h) {
+        const area = w * h;
+        if (area < bestArea) { best = n; bestArea = area; }
+      }
+    }
+    return best;
+  }, [resolveAbsolutePos]);
+
+  /** Topological sort: parents before children (xyflow requirement). */
+  const sortNodesParentsFirst = useCallback((nodeList: Node[]): Node[] => {
+    const byId = new Map<string, Node>();
+    for (const n of nodeList) byId.set(n.id, n);
+    const sorted: Node[] = [];
+    const visited = new Set<string>();
+    function visit(n: Node) {
+      if (visited.has(n.id)) return;
+      if (n.parentId) {
+        const parent = byId.get(n.parentId);
+        if (parent) visit(parent);
+      }
+      visited.add(n.id);
+      sorted.push(n);
+    }
+    for (const n of nodeList) visit(n);
+    return sorted;
+  }, []);
+
   const handleNodeDragStop: NodeMouseHandler = useCallback((_event, node) => {
     setSnaplines([]);
 
@@ -483,6 +527,43 @@ export function XYFlowCanvas({
       forceRender(n => n + 1);
       const abs = resolveAbsolutePos(node.id);
       positions = [{ element_id: node.id, x: abs.x, y: abs.y }];
+
+      // ── Swimlane auto-parenting for pf-* nodes ──────────────────────
+      const archType = (node.data as Record<string, unknown>)?.archimateType as string | undefined;
+      if (archType && archType.startsWith('pf-') && archType !== 'pf-swimlane' && archType !== 'pf-subprocess') {
+        const nodeW = node.width ?? 130;
+        const nodeH = node.height ?? 50;
+        const cx = abs.x + nodeW / 2;
+        const cy = abs.y + nodeH / 2;
+        const swimlane = findOverlappingSwimlane(cx, cy, node.id);
+        const newParentId = swimlane?.id ?? null;
+        const currentParentId = node.parentId ?? null;
+
+        if (newParentId !== currentParentId) {
+          // Update the xyflow node in-place
+          const idx = nodesRef.current.findIndex(n => n.id === node.id);
+          if (idx !== -1) {
+            const updated = { ...nodesRef.current[idx]! };
+            if (newParentId && swimlane) {
+              // Parent → convert position to relative
+              const parentAbs = resolveAbsolutePos(newParentId);
+              updated.parentId = newParentId;
+              updated.extent = 'parent' as const;
+              updated.position = { x: abs.x - parentAbs.x, y: abs.y - parentAbs.y };
+            } else {
+              // Un-parent → convert position to absolute
+              updated.parentId = undefined;
+              updated.extent = undefined;
+              updated.position = { x: abs.x, y: abs.y };
+            }
+            nodesRef.current[idx] = updated;
+            nodesRef.current = sortNodesParentsFirst(nodesRef.current);
+            forceRender(n => n + 1);
+          }
+          // Persist parent change via callback
+          onParentChange?.(node.id, newParentId);
+        }
+      }
     }
 
     if (positions.length > 0) {
@@ -500,7 +581,7 @@ export function XYFlowCanvas({
         onPositionChange(positions);
       }
     }
-  }, [onPositionChange, onDragComplete, layerLabels, theme]);
+  }, [onPositionChange, onDragComplete, layerLabels, theme, findOverlappingSwimlane, sortNodesParentsFirst, onParentChange, resolveAbsolutePos]);
 
   // Alignment snaplines during drag — show guides when near other nodes' edges/centres
   const handleNodeDrag: NodeMouseHandler = useCallback((_event, draggedNode) => {

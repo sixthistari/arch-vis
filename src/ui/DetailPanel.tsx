@@ -3,7 +3,7 @@ import type { Element, Relationship, ViewElement, ProcessStep } from '../model/t
 import { elementStatusValues, SPECIALISATION_CATEGORIES, specialisationLabel } from '../model/types';
 import { useModelStore } from '../store/model';
 import { ImpactAnalysisPanel } from './ImpactAnalysisPanel';
-import { fetchProcessSteps } from '../api/client';
+import { fetchProcessSteps, updateProcessStep } from '../api/client';
 
 interface DetailPanelProps {
   element: Element;
@@ -86,6 +86,7 @@ export function DetailPanel({ element, relationships, elements, onClose, onNavig
   const isUmlEnum = element.archimate_type === 'uml-enum';
   const isProcessFlow = element.archimate_type.startsWith('pf-');
   const [processStep, setProcessStep] = useState<ProcessStep | null>(null);
+  const [draftStep, setDraftStep] = useState<Partial<ProcessStep> | null>(null);
 
   // Reset draft when element changes
   useEffect(() => {
@@ -98,6 +99,7 @@ export function DetailPanel({ element, relationships, elements, onClose, onNavig
       specialisation: element.specialisation ?? '',
     });
     setEditing(false);
+    setDraftStep(null);
   }, [element.id, element.name, element.description, element.status, element.layer, element.sublayer, element.specialisation]);
 
   // Fetch process step data when a pf-* element is selected
@@ -163,13 +165,27 @@ export function DetailPanel({ element, relationships, elements, onClose, onNavig
         }
       }
       await updateElement(element.id, updateData);
+      // Save process step fields if editing
+      if (draftStep && processStep) {
+        const stepUpdate: Record<string, unknown> = { ...draftStep };
+        // Convert comma-separated strings back to arrays
+        if (typeof stepUpdate.input_objects === 'string') {
+          stepUpdate.input_objects = (stepUpdate.input_objects as string).split(',').map(s => s.trim()).filter(Boolean);
+        }
+        if (typeof stepUpdate.output_objects === 'string') {
+          stepUpdate.output_objects = (stepUpdate.output_objects as string).split(',').map(s => s.trim()).filter(Boolean);
+        }
+        const updated = await updateProcessStep(processStep.id, stepUpdate as Partial<Omit<ProcessStep, 'id' | 'process_id' | 'sequence'>>);
+        setProcessStep(updated);
+        setDraftStep(null);
+      }
       setEditing(false);
     } catch (err) {
       console.error('Failed to save element:', err);
     } finally {
       setSaving(false);
     }
-  }, [element.id, draft, updateElement, isUmlClass, isUmlEnum, draftAttributes, draftMethods, element.properties]);
+  }, [element.id, draft, updateElement, isUmlClass, isUmlEnum, draftAttributes, draftMethods, element.properties, draftStep, processStep]);
 
   const handleCancel = useCallback(() => {
     setDraft({
@@ -180,6 +196,7 @@ export function DetailPanel({ element, relationships, elements, onClose, onNavig
       sublayer: element.sublayer ?? '',
       specialisation: element.specialisation ?? '',
     });
+    setDraftStep(null);
     setEditing(false);
   }, [element]);
 
@@ -319,6 +336,7 @@ export function DetailPanel({ element, relationships, elements, onClose, onNavig
               isUmlClass ? renderUmlMemberEditor(
                 isUmlEnum, draftAttributes, setDraftAttributes, draftMethods, setDraftMethods, inputStyle,
               ) : null,
+              isProcessFlow && draftStep ? renderProcessStepEditable(draftStep, setDraftStep, inputStyle) : null,
               viewId ? renderAppearanceSection(appearanceFill, setAppearanceFill, appearanceStroke, setAppearanceStroke, handleAppearanceSave, handleAppearanceReset, inputStyle) : null,
             )
           : React.createElement(React.Fragment, null,
@@ -356,7 +374,22 @@ export function DetailPanel({ element, relationships, elements, onClose, onNavig
               }, 'Cancel'),
             )
           : React.createElement('button', {
-              onClick: () => setEditing(true),
+              onClick: () => {
+                setEditing(true);
+                if (processStep) {
+                  setDraftStep({
+                    step_type: processStep.step_type,
+                    role_id: processStep.role_id,
+                    agent_id: processStep.agent_id,
+                    agent_autonomy: processStep.agent_autonomy,
+                    description: processStep.description,
+                    approval_required: processStep.approval_required,
+                    track_crossing: processStep.track_crossing,
+                    input_objects: processStep.input_objects,
+                    output_objects: processStep.output_objects,
+                  });
+                }
+              },
               style: btnStyle,
             }, 'Edit'),
       ),
@@ -774,6 +807,121 @@ function renderProcessStepInfo(step: ProcessStep): React.ReactElement {
         React.createElement('div', { key: i, style: { color: 'var(--text-primary)', fontSize: 11, paddingLeft: 8 } }, obj),
       ),
     ) : null,
+  );
+}
+
+function renderProcessStepEditable(
+  draftStep: Partial<ProcessStep>,
+  setDraftStep: React.Dispatch<React.SetStateAction<Partial<ProcessStep> | null>>,
+  inputStyle: React.CSSProperties,
+): React.ReactElement {
+  const fieldRow = (label: string, child: React.ReactElement) =>
+    React.createElement('div', { key: label, style: { marginBottom: 8 } },
+      React.createElement('div', { style: { color: 'var(--text-muted)', fontSize: 9, textTransform: 'uppercase', marginBottom: 2 } }, label),
+      child,
+    );
+
+  const update = (field: string, value: unknown) => {
+    setDraftStep(prev => prev ? { ...prev, [field]: value } : prev);
+  };
+
+  const selectStyle = { ...inputStyle, appearance: 'auto' as React.CSSProperties['appearance'] };
+
+  return React.createElement('div', { style: { marginTop: 12 } },
+    React.createElement('div', {
+      style: { color: 'var(--text-muted)', fontSize: 9, textTransform: 'uppercase', marginBottom: 6, borderTop: '1px solid var(--border-secondary)', paddingTop: 8 },
+    }, 'Process Step Metadata'),
+
+    fieldRow('Step Type',
+      React.createElement('select', {
+        value: draftStep.step_type ?? '',
+        onChange: (e: React.ChangeEvent<HTMLSelectElement>) => update('step_type', e.target.value || null),
+        style: selectStyle,
+      },
+        React.createElement('option', { value: '' }, '\u2014 None'),
+        React.createElement('option', { value: 'human' }, 'Human'),
+        React.createElement('option', { value: 'agent' }, 'Agent'),
+        React.createElement('option', { value: 'system' }, 'System'),
+        React.createElement('option', { value: 'hybrid' }, 'Hybrid'),
+      ),
+    ),
+
+    fieldRow('Role',
+      React.createElement('input', {
+        value: draftStep.role_id ?? '',
+        onChange: (e: React.ChangeEvent<HTMLInputElement>) => update('role_id', e.target.value || null),
+        style: inputStyle,
+        placeholder: '\u2014',
+      }),
+    ),
+
+    fieldRow('Agent',
+      React.createElement('input', {
+        value: draftStep.agent_id ?? '',
+        onChange: (e: React.ChangeEvent<HTMLInputElement>) => update('agent_id', e.target.value || null),
+        style: inputStyle,
+        placeholder: '\u2014',
+      }),
+    ),
+
+    fieldRow('Agent Autonomy',
+      React.createElement('select', {
+        value: draftStep.agent_autonomy ?? '',
+        onChange: (e: React.ChangeEvent<HTMLSelectElement>) => update('agent_autonomy', e.target.value || null),
+        style: selectStyle,
+      },
+        React.createElement('option', { value: '' }, '\u2014 None'),
+        React.createElement('option', { value: 'full' }, 'Full'),
+        React.createElement('option', { value: 'supervised' }, 'Supervised'),
+        React.createElement('option', { value: 'advisory' }, 'Advisory'),
+        React.createElement('option', { value: 'none' }, 'None'),
+      ),
+    ),
+
+    fieldRow('Approval Required',
+      React.createElement('input', {
+        type: 'checkbox',
+        checked: draftStep.approval_required ?? false,
+        onChange: (e: React.ChangeEvent<HTMLInputElement>) => update('approval_required', e.target.checked),
+        style: { marginLeft: 0 },
+      }),
+    ),
+
+    fieldRow('Track Crossing',
+      React.createElement('input', {
+        type: 'checkbox',
+        checked: draftStep.track_crossing ?? false,
+        onChange: (e: React.ChangeEvent<HTMLInputElement>) => update('track_crossing', e.target.checked),
+        style: { marginLeft: 0 },
+      }),
+    ),
+
+    fieldRow('Description',
+      React.createElement('textarea', {
+        value: draftStep.description ?? '',
+        onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => update('description', e.target.value || null),
+        style: { ...inputStyle, minHeight: 40, resize: 'vertical' as const },
+        placeholder: '\u2014',
+      }),
+    ),
+
+    fieldRow('Inputs (comma-separated)',
+      React.createElement('input', {
+        value: Array.isArray(draftStep.input_objects) ? draftStep.input_objects.join(', ') : (draftStep.input_objects ?? ''),
+        onChange: (e: React.ChangeEvent<HTMLInputElement>) => update('input_objects', e.target.value),
+        style: inputStyle,
+        placeholder: 'e.g. document, request',
+      }),
+    ),
+
+    fieldRow('Outputs (comma-separated)',
+      React.createElement('input', {
+        value: Array.isArray(draftStep.output_objects) ? draftStep.output_objects.join(', ') : (draftStep.output_objects ?? ''),
+        onChange: (e: React.ChangeEvent<HTMLInputElement>) => update('output_objects', e.target.value),
+        style: inputStyle,
+        placeholder: 'e.g. approval, report',
+      }),
+    ),
   );
 }
 

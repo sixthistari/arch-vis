@@ -364,6 +364,12 @@ export function Canvas(): React.ReactElement {
     await loadAll();
   }, [currentView, elements, loadAll]);
 
+  // Swimlane auto-parenting — persist parent_id change when node is dragged into/out of a swimlane
+  const handleParentChange = useCallback(async (elementId: string, newParentId: string | null) => {
+    await api.updateElement(elementId, { parent_id: newParentId });
+    await loadAll();
+  }, [loadAll]);
+
   // Paste elements — create new elements from clipboard entries and add to current view
   const handlePasteElements = useCallback(async (entries: { name: string; archimateType: string; layer: string; x: number; y: number }[]) => {
     if (!currentView) return;
@@ -448,6 +454,7 @@ export function Canvas(): React.ReactElement {
           validRelationships,
           viewpointType: currentView.viewpoint_type,
           positionResetKey,
+          onParentChange: handleParentChange,
         }),
   );
 }
