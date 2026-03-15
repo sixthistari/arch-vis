@@ -9,7 +9,9 @@ function assertNever(x: never): never {
 }
 
 /** Determine which notation family an archimate_type belongs to. */
-export function getNotation(archimateType: string): 'archimate' | 'uml' | 'wireframe' {
+export function getNotation(archimateType: string): 'archimate' | 'uml' | 'wireframe' | 'data' | 'any' {
+  if (archimateType === 'annotation') return 'any';
+  if (archimateType.startsWith('dm-')) return 'data';
   if (archimateType.startsWith('uml-')) return 'uml';
   if (archimateType.startsWith('wf-')) return 'wireframe';
   return 'archimate';
@@ -21,6 +23,9 @@ export function getNotation(archimateType: string): 'archimate' | 'uml' | 'wiref
  */
 export function getNodeType(archimateType: ArchimateType): string {
   switch (archimateType) {
+    // Annotation (notation-agnostic)
+    case 'annotation': return 'annotation';
+
     // UML sequence diagram types
     case 'uml-lifeline': return 'sequence-lifeline';
     case 'uml-activation': return 'sequence-activation';
@@ -38,6 +43,8 @@ export function getNodeType(archimateType: ArchimateType): string {
     case 'uml-state':
       return 'uml-state';
 
+    case 'uml-swimlane': return 'uml-swimlane';
+
     case 'uml-activity':
     case 'uml-action':
     case 'uml-decision':
@@ -53,9 +60,10 @@ export function getNodeType(archimateType: ArchimateType): string {
     case 'uml-use-case':
       return 'uml-use-case';
 
+    case 'uml-package': return 'uml-package';
+
     // These don't have dedicated nodes yet — fall back to uml-component
     case 'uml-note':
-    case 'uml-package':
       return 'uml-component';
 
     // Wireframe types
@@ -85,6 +93,17 @@ export function getNodeType(archimateType: ArchimateType): string {
       return 'wf-control';
 
     case 'wf-feedback': return 'wf-feedback';
+
+    // Data modelling types — entity/table use the compartment node
+    case 'dm-entity':
+    case 'dm-table':
+      return 'dm-entity';
+    case 'dm-column':
+    case 'dm-attribute':
+    case 'dm-primary-key':
+    case 'dm-foreign-key':
+    case 'dm-index':
+      return 'dm-entity';
 
     // ArchiMate core types
     case 'stakeholder':
@@ -141,7 +160,9 @@ export function getNodeType(archimateType: ArchimateType): string {
     case 'implementation-event':
     case 'plateau':
     case 'gap':
+      return 'archimate';
     case 'grouping':
+      return 'group';
     case 'location':
     case 'junction':
       return 'archimate';
@@ -152,7 +173,7 @@ export function getNodeType(archimateType: ArchimateType): string {
 }
 
 /** Determine which notation family a viewpoint type targets. */
-export function getViewNotation(viewpointType: string): 'archimate' | 'uml' | 'wireframe' | 'any' {
+export function getViewNotation(viewpointType: string): 'archimate' | 'uml' | 'wireframe' | 'data' | 'any' {
   switch (viewpointType) {
     case 'layered':
     case 'knowledge_cognition':
@@ -171,6 +192,10 @@ export function getViewNotation(viewpointType: string): 'archimate' | 'uml' | 'w
       return 'uml';
     case 'wireframe':
       return 'wireframe';
+    case 'data_conceptual':
+    case 'data_logical':
+    case 'data_physical':
+      return 'data';
     case 'custom':
     default:
       return 'any';
@@ -188,5 +213,6 @@ export function getEdgeType(relationshipType: string): string {
   }
   if (relationshipType.startsWith('uml-')) return 'uml-edge';
   if (relationshipType.startsWith('wf-')) return 'wireframe';
+  if (relationshipType.startsWith('dm-')) return 'data-edge';
   return 'archimate';
 }

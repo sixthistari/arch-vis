@@ -1,5 +1,15 @@
 # CLAUDE.md — Claude Code Project Instructions
 
+## Session Modes
+
+At the start of every session, ask: **"What type of session — build, fix, test, assess, or chat?"**
+
+- **build** — Add features. Autonomous. Compile-check after every change.
+- **fix** — Work a known bug/issue list. Surgical fixes only — no refactoring, no feature creep.
+- **test** — Run test strategy (`tests/TEST-STRATEGY.md`). **Do not modify application code.** Write test files only. Output is a report + fix list.
+- **assess** — Read code/docs, produce a written evaluation. No code changes.
+- **chat** — Answer questions. No code changes.
+
 ## Identity
 
 This is **arch-vis**, an ArchiMate-aligned enterprise architecture modelling and visualisation tool. It renders interactive, notation-accurate architecture diagrams from a relational model. Diagrams are projections of data — not authored drawings.

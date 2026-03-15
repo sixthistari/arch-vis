@@ -139,6 +139,23 @@ export function updateElement(
   });
 }
 
+export function bulkRenameSpecialisation(
+  oldValue: string,
+  newValue: string | null,
+): Promise<{ updated: number }> {
+  return request('/elements/bulk-specialisation', z.object({ updated: z.number() }), {
+    method: 'POST',
+    body: JSON.stringify({ oldValue, newValue }),
+  });
+}
+
+export function fetchDistinctSpecialisations(): Promise<Array<{ specialisation: string; count: number }>> {
+  return request(
+    '/elements/distinct-specialisations',
+    z.array(z.object({ specialisation: z.string(), count: z.number() })),
+  );
+}
+
 export function deleteElement(id: string): Promise<void> {
   return requestVoid(`/elements/${encodeURIComponent(id)}`, {
     method: 'DELETE',
@@ -171,6 +188,16 @@ export function createRelationship(
   });
 }
 
+export function updateRelationship(
+  id: string,
+  data: Partial<Omit<Relationship, 'id' | 'created_at' | 'updated_at'>>,
+): Promise<Relationship> {
+  return request(`/relationships/${encodeURIComponent(id)}`, RelationshipSchema, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
 export function deleteRelationship(id: string): Promise<void> {
   return requestVoid(`/relationships/${encodeURIComponent(id)}`, {
     method: 'DELETE',
@@ -194,7 +221,7 @@ export const ViewDetailSchema = z.object({
 export type ViewDetail = z.infer<typeof ViewDetailSchema>;
 
 export function fetchView(id: string): Promise<ViewDetail> {
-  return request(`/views/${encodeURIComponent(id)}`, ViewDetailSchema);
+  return request(`/views/${encodeURIComponent(id)}`, ViewDetailSchema as z.ZodType<ViewDetail>);
 }
 
 export function createView(data: CreateViewInput): Promise<View> {
@@ -204,13 +231,29 @@ export function createView(data: CreateViewInput): Promise<View> {
   });
 }
 
+export function duplicateView(id: string): Promise<View> {
+  return request(`/views/${encodeURIComponent(id)}/duplicate`, ViewSchema, {
+    method: 'POST',
+  });
+}
+
+export function removeViewElements(
+  viewId: string,
+  elementIds: string[],
+): Promise<void> {
+  return requestVoid(`/views/${encodeURIComponent(viewId)}/elements`, {
+    method: 'DELETE',
+    body: JSON.stringify({ element_ids: elementIds }),
+  });
+}
+
 export function updateViewElements(
   viewId: string,
   elements: ViewElement[],
 ): Promise<ViewElement[]> {
   return request(
     `/views/${encodeURIComponent(viewId)}/elements`,
-    z.array(ViewElementSchema),
+    z.array(ViewElementSchema) as z.ZodType<ViewElement[]>,
     {
       method: 'PUT',
       body: JSON.stringify(elements),
@@ -351,6 +394,136 @@ const CsvExportResultSchema = z.object({
 
 export function exportCsv(): Promise<CsvExportResult> {
   return request('/export/csv', CsvExportResultSchema);
+}
+
+// ═══════════════════════════════════════
+// HTML Report Export
+// ═══════════════════════════════════════
+
+export async function exportHtmlReport(): Promise<void> {
+  const response = await fetch(`${API_BASE}/reports/html`);
+  if (!response.ok) {
+    const body = await response.text().catch(() => 'Unknown error');
+    throw new ApiError(response.status, `${response.status}: ${body}`);
+  }
+  const html = await response.text();
+  const blob = new Blob([html], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'architecture-report.html';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ═══════════════════════════════════════
+// Model File Operations (Open / Save / Close)
+// ═══════════════════════════════════════
+
+export interface ModelFileData {
+  version: number;
+  exportedAt: string;
+  domains: unknown[];
+  elements: unknown[];
+  relationships: unknown[];
+  views: unknown[];
+  viewElements: unknown[];
+  viewRelationships: unknown[];
+}
+
+const ModelFileDataSchema = z.object({
+  version: z.number(),
+  exportedAt: z.string(),
+  domains: z.array(z.unknown()),
+  elements: z.array(z.unknown()),
+  relationships: z.array(z.unknown()),
+  views: z.array(z.unknown()),
+  viewElements: z.array(z.unknown()),
+  viewRelationships: z.array(z.unknown()),
+});
+
+export interface ModelImportResult {
+  success: boolean;
+  elementsImported: number;
+  relationshipsImported: number;
+  viewsImported: number;
+}
+
+const ModelImportResultSchema = z.object({
+  success: z.boolean(),
+  elementsImported: z.number(),
+  relationshipsImported: z.number(),
+  viewsImported: z.number(),
+});
+
+export interface ModelResetResult {
+  success: boolean;
+  seeded: boolean;
+  elements: number;
+}
+
+const ModelResetResultSchema = z.object({
+  success: z.boolean(),
+  seeded: z.boolean(),
+  elements: z.number(),
+});
+
+/** GET /api/export/model-full — full model export for .archvis file */
+export function exportModelFull(): Promise<ModelFileData> {
+  return request('/export/model-full', ModelFileDataSchema);
+}
+
+/** POST /api/import/model-full — replace model with .archvis file contents */
+export function importModelFull(data: ModelFileData): Promise<ModelImportResult> {
+  return request('/import/model-full', ModelImportResultSchema, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+/** POST /api/model/reset — clear the model; optionally reload seed data */
+export function resetModel(seed: boolean = true): Promise<ModelResetResult> {
+  return request(`/model/reset?seed=${seed}`, ModelResetResultSchema, {
+    method: 'POST',
+  });
+}
+
+/** Trigger browser download of model as .archvis file */
+export async function saveModelFile(): Promise<void> {
+  const data = await exportModelFull();
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const timestamp = new Date().toISOString().slice(0, 10);
+  a.download = `model-${timestamp}.archvis`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/** Open file picker, read .archvis file, import to server, reload state */
+export function openModelFile(): Promise<ModelImportResult> {
+  return new Promise((resolve, reject) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.archvis';
+    input.onchange = async () => {
+      if (!input.files?.[0]) {
+        reject(new Error('No file selected'));
+        return;
+      }
+      try {
+        const text = await input.files[0].text();
+        const data = JSON.parse(text) as ModelFileData;
+        const result = await importModelFull(data);
+        resolve(result);
+      } catch (err) {
+        reject(err);
+      }
+    };
+    input.click();
+  });
 }
 
 // ═══════════════════════════════════════

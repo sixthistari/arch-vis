@@ -78,6 +78,21 @@ const SHAPE_REGISTRY: Record<string, ShapeDefinition> = {
   'grouping': { shapeType: 'dashed-rect', defaultWidth: 120, defaultHeight: 80 },
   'location': { shapeType: 'rect', defaultWidth: 80, defaultHeight: 22 },
   'junction': { shapeType: 'rect', defaultWidth: 10, defaultHeight: 10 },
+
+  // UML Activity Partition (swimlane)
+  'uml-swimlane': { shapeType: 'dashed-rect', defaultWidth: 200, defaultHeight: 400 },
+
+  // Data Modelling
+  'dm-entity': { shapeType: 'rect', defaultWidth: 160, defaultHeight: 60 },
+  'dm-table': { shapeType: 'rect', defaultWidth: 160, defaultHeight: 60 },
+  'dm-column': { shapeType: 'rect', defaultWidth: 100, defaultHeight: 20 },
+  'dm-attribute': { shapeType: 'rect', defaultWidth: 100, defaultHeight: 20 },
+  'dm-primary-key': { shapeType: 'rect', defaultWidth: 100, defaultHeight: 20 },
+  'dm-foreign-key': { shapeType: 'rect', defaultWidth: 100, defaultHeight: 20 },
+  'dm-index': { shapeType: 'rect', defaultWidth: 100, defaultHeight: 20 },
+
+  // Annotation (notation-agnostic)
+  'annotation': { shapeType: 'folded-corner', defaultWidth: 75, defaultHeight: 50 },
 };
 
 const FALLBACK_SHAPE: ShapeDefinition = {

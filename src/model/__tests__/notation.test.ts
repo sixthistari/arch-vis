@@ -23,6 +23,10 @@ describe('getNotation', () => {
     expect(getNotation('stakeholder')).toBe('archimate');
     expect(getNotation('junction')).toBe('archimate');
   });
+
+  it('returns "any" for annotation', () => {
+    expect(getNotation('annotation')).toBe('any');
+  });
 });
 
 describe('getNodeType', () => {
@@ -66,8 +70,12 @@ describe('getNodeType', () => {
     expect(getNodeType(input as any)).toBe('uml-use-case');
   });
 
+  it('maps uml-package to uml-package', () => {
+    expect(getNodeType('uml-package' as any)).toBe('uml-package');
+  });
+
   // UML fallback types
-  it.each(['uml-note', 'uml-package'])('%s maps to uml-component (fallback)', (input) => {
+  it.each(['uml-note'])('%s maps to uml-component (fallback)', (input) => {
     expect(getNodeType(input as any)).toBe('uml-component');
   });
 
@@ -101,9 +109,17 @@ describe('getNodeType', () => {
   it.each([
     'stakeholder', 'driver', 'goal', 'business-process',
     'application-component', 'node', 'device', 'artifact',
-    'work-package', 'junction', 'grouping', 'location',
+    'work-package', 'junction', 'location',
   ])('archimate: %s maps to archimate', (input) => {
     expect(getNodeType(input as any)).toBe('archimate');
+  });
+
+  it('grouping maps to group', () => {
+    expect(getNodeType('grouping' as any)).toBe('group');
+  });
+
+  it('annotation maps to annotation', () => {
+    expect(getNodeType('annotation' as any)).toBe('annotation');
   });
 });
 

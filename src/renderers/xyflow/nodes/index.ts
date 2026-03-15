@@ -1,11 +1,14 @@
 import type { NodeTypes } from '@xyflow/react';
+import { AnnotationNode } from './AnnotationNode';
 import { ArchimateNode } from './ArchimateNode';
 import { UmlClassNode } from './uml/UmlClassNode';
 import { UmlComponentNode } from './uml/UmlComponentNode';
+import { UmlPackageNode } from './uml/UmlPackageNode';
 import { UmlStateNode } from './uml/UmlStateNode';
 import { UmlUseCaseNode } from './uml/UmlUseCaseNode';
 import { UcdBoundaryNode } from './uml/UcdBoundaryNode';
 import { UmlActivityNode } from './uml/UmlActivityNode';
+import { UmlSwimlaneNode } from './uml/UmlSwimlaneNode';
 import { UmlLifelineNode, UmlActivationNode, UmlFragmentNode } from './uml/UmlSequenceNodes';
 import { SequenceLifelineNode } from './sequence/SequenceLifelineNode';
 import { SequenceActivationNode } from './sequence/SequenceActivationNode';
@@ -18,19 +21,27 @@ import { WfFormNode } from './wireframe/WfFormNode';
 import { WfControlNode } from './wireframe/WfControlNode';
 import { WfListNode } from './wireframe/WfListNode';
 import { WfFeedbackNode } from './wireframe/WfFeedbackNode';
+import { DmEntityNode } from './data/DmEntityNode';
+import { GroupNode } from './GroupNode';
 import { LayerBandNode } from './LayerBandNode';
 
 export const nodeTypes: NodeTypes = {
+  // Annotation (notation-agnostic)
+  annotation: AnnotationNode,
+  // Visual group container
+  group: GroupNode,
   // ArchiMate
   archimate: ArchimateNode,
   'layer-band': LayerBandNode,
   // UML
   'uml-class': UmlClassNode,
   'uml-component': UmlComponentNode,
+  'uml-package': UmlPackageNode,
   'uml-use-case': UmlUseCaseNode,
   'ucd-boundary': UcdBoundaryNode,
   'uml-state': UmlStateNode,
   'uml-activity': UmlActivityNode,
+  'uml-swimlane': UmlSwimlaneNode,
   'uml-lifeline': UmlLifelineNode,
   'uml-activation': UmlActivationNode,
   'uml-fragment': UmlFragmentNode,
@@ -38,6 +49,8 @@ export const nodeTypes: NodeTypes = {
   'sequence-lifeline': SequenceLifelineNode,
   'sequence-activation': SequenceActivationNode,
   'sequence-fragment': SequenceFragmentNode,
+  // Data modelling
+  'dm-entity': DmEntityNode,
   // Wireframe
   'wf-page': WfPageNode,
   'wf-section': WfSectionNode,
@@ -49,6 +62,14 @@ export const nodeTypes: NodeTypes = {
   'wf-feedback': WfFeedbackNode,
 };
 
+// Annotation exports
+export { AnnotationNode } from './AnnotationNode';
+export type { AnnotationNodeData } from './AnnotationNode';
+
+// Group exports
+export { GroupNode } from './GroupNode';
+export type { GroupNodeData } from './GroupNode';
+
 // ArchiMate exports
 export { ArchimateNode } from './ArchimateNode';
 export type { ArchimateNodeData } from './ArchimateNode';
@@ -58,6 +79,8 @@ export { UmlClassNode } from './uml/UmlClassNode';
 export type { UmlClassNodeData } from './uml/UmlClassNode';
 export { UmlComponentNode } from './uml/UmlComponentNode';
 export type { UmlComponentNodeData } from './uml/UmlComponentNode';
+export { UmlPackageNode } from './uml/UmlPackageNode';
+export type { UmlPackageNodeData } from './uml/UmlPackageNode';
 export { UmlUseCaseNode } from './uml/UmlUseCaseNode';
 export type { UmlUseCaseNodeData } from './uml/UmlUseCaseNode';
 export { UcdBoundaryNode } from './uml/UcdBoundaryNode';
@@ -66,6 +89,8 @@ export { UmlStateNode } from './uml/UmlStateNode';
 export type { UmlStateNodeData } from './uml/UmlStateNode';
 export { UmlActivityNode } from './uml/UmlActivityNode';
 export type { UmlActivityNodeData } from './uml/UmlActivityNode';
+export { UmlSwimlaneNode } from './uml/UmlSwimlaneNode';
+export type { UmlSwimlaneNodeData } from './uml/UmlSwimlaneNode';
 export { UmlLifelineNode, UmlActivationNode, UmlFragmentNode } from './uml/UmlSequenceNodes';
 export type { UmlLifelineNodeData, UmlActivationNodeData, UmlFragmentNodeData } from './uml/UmlSequenceNodes';
 export { SequenceLifelineNode } from './sequence/SequenceLifelineNode';
@@ -74,6 +99,10 @@ export { SequenceActivationNode } from './sequence/SequenceActivationNode';
 export type { SequenceActivationNodeData } from './sequence/SequenceActivationNode';
 export { SequenceFragmentNode } from './sequence/SequenceFragmentNode';
 export type { SequenceFragmentNodeData } from './sequence/SequenceFragmentNode';
+
+// Data modelling exports
+export { DmEntityNode } from './data/DmEntityNode';
+export type { DmEntityNodeData, DmAttribute } from './data/DmEntityNode';
 
 // Wireframe exports
 export { WfPageNode } from './wireframe/WfPageNode';

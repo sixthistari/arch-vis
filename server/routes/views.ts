@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import crypto from 'crypto';
 import db from '../db.js';
 
 interface ViewRow {
@@ -25,6 +26,7 @@ interface ViewElementRow {
   height: number | null;
   sublayer_override: string | null;
   style_overrides: string | null;
+  z_index: number;
 }
 
 interface ViewRelationshipRow {
@@ -127,8 +129,8 @@ router.put('/views/:id/elements', (req: Request, res: Response) => {
   const items = req.body as Array<Record<string, unknown>>;
 
   const upsert = db.prepare(`
-    INSERT OR REPLACE INTO view_elements (view_id, element_id, x, y, width, height, sublayer_override, style_overrides)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT OR REPLACE INTO view_elements (view_id, element_id, x, y, width, height, sublayer_override, style_overrides, z_index)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   const batchUpsert = db.transaction((rows: Array<Record<string, unknown>>) => {
@@ -142,6 +144,7 @@ router.put('/views/:id/elements', (req: Request, res: Response) => {
         row.height ?? null,
         row.sublayer_override ?? null,
         row.style_overrides ? JSON.stringify(row.style_overrides) : null,
+        row.z_index ?? 0,
       );
     }
   });
@@ -150,6 +153,92 @@ router.put('/views/:id/elements', (req: Request, res: Response) => {
 
   const updated = db.prepare('SELECT * FROM view_elements WHERE view_id = ?').all(id) as ViewElementRow[];
   res.json(updated.map(parseViewElement));
+});
+
+// DELETE /api/views/:id/elements — batch remove view_elements (remove from view only, model unchanged)
+router.delete('/views/:id/elements', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const body = req.body as { element_ids?: string[] };
+  const elementIds = body.element_ids;
+  if (!Array.isArray(elementIds) || elementIds.length === 0) {
+    res.status(400).json({ error: 'element_ids array required' });
+    return;
+  }
+
+  const del = db.prepare('DELETE FROM view_elements WHERE view_id = ? AND element_id = ?');
+  const batchDelete = db.transaction((ids: string[]) => {
+    for (const eid of ids) {
+      del.run(id, eid);
+    }
+  });
+  batchDelete(elementIds);
+
+  res.json({ removed: elementIds.length });
+});
+
+// DELETE /api/views/:id/elements/:elementId — remove a single view_element
+router.delete('/views/:id/elements/:elementId', (req: Request, res: Response) => {
+  const { id, elementId } = req.params;
+  db.prepare('DELETE FROM view_elements WHERE view_id = ? AND element_id = ?').run(id, elementId);
+  res.json({ removed: elementId });
+});
+
+// POST /api/views/:id/duplicate — atomically duplicate a view with all elements and relationships
+router.post('/views/:id/duplicate', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const original = db.prepare('SELECT * FROM views WHERE id = ?').get(id) as ViewRow | undefined;
+  if (!original) {
+    res.status(404).json({ error: 'View not found' });
+    return;
+  }
+
+  const newId = `view-${crypto.randomUUID()}`;
+  const newName = `Copy of ${original.name}`;
+
+  const duplicateTransaction = db.transaction(() => {
+    // Create the new view
+    db.prepare(`
+      INSERT INTO views (id, name, viewpoint_type, description, render_mode,
+        filter_domain, filter_layers, filter_specialisations, rotation_default, is_preset)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      newId,
+      newName,
+      original.viewpoint_type,
+      original.description,
+      original.render_mode,
+      original.filter_domain,
+      original.filter_layers,
+      original.filter_specialisations,
+      original.rotation_default,
+      0, // duplicated views are never presets
+    );
+
+    // Copy view_elements
+    const viewElements = db.prepare('SELECT * FROM view_elements WHERE view_id = ?').all(id) as ViewElementRow[];
+    const insertVE = db.prepare(`
+      INSERT INTO view_elements (view_id, element_id, x, y, width, height, sublayer_override, style_overrides, z_index)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    for (const ve of viewElements) {
+      insertVE.run(newId, ve.element_id, ve.x, ve.y, ve.width, ve.height, ve.sublayer_override, ve.style_overrides, ve.z_index);
+    }
+
+    // Copy view_relationships
+    const viewRels = db.prepare('SELECT * FROM view_relationships WHERE view_id = ?').all(id) as ViewRelationshipRow[];
+    const insertVR = db.prepare(`
+      INSERT INTO view_relationships (view_id, relationship_id, route_points, style_overrides)
+      VALUES (?, ?, ?, ?)
+    `);
+    for (const vr of viewRels) {
+      insertVR.run(newId, vr.relationship_id, vr.route_points, vr.style_overrides);
+    }
+  });
+
+  duplicateTransaction();
+
+  const created = db.prepare('SELECT * FROM views WHERE id = ?').get(newId) as ViewRow;
+  res.status(201).json(parseView(created));
 });
 
 // DELETE /api/views/:id — delete a view (cascade handles view_elements and view_relationships)

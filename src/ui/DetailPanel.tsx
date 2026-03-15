@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import type { Element, Relationship } from '../model/types';
-import { elementStatusValues } from '../model/types';
+import type { Element, Relationship, ViewElement } from '../model/types';
+import { elementStatusValues, SPECIALISATION_CATEGORIES, specialisationLabel } from '../model/types';
 import { useModelStore } from '../store/model';
+import { ImpactAnalysisPanel } from './ImpactAnalysisPanel';
 
 interface DetailPanelProps {
   element: Element;
@@ -10,6 +11,9 @@ interface DetailPanelProps {
   onClose: () => void;
   onNavigate: (elementId: string) => void;
   onDelete: (elementId: string) => void;
+  viewId: string | null;
+  viewElements: ViewElement[];
+  savePositions: (viewId: string, elements: ViewElement[]) => Promise<void>;
 }
 
 type Tab = 'properties' | 'relationships' | 'provenance';
@@ -29,20 +33,53 @@ const VISIBILITY_OPTIONS: Array<{ value: string; label: string }> = [
   { value: '~', label: '~ package' },
 ];
 
-export function DetailPanel({ element, relationships, elements, onClose, onNavigate, onDelete }: DetailPanelProps): React.ReactElement {
+export function DetailPanel({ element, relationships, elements, onClose, onNavigate, onDelete, viewId, viewElements, savePositions }: DetailPanelProps): React.ReactElement {
   const [tab, setTab] = useState<Tab>('properties');
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState<{ name: string; description: string; status: string; layer: string; sublayer: string }>({
+  const [impactOpen, setImpactOpen] = useState(false);
+  const [draft, setDraft] = useState<{ name: string; description: string; status: string; layer: string; sublayer: string; specialisation: string }>({
     name: element.name,
     description: element.description ?? '',
     status: element.status,
     layer: element.layer,
     sublayer: element.sublayer ?? '',
+    specialisation: element.specialisation ?? '',
   });
   const [draftAttributes, setDraftAttributes] = useState<DraftMember[]>([]);
   const [draftMethods, setDraftMethods] = useState<DraftMember[]>([]);
   const [saving, setSaving] = useState(false);
+  const [appearanceFill, setAppearanceFill] = useState('');
+  const [appearanceStroke, setAppearanceStroke] = useState('');
   const updateElement = useModelStore(s => s.updateElement);
+
+  // Resolve current view element for this element
+  const currentVe = viewElements.find(ve => ve.element_id === element.id);
+
+  // Sync appearance fields when element or view element changes
+  useEffect(() => {
+    const so = currentVe?.style_overrides as Record<string, string> | null | undefined;
+    setAppearanceFill(so?.fill ?? '');
+    setAppearanceStroke(so?.stroke ?? '');
+  }, [element.id, currentVe?.style_overrides]);
+
+  const handleAppearanceSave = useCallback(async (fill: string, stroke: string) => {
+    if (!viewId || !currentVe) return;
+    const overrides: Record<string, string> = {};
+    if (fill) overrides.fill = fill;
+    if (stroke) overrides.stroke = stroke;
+    const updated = viewElements.map(ve =>
+      ve.element_id === element.id
+        ? { ...ve, style_overrides: Object.keys(overrides).length > 0 ? overrides : null }
+        : ve,
+    );
+    await savePositions(viewId, updated);
+  }, [viewId, currentVe, viewElements, element.id, savePositions]);
+
+  const handleAppearanceReset = useCallback(async () => {
+    setAppearanceFill('');
+    setAppearanceStroke('');
+    await handleAppearanceSave('', '');
+  }, [handleAppearanceSave]);
 
   const isUmlClass = UML_CLASS_TYPES.includes(element.archimate_type);
   const isUmlEnum = element.archimate_type === 'uml-enum';
@@ -55,9 +92,10 @@ export function DetailPanel({ element, relationships, elements, onClose, onNavig
       status: element.status,
       layer: element.layer,
       sublayer: element.sublayer ?? '',
+      specialisation: element.specialisation ?? '',
     });
     setEditing(false);
-  }, [element.id, element.name, element.description, element.status, element.layer, element.sublayer]);
+  }, [element.id, element.name, element.description, element.status, element.layer, element.sublayer, element.specialisation]);
 
   // Initialise UML member drafts from element properties
   useEffect(() => {
@@ -87,6 +125,7 @@ export function DetailPanel({ element, relationships, elements, onClose, onNavig
         status: draft.status,
         layer: draft.layer,
         sublayer: draft.sublayer || null,
+        specialisation: draft.specialisation || null,
       };
       if (isUmlClass) {
         const existingProps = (element.properties as Record<string, unknown>) ?? {};
@@ -121,6 +160,7 @@ export function DetailPanel({ element, relationships, elements, onClose, onNavig
       status: element.status,
       layer: element.layer,
       sublayer: element.sublayer ?? '',
+      specialisation: element.specialisation ?? '',
     });
     setEditing(false);
   }, [element]);
@@ -167,7 +207,13 @@ export function DetailPanel({ element, relationships, elements, onClose, onNavig
     color: 'var(--button-fg, #ccc)',
   };
 
-  return React.createElement('div', {
+  return React.createElement(React.Fragment, null,
+    impactOpen && React.createElement(ImpactAnalysisPanel, {
+      element,
+      onClose: () => setImpactOpen(false),
+      onNavigate: (id: string) => { setImpactOpen(false); onNavigate(id); },
+    }),
+    React.createElement('div', {
     style: {
       width: '100%',
       height: '100%',
@@ -205,18 +251,34 @@ export function DetailPanel({ element, relationships, elements, onClose, onNavig
           },
         }, element.specialisation) : null,
       ),
-      React.createElement('button', {
-        onClick: onClose,
-        style: {
-          background: 'none',
-          border: 'none',
-          color: 'var(--text-muted)',
-          cursor: 'pointer',
-          fontSize: 16,
-          padding: '0 4px',
-          flexShrink: 0,
-        },
-      }, '\u00D7'),
+      React.createElement('div', { style: { display: 'flex', alignItems: 'flex-start', gap: 6, flexShrink: 0 } },
+        React.createElement('button', {
+          onClick: () => setImpactOpen(true),
+          title: 'Impact Analysis',
+          style: {
+            padding: '3px 8px',
+            fontSize: 10,
+            borderRadius: 3,
+            border: '1px solid var(--border-primary)',
+            cursor: 'pointer',
+            background: 'var(--button-bg, #333)',
+            color: 'var(--button-fg, #ccc)',
+            whiteSpace: 'nowrap',
+          },
+        }, 'Impact Analysis'),
+        React.createElement('button', {
+          onClick: onClose,
+          style: {
+            background: 'none',
+            border: 'none',
+            color: 'var(--text-muted)',
+            cursor: 'pointer',
+            fontSize: 16,
+            padding: '0 4px',
+            flexShrink: 0,
+          },
+        }, '\u00D7'),
+      ),
     ),
 
     // Tabs
@@ -239,10 +301,12 @@ export function DetailPanel({ element, relationships, elements, onClose, onNavig
               isUmlClass ? renderUmlMemberEditor(
                 isUmlEnum, draftAttributes, setDraftAttributes, draftMethods, setDraftMethods, inputStyle,
               ) : null,
+              viewId ? renderAppearanceSection(appearanceFill, setAppearanceFill, appearanceStroke, setAppearanceStroke, handleAppearanceSave, handleAppearanceReset, inputStyle) : null,
             )
           : React.createElement(React.Fragment, null,
               renderProperties(element),
               isUmlClass ? renderUmlMembers(element, isUmlEnum) : null,
+              viewId ? renderAppearanceSection(appearanceFill, setAppearanceFill, appearanceStroke, setAppearanceStroke, handleAppearanceSave, handleAppearanceReset, inputStyle) : null,
             ))
         : tab === 'relationships'
           ? renderRelationships(incoming, outgoing, elementMap, onNavigate)
@@ -282,6 +346,7 @@ export function DetailPanel({ element, relationships, elements, onClose, onNavig
         style: { ...btnStyle, color: '#e05252', borderColor: '#e0525244' },
       }, 'Delete'),
     ) : null,
+  ),
   );
 }
 
@@ -289,6 +354,7 @@ function renderProperties(element: Element): React.ReactElement {
   const rows: Array<[string, string]> = [
     ['Name', element.name],
     ['Type', element.archimate_type],
+    ['Specialisation', element.specialisation ? specialisationLabel(element.specialisation) : '\u2014'],
     ['Layer', element.layer],
     ['Sublayer', element.sublayer ?? '\u2014'],
     ['Status', element.status],
@@ -318,7 +384,7 @@ function renderProperties(element: Element): React.ReactElement {
 }
 
 function renderEditForm(
-  draft: { name: string; description: string; status: string; layer: string; sublayer: string },
+  draft: { name: string; description: string; status: string; layer: string; sublayer: string; specialisation: string },
   setDraft: React.Dispatch<React.SetStateAction<typeof draft>>,
   inputStyle: React.CSSProperties,
 ): React.ReactElement {
@@ -328,6 +394,28 @@ function renderEditForm(
       child,
     );
 
+  // Build specialisation options grouped by category
+  const specOptions: React.ReactElement[] = [
+    React.createElement('option', { key: '__none', value: '' }, '\u2014 None'),
+  ];
+  for (const [category, slugs] of Object.entries(SPECIALISATION_CATEGORIES)) {
+    specOptions.push(
+      React.createElement('optgroup', { key: category, label: category },
+        ...slugs.map(slug =>
+          React.createElement('option', { key: slug, value: slug }, specialisationLabel(slug)),
+        ),
+      ),
+    );
+  }
+  // If current value is custom (not in predefined), add it as an option
+  if (draft.specialisation && !Object.values(SPECIALISATION_CATEGORIES).flat().includes(draft.specialisation)) {
+    specOptions.push(
+      React.createElement('optgroup', { key: 'custom', label: 'Custom' },
+        React.createElement('option', { key: draft.specialisation, value: draft.specialisation }, specialisationLabel(draft.specialisation)),
+      ),
+    );
+  }
+
   return React.createElement('div', null,
     fieldRow('Name',
       React.createElement('input', {
@@ -335,6 +423,29 @@ function renderEditForm(
         onChange: (e: React.ChangeEvent<HTMLInputElement>) => setDraft(d => ({ ...d, name: e.target.value })),
         style: inputStyle,
       }),
+    ),
+    fieldRow('Specialisation',
+      React.createElement('div', { style: { display: 'flex', gap: 4, alignItems: 'center' } },
+        React.createElement('select', {
+          value: draft.specialisation,
+          onChange: (e: React.ChangeEvent<HTMLSelectElement>) => setDraft(d => ({ ...d, specialisation: e.target.value })),
+          style: { ...inputStyle, flex: 1, appearance: 'auto' as React.CSSProperties['appearance'] },
+        }, ...specOptions),
+        draft.specialisation ? React.createElement('button', {
+          onClick: () => setDraft(d => ({ ...d, specialisation: '' })),
+          title: 'Clear specialisation',
+          style: {
+            padding: '2px 6px',
+            fontSize: 10,
+            borderRadius: 3,
+            border: '1px solid var(--border-primary)',
+            cursor: 'pointer',
+            background: 'var(--button-bg, #333)',
+            color: 'var(--button-fg, #ccc)',
+            flexShrink: 0,
+          },
+        }, 'Clear') : null,
+      ),
     ),
     fieldRow('Status',
       React.createElement('select', {
@@ -538,6 +649,75 @@ function renderUmlMemberEditor(
             style: { color: 'var(--text-muted)', fontSize: 10, fontStyle: 'italic', paddingLeft: 8 },
           }, 'No methods') : null,
         ),
+  );
+}
+
+function renderAppearanceSection(
+  fill: string,
+  setFill: (v: string) => void,
+  stroke: string,
+  setStroke: (v: string) => void,
+  onSave: (fill: string, stroke: string) => Promise<void>,
+  onReset: () => Promise<void>,
+  inputStyle: React.CSSProperties,
+): React.ReactElement {
+  const smallBtn: React.CSSProperties = {
+    padding: '3px 8px',
+    fontSize: 10,
+    borderRadius: 3,
+    border: '1px solid var(--border-primary)',
+    cursor: 'pointer',
+    background: 'var(--button-bg, #333)',
+    color: 'var(--button-fg, #ccc)',
+  };
+
+  const colourInputStyle: React.CSSProperties = {
+    ...inputStyle,
+    width: 90,
+    fontFamily: 'monospace',
+  };
+
+  const handleBlur = () => { onSave(fill, stroke); };
+
+  return React.createElement('div', { style: { marginTop: 16 } },
+    React.createElement('div', {
+      style: { color: 'var(--text-muted)', fontSize: 9, textTransform: 'uppercase', marginBottom: 6, borderTop: '1px solid var(--border-secondary)', paddingTop: 8 },
+    }, 'Appearance'),
+
+    React.createElement('div', { style: { display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 } },
+      React.createElement('label', { style: { color: 'var(--text-secondary)', fontSize: 10, width: 40 } }, 'Fill'),
+      React.createElement('input', {
+        value: fill,
+        placeholder: '#RRGGBB',
+        onChange: (e: React.ChangeEvent<HTMLInputElement>) => setFill(e.target.value),
+        onBlur: handleBlur,
+        onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === 'Enter') onSave(fill, stroke); },
+        style: colourInputStyle,
+      }),
+      fill ? React.createElement('div', {
+        style: { width: 16, height: 16, borderRadius: 2, border: '1px solid var(--border-primary)', background: fill },
+      }) : null,
+    ),
+
+    React.createElement('div', { style: { display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 } },
+      React.createElement('label', { style: { color: 'var(--text-secondary)', fontSize: 10, width: 40 } }, 'Stroke'),
+      React.createElement('input', {
+        value: stroke,
+        placeholder: '#RRGGBB',
+        onChange: (e: React.ChangeEvent<HTMLInputElement>) => setStroke(e.target.value),
+        onBlur: handleBlur,
+        onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === 'Enter') onSave(fill, stroke); },
+        style: colourInputStyle,
+      }),
+      stroke ? React.createElement('div', {
+        style: { width: 16, height: 16, borderRadius: 2, border: '1px solid var(--border-primary)', background: stroke },
+      }) : null,
+    ),
+
+    (fill || stroke) ? React.createElement('button', {
+      onClick: onReset,
+      style: { ...smallBtn, fontSize: 9 },
+    }, 'Reset to Default') : null,
   );
 }
 

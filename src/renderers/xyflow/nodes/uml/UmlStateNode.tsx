@@ -10,7 +10,7 @@
  * - Fork/join: thick horizontal or vertical bar
  */
 import { memo } from 'react';
-import { Handle, Position, type NodeProps, type Node } from '@xyflow/react';
+import { Handle, Position, type NodeProps, type Node, NodeResizer } from '@xyflow/react';
 import { RoutingHandles } from '../shared/RoutingHandles';
 
 export interface StateActivity {
@@ -105,12 +105,50 @@ function UmlStateNodeComponent({ data, selected }: NodeProps<UmlStateNodeType>) 
     );
   }
 
-  // ── Regular / composite state: rounded rectangle ──
+  // ── Composite state: HTML container for child nesting ──
+  if (stateType === 'composite') {
+    return (
+      <div style={{ width: '100%', height: '100%', opacity, position: 'relative' }}>
+        <NodeResizer
+          isVisible={selected}
+          minWidth={160}
+          minHeight={100}
+          lineStyle={{ borderColor: stroke, borderWidth: 1 }}
+          handleStyle={{ width: 6, height: 6, backgroundColor: stroke, borderRadius: 1 }}
+        />
+        <div style={{
+          width: '100%',
+          height: '100%',
+          border: `1.5px solid ${stroke}`,
+          borderRadius: STATE_RADIUS,
+          background: fill,
+          position: 'relative',
+        }}>
+          {/* Header */}
+          <div style={{
+            padding: '4px 10px',
+            fontSize: 12,
+            fontWeight: 600,
+            color: textFill,
+            fontFamily: 'Inter, system-ui, sans-serif',
+            borderBottom: `1px solid ${stroke}`,
+            userSelect: 'none',
+          }}>
+            {label}
+          </div>
+          {/* Child area — sub-states nest here via parent_id */}
+        </div>
+        <RoutingHandles />
+      </div>
+    );
+  }
+
+  // ── Regular state: rounded rectangle ──
   const hasActivities = activities.length > 0;
   const activitiesH = hasActivities ? activities.length * ROW_HEIGHT + 8 : 0;
   const totalHeight = HEADER_HEIGHT + activitiesH + (hasActivities ? 0 : 6);
-  const width = stateType === 'composite' ? STATE_WIDTH * 1.4 : STATE_WIDTH;
-  const height = stateType === 'composite' ? totalHeight * 2 : totalHeight;
+  const width = STATE_WIDTH;
+  const height = totalHeight;
 
   return (
     <div style={{ opacity }}>
@@ -150,16 +188,6 @@ function UmlStateNodeComponent({ data, selected }: NodeProps<UmlStateNodeType>) 
             {act.trigger}/ {act.action}
           </text>
         ))}
-
-        {/* Composite indicator — dashed inner region */}
-        {stateType === 'composite' && (
-          <rect
-            x={8} y={HEADER_HEIGHT + 8}
-            width={width - 16} height={height - HEADER_HEIGHT - 16}
-            rx={6} ry={6}
-            stroke={stroke} fill="none" strokeWidth={0.8} strokeDasharray="4 2"
-          />
-        )}
       </svg>
 
       <RoutingHandles />

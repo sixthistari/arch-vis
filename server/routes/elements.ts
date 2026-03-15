@@ -52,8 +52,8 @@ router.post('/elements', (req: Request, res: Response) => {
   const stmt = db.prepare(`
     INSERT INTO elements (id, name, archimate_type, specialisation, layer, sublayer,
       domain_id, status, description, properties, confidence, source_session_id, parent_id,
-      created_by, source)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      created_by, source, folder)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   stmt.run(
@@ -72,6 +72,7 @@ router.post('/elements', (req: Request, res: Response) => {
     body.parent_id ?? null,
     body.created_by ?? 'manual',
     body.source ?? 'manual',
+    body.folder ?? null,
   );
 
   const created = db.prepare('SELECT * FROM elements WHERE id = ?').get(id) as ElementRow;
@@ -102,6 +103,7 @@ router.put('/elements/:id', (req: Request, res: Response) => {
   const updatable = [
     'name', 'archimate_type', 'specialisation', 'layer', 'sublayer',
     'domain_id', 'status', 'description', 'confidence', 'source_session_id', 'parent_id',
+    'folder',
   ];
 
   const bodyRecord = body as Record<string, unknown>;
@@ -156,6 +158,26 @@ router.get('/elements/:id/views', (req: Request, res: Response) => {
   }));
 
   res.json(parsed);
+});
+
+// POST /api/elements/bulk-specialisation — rename or clear specialisation across all matching elements
+router.post('/elements/bulk-specialisation', (req: Request, res: Response) => {
+  const { oldValue, newValue } = req.body as { oldValue?: string; newValue?: string | null };
+  if (typeof oldValue !== 'string' || !oldValue) {
+    res.status(400).json({ error: 'oldValue is required' });
+    return;
+  }
+  const stmt = db.prepare('UPDATE elements SET specialisation = ?, updated_at = datetime(\'now\') WHERE specialisation = ?');
+  const result = stmt.run(newValue ?? null, oldValue);
+  res.json({ updated: result.changes });
+});
+
+// GET /api/elements/distinct-specialisations — return distinct specialisation values with counts
+router.get('/elements/distinct-specialisations', (_req: Request, res: Response) => {
+  const rows = db.prepare(
+    'SELECT specialisation, COUNT(*) as count FROM elements WHERE specialisation IS NOT NULL GROUP BY specialisation ORDER BY specialisation ASC',
+  ).all() as Array<{ specialisation: string; count: number }>;
+  res.json(rows);
 });
 
 // DELETE /api/elements/:id — delete an element

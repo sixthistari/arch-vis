@@ -94,6 +94,7 @@ describe('ElementSchema', () => {
     parent_id: null,
     created_by: null,
     source: null,
+    folder: null,
     created_at: null,
     updated_at: null,
   };
@@ -174,6 +175,7 @@ describe('RelationshipSchema', () => {
     confidence: null,
     created_by: null,
     source: null,
+    folder: null,
     created_at: null,
     updated_at: null,
   };

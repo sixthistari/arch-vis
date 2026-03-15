@@ -325,6 +325,7 @@ export function Canvas(): React.ReactElement {
       height: null,
       sublayer_override: null,
       style_overrides: null,
+      z_index: 0,
     };
 
     // Clear drag offset — it's now baked into saved position
@@ -376,6 +377,7 @@ export function Canvas(): React.ReactElement {
       height: null,
       sublayer_override: null,
       style_overrides: null,
+      z_index: 0,
     }));
 
     savePositions(currentView.id, freshViewElements);
@@ -560,6 +562,7 @@ export function Canvas(): React.ReactElement {
         height: null,
         sublayer_override: null,
         style_overrides: null,
+        z_index: 0,
       };
       const merged = [...existing.filter(v => v.element_id !== el.id), ve];
       savePositions(currentView.id, merged);
@@ -947,6 +950,9 @@ export function Canvas(): React.ReactElement {
         setDetailElement(null);
         deleteElement(id);
       },
+      viewId: currentView?.id ?? null,
+      viewElements,
+      savePositions,
     }) : null,
 
     // Context menu

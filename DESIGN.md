@@ -1163,3 +1163,44 @@ This self-referential modelling serves three purposes:
 1. **Validation:** exercising the UML notation system with a non-trivial real model
 2. **Documentation:** the running application is its own architecture documentation
 3. **Regression detection:** changes that break UML rendering are immediately visible in the seed data views
+
+---
+
+## 27. Planned Capability Extensions (from Parity Audit §21)
+
+The following architectural decisions apply to features identified in the functional parity audit (REQUIREMENTS.md §21) that are not yet implemented.
+
+### 27.1 Data Modelling Notation (§21.8)
+
+A fourth notation family alongside ArchiMate, UML, and Wireframe. Element types prefixed `dm-` (e.g. `dm-entity`, `dm-table`, `dm-column`). Three viewpoint levels:
+
+- **Conceptual:** entities + named relationships (no attributes)
+- **Logical:** entities with typed attributes, relationships with cardinality (ERD)
+- **Physical:** tables, columns, keys, indexes, data types
+
+Node renderers: `DmEntityNode` (logical), `DmTableNode` (physical — column list with PK/FK icons). Edge markers: crow's foot notation for cardinality. DDL generation is a server-side export route.
+
+### 27.2 Per-Element Appearance Override (§21.4 #4.5)
+
+`view_elements.style_overrides` JSON column already exists. Schema: `{ fill?: string, stroke?: string, fontSize?: number, fontWeight?: string, borderStyle?: string }`. Node renderers merge style_overrides on top of theme defaults. No new tables needed — just UI to edit and renderers to consume.
+
+### 27.3 Copy/Paste on Canvas (§21.3 #3.10)
+
+Clipboard holds serialised node data (element IDs + relative positions). Paste duplicates elements in the model (new UUIDs) and adds them to the current view with offset positions. Relationships between copied elements are also duplicated. Uses the undo/redo command pattern.
+
+### 27.4 Notes, Groups, and Legends (§21.4 #4.7–4.9)
+
+- **Notes:** `annotation` element type with a sticky-note renderer. No relationships — purely visual. Stored as elements with `archimate_type: 'annotation'`.
+- **Groups:** `visual-group` element type with a transparent container renderer. Children nested via `parent_id`. Not an ArchiMate Grouping element — purely visual.
+- **Legend:** auto-generated from current view's element types and colours. Rendered as a fixed-position overlay, not a model element.
+
+### 27.5 Delete from View vs Delete from Model (§21.3 #3.11)
+
+Two distinct actions in the context menu and keyboard shortcuts:
+- **Remove from view** (default Delete key): removes `view_elements` row only. Element stays in model.
+- **Delete from model** (Shift+Delete or context menu): deletes element from `elements` table (cascading to relationships and all view_elements).
+Both are undoable via the command pattern.
+
+### 27.6 Z-Order (§21.3 #3.12)
+
+Add `z_index INTEGER DEFAULT 0` to `view_elements`. Context menu actions: Bring to Front, Send to Back, Bring Forward, Send Backward. xyflow renders nodes in z_index order.

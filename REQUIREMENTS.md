@@ -775,3 +775,276 @@ Each diagram type has distinct layout conventions that auto-layout must respect.
 | Sequence Diagram | Custom | N/A | Time-ordered slot layout |
 | State Diagram | Hierarchical (ELK) | Right/Down | Composite state nesting |
 | Wireframe | Manual | N/A | Nested containment |
+
+---
+
+## 21. Functional Parity Audit
+
+Benchmarked against **Archi** (ArchiMate, 172pp manual) and **Sparx EA** (UML/data/wireframes, scoped subset of 3300pp manual). Each row is a trackable requirement with a status lifecycle.
+
+### Status Lifecycle
+
+| Status | Meaning |
+|--------|---------|
+| Not started | No code exists |
+| In progress | Partial implementation |
+| Implemented | Code exists, untested |
+| Verified | Tested, confirmed working |
+| Working | Verified and fit for purpose |
+| N/A | Not applicable to arch-vis |
+
+### 21.1 Model Management
+
+| # | Function | Archi | Sparx | Status | Notes |
+|---|----------|:-----:|:-----:|--------|-------|
+| 1.1 | Create new model/project | Y | Y | Implemented | SQLite DB + seed data on first run |
+| 1.2 | Open / save / close model file | Y | Y | Not started | Auto-persists to SQLite; no file-based save/open/close workflow |
+| 1.3 | Model tree (elements by type/layer) | Y | Y | Implemented | Panel with layer folders, expand/collapse |
+| 1.4 | User sub-folders in model tree | Y | Y | Not started | Domains exist but no arbitrary folder organisation |
+| 1.5 | Search/filter model tree | Y | Y | Implemented | Filter by name, type, domain |
+| 1.6 | Find and replace (element names) | Y | Y | Implemented | Ctrl+H; search + individual/bulk replace |
+| 1.7 | Drag elements between tree and canvas | Y | Y | Implemented | Tree → canvas adds existing element to view |
+| 1.8 | Tree ↔ canvas selection sync | Y | Y | Implemented | Click tree → selects on canvas and vice versa |
+| 1.9 | Orphan detection (unused elements) | Y | N | Implemented | Italic font in tree for elements not in any view |
+| 1.10 | Duplicate element / view | Y | Y | Not started | |
+| 1.11 | Change element type | Y | Y | Implemented | Via PUT API; unclear if UI exposes this |
+
+### 21.2 Views / Diagrams
+
+| # | Function | Archi | Sparx | Status | Notes |
+|---|----------|:-----:|:-----:|--------|-------|
+| 2.1 | Create / open / rename / delete views | Y | Y | Implemented | Via view menu and API |
+| 2.2 | Multiple views open as tabs | Y | Y | Not started | Single active view only |
+| 2.3 | Viewpoints (restrict palette to relevant types) | Y | Y | Implemented | Notation-family filtering (ArchiMate, UML, wireframe) |
+| 2.4 | View reference (link to another view on canvas) | Y | Y | Not started | |
+| 2.5 | Generate view from selected elements | Y | N | Not started | |
+| 2.6 | Diagram slideshow | N | Y | Not started | Low priority |
+
+### 21.3 Canvas Interaction
+
+| # | Function | Archi | Sparx | Status | Notes |
+|---|----------|:-----:|:-----:|--------|-------|
+| 3.1 | Pan (scroll/drag) | Y | Y | Implemented | |
+| 3.2 | Zoom (scroll wheel) | Y | Y | Implemented | |
+| 3.3 | Minimap / outline | Y | Y | Implemented | xyflow minimap component |
+| 3.4 | Select / multi-select (Shift+click, box select) | Y | Y | Implemented | Shift+click toggle, Shift+drag box |
+| 3.5 | Select all (Ctrl+A) | Y | Y | Implemented | |
+| 3.6 | Alignment tools (left, centre, right, distribute) | Y | Y | Implemented | Toolbar visible when 2+ nodes selected |
+| 3.7 | Snap to grid | Y | Y | Implemented | 10px grid with dot-pattern overlay |
+| 3.8 | Alignment snaplines / guides | Y | Y | Implemented | Orange dashed lines at 5px threshold |
+| 3.9 | Undo / redo (Ctrl+Z / Ctrl+Y) | Y | Y | Implemented | Command pattern with past/future stacks |
+| 3.10 | Copy / paste elements on canvas (Ctrl+C/V) | Y | Y | Implemented | Ctrl+C/V/X with clipboard store + offset paste |
+| 3.11 | Delete from view (keep in model) vs delete from model | Y | Y | Implemented | Delete = remove from view; Shift+Delete = delete from model; context menu has both |
+| 3.12 | Z-order (bring to front / send to back) | Y | Y | Implemented | z_index on view_elements; context menu Bring to Front / Send to Back |
+| 3.13 | Full screen mode | Y | N | Implemented | F11 toggle; hides all panels + status bar |
+| 3.14 | Keyboard nudge (arrow keys) | Y | Y | Implemented | 1px normal, 10px with Shift |
+| 3.15 | Inline label editing (double-click) | Y | Y | Implemented | Enter to commit, Escape to cancel |
+| 3.16 | Resize elements (drag handles) | Y | Y | Implemented | |
+| 3.17 | Format painter (copy appearance) | Y | N | Not started | |
+
+### 21.4 Element Creation & Properties
+
+| # | Function | Archi | Sparx | Status | Notes |
+|---|----------|:-----:|:-----:|--------|-------|
+| 4.1 | Create from palette (drag to canvas) | Y | Y | Implemented | Prompts for name, creates in DB + view |
+| 4.2 | Create from tree (right-click → new) | Y | Y | Implemented | |
+| 4.3 | Properties panel (name, type, description) | Y | Y | Implemented | 3-tab: Properties, Relationships, Provenance |
+| 4.4 | Custom properties (key-value pairs) | Y | Y | Implemented | JSON properties blob in DB |
+| 4.5 | Per-element appearance override (fill, font, border) | Y | Y | Implemented | style_overrides JSON in view_elements; colour pickers in detail panel |
+| 4.6 | Specializations (sub-types with badges) | Y | Y | Implemented | 55 specialisations with amber pill badges |
+| 4.7 | Notes (annotation boxes on canvas) | Y | Y | Implemented | AnnotationNode with sticky-note style; available in all palettes |
+| 4.8 | Groups (visual container, no semantic meaning) | Y | Y | Implemented | GroupNode with dashed border + label tab; uses ArchiMate grouping type |
+| 4.9 | Legend (colour/shape key on canvas) | Y | Y | Implemented | Auto-generated from visible elements; toggleable overlay |
+| 4.10 | Container elements (visual nesting) | Y | Y | Implemented | parent_id hierarchy for nesting |
+
+### 21.5 Relationships / Connectors
+
+| # | Function | Archi | Sparx | Status | Notes |
+|---|----------|:-----:|:-----:|--------|-------|
+| 5.1 | Create by dragging between elements | Y | Y | Implemented | Handle drag → target element |
+| 5.2 | Relationship type picker (valid types only) | Y | Y | Implemented | Filtered by metamodel valid_relationships |
+| 5.3 | Magic connector (create element + relationship in one step) | Y | Y | Not started | |
+| 5.4 | Waypoint / bend point editing | Y | Y | Implemented | Ctrl+click to insert, drag handles, segment slides |
+| 5.5 | Connection routing modes (direct, orthogonal, bezier) | Y | Y | Implemented | Straight, step, bezier via edge context menu |
+| 5.6 | Connector labels (name, multiplicity, role) | N | Y | In progress | Multiplicity + role on UML associations only |
+| 5.7 | Change connector type after creation | N | Y | Not started | Must delete and recreate |
+| 5.8 | Reverse connector direction | N | Y | Not started | |
+| 5.9 | Relationship tooltip on hover | Y | N | Implemented | Shows type, source→target, label on 300ms hover |
+| 5.10 | Show/hide relationships by type | Y | Y | In progress | Layer visibility toggle; not per-relationship-type |
+| 5.11 | Self-referencing relationships | Y | Y | Implemented | Self-message in sequence diagrams |
+
+### 21.6 ArchiMate-Specific
+
+| # | Function | Archi | Sparx | Status | Notes |
+|---|----------|:-----:|:-----:|--------|-------|
+| 6.1 | All ArchiMate 3.2 element types | Y | Y | Implemented | 48+ types in shape registry |
+| 6.2 | All ArchiMate 3.2 relationship types | Y | Y | Implemented | 11 types with correct marker rendering |
+| 6.3 | Notation shapes (icon + box views) | Y | N | Implemented | Shape registry with aspect-specific geometries |
+| 6.4 | Layer-coloured elements | Y | N | Implemented | 7 layer colour palettes |
+| 6.5 | Junction element (And/Or) | Y | N | Implemented | In schema and types |
+| 6.6 | Named ArchiMate viewpoints (23 spec viewpoints) | Y | N | Not started | Custom viewpoint types only; no ArchiMate-named viewpoints |
+| 6.7 | Model validation UI (ArchiMate rules) | Y | N | Not started | Metamodel validation in API; no validator panel |
+| 6.8 | Specializations manager UI | Y | N | Not started | Data exists; no management interface |
+
+### 21.7 UML Diagrams
+
+| # | Function | Archi | Sparx | Status | Notes |
+|---|----------|:-----:|:-----:|--------|-------|
+| 7.1 | Class diagram (classes, attributes, methods, visibility) | N | Y | Implemented | 3-compartment, visibility markers (+/-/#/~) |
+| 7.2 | Inheritance / generalization | N | Y | Implemented | Hollow-triangle target marker |
+| 7.3 | Association with multiplicity + role names | N | Y | Implemented | Labels on UML associations |
+| 7.4 | Abstract classes, interfaces, enums | N | Y | Implemented | Distinct shapes for each |
+| 7.5 | Use case diagram (actors, use cases, boundary) | N | Y | Implemented | Stick figure, ellipse, system boundary |
+| 7.6 | Include / extend relationships | N | Y | In progress | Dependency exists; no dedicated <<include>>/<<extend>> stereotypes |
+| 7.7 | Activity diagram (actions, decisions, forks/joins) | N | Y | Implemented | Rounded rects, diamonds, bars |
+| 7.8 | Swimlanes / activity partitions | N | Y | Implemented | UmlSwimlaneNode; vertical lane container with header |
+| 7.9 | Sequence diagram (lifelines, messages, activation) | N | Y | Implemented | 7 message types |
+| 7.10 | Combined fragments (alt, opt, loop, par) | N | Y | Implemented | SequenceFragmentNode |
+| 7.11 | State machine diagram (states, transitions) | N | Y | Implemented | UmlStateNode |
+| 7.12 | Composite / nested states | N | Y | Implemented | Composite state renders as resizable container; children nest via parent_id |
+| 7.13 | Component diagram (components, interfaces, ports) | N | Y | Implemented | Lollipop + socket notation |
+| 7.14 | Package diagram | N | Y | Implemented | UmlPackageNode with tab-rectangle; supports child nesting |
+| 7.15 | Object diagram (instances) | N | Y | Not started | |
+
+### 21.8 Data Modelling
+
+| # | Function | Archi | Sparx | Status | Notes |
+|---|----------|:-----:|:-----:|--------|-------|
+| 8.1 | Conceptual data model (entities + relationships) | N | Y | Implemented | dm-entity type + DmEntityNode; viewpoint data_conceptual |
+| 8.2 | Logical data model (ERD) | N | Y | Implemented | dm-entity with attributes; PK/FK indicators |
+| 8.3 | Physical data model (tables, columns, keys, indexes) | N | Y | Implemented | dm-table type with column list, PK/FK/IX markers |
+| 8.4 | Data type management | N | Y | In progress | Column types stored in attributes; no dedicated type manager |
+| 8.5 | Primary / foreign key definition | N | Y | Implemented | isPK/isFK flags on attributes; visual indicators in node |
+| 8.6 | DDL generation (SQL from model) | N | Y | Not started | |
+| 8.7 | Database schema import (reverse-engineer) | N | Y | Not started | |
+| 8.8 | Data modelling notations (IDEF1X, IE) | N | Y | Not started | Crow's foot cardinality on edges |
+
+### 21.9 Wireframes / UI Modelling
+
+| # | Function | Archi | Sparx | Status | Notes |
+|---|----------|:-----:|:-----:|--------|-------|
+| 9.1 | Page containers | N | Y | Implemented | WfPageNode — untested in UI |
+| 9.2 | Form controls (button, input, select, etc.) | N | Y | Implemented | WfControlNode — untested in UI |
+| 9.3 | Data display (table, list) | N | Y | Implemented | WfTableNode, WfListNode — untested in UI |
+| 9.4 | Navigation elements | N | Y | Implemented | WfNavNode — untested in UI |
+| 9.5 | Content placeholders | N | Y | Implemented | In properties — untested in UI |
+| 9.6 | Deep nesting (sections within pages) | N | Y | Implemented | parent_id hierarchy — untested in UI |
+| 9.7 | Page-to-page navigation flow | N | Y | Implemented | navigates-to relationship — untested in UI |
+| 9.8 | Data binding indicators | N | Y | Implemented | binds-to relationship — untested in UI |
+| 9.9 | Modal / dialog | N | Y | Implemented | Modal variant — untested in UI |
+| 9.10 | Feedback / alert components | N | Y | Implemented | WfFeedbackNode — untested in UI |
+
+### 21.10 Layout
+
+| # | Function | Archi | Sparx | Status | Notes |
+|---|----------|:-----:|:-----:|--------|-------|
+| 10.1 | Auto-layout (hierarchical / tree) | N | Y | Implemented | ELK with per-viewpoint direction |
+| 10.2 | Circular layout | N | Y | Not started | |
+| 10.3 | Force-directed layout | N | Y | Not started | |
+| 10.4 | Manual positioning with saved positions | Y | Y | Implemented | Persisted to view_elements table |
+| 10.5 | Auto-route connections (obstacle-avoiding) | N | Y | Implemented | A* orthogonal routing |
+| 10.6 | Autosize elements to content | N | Y | Not started | |
+
+### 21.11 Import / Export
+
+| # | Function | Archi | Sparx | Status | Notes |
+|---|----------|:-----:|:-----:|--------|-------|
+| 11.1 | ArchiMate XML import (Open Exchange) | Y | N | Implemented | POST /api/import/archimate-xml |
+| 11.2 | ArchiMate XML export | Y | N | Implemented | |
+| 11.3 | CSV import | Y | Y | Implemented | Archi-compatible 3-file format |
+| 11.4 | CSV export | Y | Y | Implemented | |
+| 11.5 | XMI / UML interchange import | N | Y | Not started | |
+| 11.6 | XMI export | N | Y | Not started | |
+| 11.7 | Export view as PNG | Y | Y | Implemented | 2x retina |
+| 11.8 | Export view as SVG | Y | N | Implemented | Filters out minimap/controls |
+| 11.9 | Export view as PDF | N | Y | Implemented | jsPDF with auto landscape/portrait |
+| 11.10 | Copy image to clipboard | Y | Y | Implemented | Clipboard API with PNG blob |
+| 11.11 | Import/merge another model | Y | Y | Not started | |
+| 11.12 | Print diagram | Y | Y | Implemented | Ctrl+P; print CSS hides panels; Export menu button |
+
+### 21.12 Reporting
+
+| # | Function | Archi | Sparx | Status | Notes |
+|---|----------|:-----:|:-----:|--------|-------|
+| 12.1 | HTML report (navigable model) | Y | Y | Implemented | Self-contained HTML with sidebar nav, search, dark/light mode |
+| 12.2 | Document report (RTF/DOCX) | N | Y | Not started | |
+| 12.3 | Custom report templates | Y | Y | Not started | |
+
+### 21.13 Analysis & Navigation
+
+| # | Function | Archi | Sparx | Status | Notes |
+|---|----------|:-----:|:-----:|--------|-------|
+| 13.1 | Relationship navigator (incoming/outgoing) | Y | Y | Implemented | Context menu + Graphology traversal |
+| 13.2 | Visual relationship explorer | Y | Y | In progress | Highlight/dim mode; no dedicated explorer window |
+| 13.3 | Relationship matrix (source × target grid) | N | Y | Not started | |
+| 13.4 | Diagram filters (fade/hide by criteria) | N | Y | In progress | Layer visibility + data overlay; not per-type |
+| 13.5 | Impact analysis / traceability | N | Y | Not started | |
+
+### 21.14 Appearance & Theme
+
+| # | Function | Archi | Sparx | Status | Notes |
+|---|----------|:-----:|:-----:|--------|-------|
+| 14.1 | Dark / light theme | N | N | Implemented | Zustand store + CSS variables |
+| 14.2 | Per-element appearance override | Y | Y | Not started | Theme-driven only currently |
+| 14.3 | Conditional formatting / colour overlay | N | N | Implemented | Colour-by-property, heatmaps, status badges |
+| 14.4 | Progressive zoom tiers | N | N | Implemented | 5 tiers from dots-only to full notation |
+
+### 21.15 Audit Summary
+
+| Category | Items | Not Started | In Progress | Implemented | Verified | Working |
+|----------|:-----:|:-----------:|:-----------:|:-----------:|:--------:|:-------:|
+| Model Management | 11 | 4 | 0 | 7 | 0 | 0 |
+| Views/Diagrams | 6 | 3 | 0 | 3 | 0 | 0 |
+| Canvas Interaction | 17 | 3 | 0 | 14 | 0 | 0 |
+| Element Creation | 10 | 3 | 0 | 7 | 0 | 0 |
+| Relationships | 11 | 4 | 2 | 5 | 0 | 0 |
+| ArchiMate | 8 | 3 | 0 | 5 | 0 | 0 |
+| UML Diagrams | 15 | 2 | 1 | 12 | 0 | 0 |
+| Data Modelling | 8 | 2 | 1 | 5 | 0 | 0 |
+| Wireframes | 10 | 0 | 0 | 10 | 0 | 0 |
+| Layout | 6 | 3 | 0 | 3 | 0 | 0 |
+| Import/Export | 12 | 6 | 0 | 6 | 0 | 0 |
+| Reporting | 3 | 3 | 0 | 0 | 0 | 0 |
+| Analysis/Navigation | 5 | 2 | 2 | 1 | 0 | 0 |
+| Appearance/Theme | 4 | 1 | 0 | 3 | 0 | 0 |
+| **TOTAL** | **126** | **32** | **6** | **88** | **0** | **0** |
+
+### 21.15a Performance
+
+| # | Function | Status | Notes |
+|---|----------|--------|-------|
+| P.1 | Canvas renders 200+ elements without lag | Not verified | Full Model (Flat) view is slow to load and clunky to interact with |
+| P.2 | Edge routing doesn't re-run on every render | Implemented | Memoised routedPaths useMemo; needs verification |
+| P.3 | Node components properly memoised | In progress | Some nodes use memo(); not all selectors optimised |
+| P.4 | Position save debounced | Implemented | Timer ref for nudge saves |
+| P.5 | Layout computation cached | In progress | buildOrderMaps memoised; full layout recompute on view switch |
+
+### 21.16 Build Priority (Gaps)
+
+**Tier 1 — Table stakes (must-have for any modelling tool):**
+- 3.10 Copy/paste on canvas
+- 4.7 Notes (annotation boxes)
+- 4.8 Groups (visual container)
+- 4.9 Legend (colour/shape key)
+- 3.11 Delete from view vs delete from model (clarify in UI)
+- 4.5 Per-element appearance override
+- 5.9 Relationship tooltip on hover
+
+**Tier 2 — Missing notation families:**
+- 8.1–8.8 Data modelling (ERD, physical model) — 8 items, entirely new
+- 7.8 Swimlanes for activity diagrams
+- 7.14 Package diagram
+- 7.12 Composite / nested states
+
+**Tier 3 — Deliverable output:**
+- 12.1 HTML report generation
+- 11.9 PDF export
+- 11.12 Print support
+
+**Tier 4 — Power-user features:**
+- 13.3 Relationship matrix
+- 1.6 Find and replace
+- 2.2 Multiple views as tabs
+- 5.3 Magic connector
+- 13.5 Impact analysis
+- 3.12 Z-order (bring to front / send to back)

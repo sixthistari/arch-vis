@@ -9,7 +9,7 @@
  *  - Sequence messages (straight horizontal, self-message arcs, inline arrowheads)
  *  - Wireframe edge styles
  */
-import React, { memo, useRef, useCallback } from 'react';
+import React, { memo, useRef, useCallback, useState } from 'react';
 import {
   BaseEdge,
   EdgeLabelRenderer,
@@ -61,8 +61,9 @@ type UnifiedEdgeType = Edge<UnifiedEdgeData, 'archimate'>;
 function markerUrl(marker: MarkerType | null): string | undefined {
   if (!marker || marker === 'none') return undefined;
   // UML markers use their ID directly (e.g. 'uml-hollow-triangle' → '#uml-hollow-triangle')
+  // DM markers use their ID directly (e.g. 'dm-one' → '#dm-one')
   // ArchiMate markers use 'marker-' prefix
-  if (marker.startsWith('uml-')) return `url(#${marker})`;
+  if (marker.startsWith('uml-') || marker.startsWith('dm-')) return `url(#${marker})`;
   return `url(#marker-${marker})`;
 }
 
@@ -244,6 +245,32 @@ function segHandleStyle(dir: 'h' | 'v'): React.CSSProperties {
   };
 }
 
+// ─── Tooltip helpers ────────────────────────────────────────────────────────
+
+/** Format a relationship type key for display: "composition" → "Composition", "flow" → "Flow". */
+function formatRelType(key: string): string {
+  return key
+    .replace(/[-_]/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
+
+const tooltipStyle: React.CSSProperties = {
+  position: 'fixed',
+  pointerEvents: 'none',
+  padding: '6px 10px',
+  borderRadius: 4,
+  fontSize: 11,
+  lineHeight: '1.4',
+  fontFamily: 'Inter, system-ui, sans-serif',
+  background: 'var(--panel-bg, #1e293b)',
+  color: 'var(--text-primary, #e2e8f0)',
+  border: '1px solid var(--panel-border, #334155)',
+  boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+  zIndex: 9999,
+  whiteSpace: 'nowrap',
+  maxWidth: 320,
+};
+
 // ─── Component ─────────────────────────────────────────────────────────────
 
 function UnifiedEdgeComponent(props: EdgeProps<UnifiedEdgeType>) {
@@ -254,7 +281,7 @@ function UnifiedEdgeComponent(props: EdgeProps<UnifiedEdgeType>) {
   } = props;
 
   const updateWaypoints = React.useContext(WaypointUpdateContext);
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, getNode } = useReactFlow();
 
   // Resolve the style key — for UML edges the edgeType carries the relationship type,
   // for sequence messages the messageType carries it.
@@ -272,6 +299,35 @@ function UnifiedEdgeComponent(props: EdgeProps<UnifiedEdgeType>) {
   const strokeColour = selected || highlighted ? '#F59E0B' : (isDark ? '#94A3B8' : '#475569');
   const opacity = dimmed ? 0.04 : 1;
   const strokeWidth = highlighted && !selected ? edgeStyle.width * 2.0 : edgeStyle.width;
+
+  // ── Relationship tooltip on hover ───────────────────────────────────
+  const [tooltip, setTooltip] = useState<{ x: number; y: number } | null>(null);
+  const tooltipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleEdgeMouseEnter = useCallback((e: React.MouseEvent) => {
+    tooltipTimer.current = setTimeout(() => {
+      setTooltip({ x: e.clientX + 12, y: e.clientY + 12 });
+    }, 300);
+  }, []);
+
+  const handleEdgeMouseMove = useCallback((e: React.MouseEvent) => {
+    if (tooltip) setTooltip({ x: e.clientX + 12, y: e.clientY + 12 });
+  }, [tooltip]);
+
+  const handleEdgeMouseLeave = useCallback(() => {
+    if (tooltipTimer.current) { clearTimeout(tooltipTimer.current); tooltipTimer.current = null; }
+    setTooltip(null);
+  }, []);
+
+  // Build tooltip content lazily
+  const tooltipContent = React.useMemo(() => {
+    if (!tooltip) return null;
+    const srcNode = getNode(props.source);
+    const tgtNode = getNode(props.target);
+    const srcName = (srcNode?.data as Record<string, unknown> | undefined)?.label as string | undefined;
+    const tgtName = (tgtNode?.data as Record<string, unknown> | undefined)?.label as string | undefined;
+    return { relType: formatRelType(relType), srcName, tgtName, label: data?.label };
+  }, [tooltip, relType, data?.label, props.source, props.target, getNode]);
 
   // ── Sequence message — self-message arc ──────────────────────────────
   if (edgeStyle.isSelfMessage) {
@@ -444,7 +500,7 @@ function UnifiedEdgeComponent(props: EdgeProps<UnifiedEdgeType>) {
 
   return (
     <>
-      {/* Wide transparent stroke — hit-area for Ctrl+click */}
+      {/* Wide transparent stroke — hit-area for Ctrl+click + hover tooltip */}
       <path
         d={displayPath}
         stroke="transparent"
@@ -452,6 +508,9 @@ function UnifiedEdgeComponent(props: EdgeProps<UnifiedEdgeType>) {
         fill="none"
         style={{ cursor: selected ? 'crosshair' : 'pointer', pointerEvents: 'stroke' }}
         onMouseDown={handlePathMouseDown}
+        onMouseEnter={handleEdgeMouseEnter}
+        onMouseMove={handleEdgeMouseMove}
+        onMouseLeave={handleEdgeMouseLeave}
       />
 
       <BaseEdge
@@ -502,6 +561,23 @@ function UnifiedEdgeComponent(props: EdgeProps<UnifiedEdgeType>) {
             </text>
           )}
         </>
+      )}
+
+      {/* Relationship tooltip */}
+      {tooltip && tooltipContent && (
+        <EdgeLabelRenderer>
+          <div style={{ ...tooltipStyle, left: tooltip.x, top: tooltip.y }}>
+            <div style={{ fontWeight: 600, marginBottom: 2 }}>{tooltipContent.relType}</div>
+            {(tooltipContent.srcName || tooltipContent.tgtName) && (
+              <div style={{ opacity: 0.85 }}>
+                {tooltipContent.srcName ?? '?'} → {tooltipContent.tgtName ?? '?'}
+              </div>
+            )}
+            {tooltipContent.label && (
+              <div style={{ opacity: 0.7, fontStyle: 'italic', marginTop: 1 }}>{tooltipContent.label}</div>
+            )}
+          </div>
+        </EdgeLabelRenderer>
       )}
 
       <EdgeLabelRenderer>

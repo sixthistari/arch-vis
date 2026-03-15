@@ -119,6 +119,24 @@ const versionedMigrations: MigrationEntry[] = [
       CREATE INDEX IF NOT EXISTS idx_rel_target ON relationships(target_id);
     `);
   }],
+  // Version 4: add z_index column to view_elements
+  [4, () => {
+    try {
+      db.exec("ALTER TABLE view_elements ADD COLUMN z_index INTEGER DEFAULT 0");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!msg.includes('duplicate column')) throw err;
+    }
+  }],
+  // Version 5: add folder column to elements for user sub-folders in model tree
+  [5, () => {
+    try {
+      db.exec("ALTER TABLE elements ADD COLUMN folder TEXT DEFAULT NULL");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!msg.includes('duplicate column')) throw err;
+    }
+  }],
 ];
 
 for (const [version, migrate] of versionedMigrations) {

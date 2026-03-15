@@ -162,6 +162,12 @@ export function elementsToNodes(
         theme,
         onLabelChange,
       };
+    } else if (nodeType === 'uml-package') {
+      data = {
+        label: el.name,
+        theme,
+        onLabelChange,
+      };
     } else if (nodeType === 'uml-use-case') {
       data = {
         label: el.name,
@@ -170,8 +176,12 @@ export function elementsToNodes(
         onLabelChange,
       };
     } else if (nodeType === 'uml-state') {
+      const stateProps = (el.properties ?? {}) as Record<string, unknown>;
       data = {
         label: el.name,
+        stateType: (stateProps.stateType as string) ?? 'state',
+        activities: (stateProps.activities as unknown[]) ?? [],
+        isVertical: (stateProps.isVertical as boolean) ?? false,
         theme,
         onLabelChange,
       };
@@ -200,6 +210,16 @@ export function elementsToNodes(
         fragmentWidth: (props.fragmentWidth as number) ?? 300,
         fragmentHeight: (props.fragmentHeight as number) ?? 150,
       };
+    } else if (notation === 'data') {
+      const dmProps = (el.properties ?? {}) as Record<string, unknown>;
+      const isTable = el.archimate_type === 'dm-table';
+      data = {
+        label: el.name,
+        entityType: isTable ? 'table' : 'entity',
+        attributes: (dmProps.attributes as unknown[]) ?? [],
+        theme,
+        onLabelChange,
+      };
     } else if (notation === 'wireframe') {
       const props = (el.properties ?? {}) as Record<string, unknown>;
       if (nodeType === 'wf-page') {
@@ -219,6 +239,26 @@ export function elementsToNodes(
       } else {
         data = { label: el.name, theme, onLabelChange };
       }
+    } else if (nodeType === 'uml-swimlane') {
+      data = {
+        label: el.name,
+        theme,
+        onLabelChange,
+      };
+    } else if (nodeType === 'group') {
+      data = {
+        label: el.name,
+        layer: el.layer,
+        theme,
+        onLabelChange,
+      };
+    } else if (nodeType === 'annotation') {
+      data = {
+        label: el.name,
+        description: el.description ?? undefined,
+        theme,
+        onLabelChange,
+      };
     } else {
       // ArchiMate (default) — compute overlay data
       let colourOverride: { fill: string; stroke: string } | undefined;
@@ -261,6 +301,11 @@ export function elementsToNodes(
           }).filter(Boolean)
         : undefined;
 
+      // Per-element style override from view_elements.style_overrides
+      const so = ve?.style_overrides as Record<string, string> | null | undefined;
+      const styleOverride = (so?.fill || so?.stroke)
+        ? { fill: so.fill, stroke: so.stroke } : undefined;
+
       data = {
         label: el.name,
         archimateType: el.archimate_type,
@@ -269,6 +314,7 @@ export function elementsToNodes(
         theme,
         onLabelChange,
         colourOverride,
+        styleOverride,
         statusBadge,
         displayFields: overlayDisplayFields,
       };
@@ -326,6 +372,29 @@ export function elementsToNodes(
       const props = (el.properties ?? {}) as Record<string, unknown>;
       width = ve?.width ?? 12;
       height = ve?.height ?? (props.activationHeight as number) ?? 60;
+    } else if (nodeType === 'uml-package') {
+      width = ve?.width ?? 250;
+      height = ve?.height ?? 200;
+    } else if (nodeType === 'uml-swimlane') {
+      width = ve?.width ?? 200;
+      height = ve?.height ?? 400;
+    } else if (nodeType === 'group') {
+      width = ve?.width ?? 250;
+      height = ve?.height ?? 200;
+    } else if (nodeType === 'annotation') {
+      width = ve?.width ?? 120;
+      height = ve?.height ?? 80;
+    } else if (notation === 'data') {
+      const dmProps = (el.properties ?? {}) as Record<string, unknown>;
+      const dmAttrCount = Array.isArray(dmProps.attributes) ? (dmProps.attributes as unknown[]).length : 0;
+      const dmTexts = Array.isArray(dmProps.attributes)
+        ? (dmProps.attributes as Array<{ name?: string; type?: string }>).map(a => `PK ${a.name ?? ''}${a.type ? ' : ' + a.type : ''}`)
+        : [];
+      dmTexts.push(el.name);
+      const dmLongest = Math.max(0, ...dmTexts.map(s => s.length));
+      const dmContentW = Math.round(dmLongest * 6.8 + 20);
+      width = ve?.width ?? Math.min(380, Math.max(160, dmContentW));
+      height = ve?.height ?? Math.max(60, 30 + dmAttrCount * 16 + 10);
     } else if (notation === 'wireframe') {
       width = ve?.width ?? 200;
       height = ve?.height ?? 100;
@@ -337,6 +406,8 @@ export function elementsToNodes(
     // Ensure elementId is always in data (needed by context menu)
     data.elementId = el.id;
 
+    const zIndex = ve?.z_index ?? 0;
+
     return {
       id: el.id,
       type: nodeType,
@@ -344,6 +415,7 @@ export function elementsToNodes(
       data,
       width,
       height,
+      ...(zIndex !== 0 ? { zIndex } : {}),
     };
   });
 

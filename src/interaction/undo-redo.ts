@@ -7,7 +7,7 @@
  */
 import { create } from 'zustand';
 import * as api from '../api/client';
-import type { Element, CreateElementInput, Relationship, CreateRelationshipInput } from '../model/types';
+import type { Element, CreateElementInput, Relationship, CreateRelationshipInput, ViewElement } from '../model/types';
 
 // ── Command interface ─────────────────────────────────────────────────────
 
@@ -24,6 +24,8 @@ interface UndoRedoState {
   future: Command[];
   /** Execute a command and push it onto the past stack. */
   run: (cmd: Command) => Promise<void>;
+  /** Push a command onto the past stack WITHOUT executing it (for already-applied changes like drags). */
+  push: (cmd: Command) => void;
   /** Undo the last command. */
   undo: () => Promise<void>;
   /** Redo the last undone command. */
@@ -40,6 +42,15 @@ export const useUndoRedoStore = create<UndoRedoState>((set, get) => ({
 
   run: async (cmd: Command) => {
     await cmd.execute();
+    set(state => ({
+      past: [...state.past, cmd],
+      future: [],
+      canUndo: true,
+      canRedo: false,
+    }));
+  },
+
+  push: (cmd: Command) => {
     set(state => ({
       past: [...state.past, cmd],
       future: [],
@@ -122,6 +133,7 @@ export function moveElementCommand(
         height: null,
         sublayer_override: null,
         style_overrides: null,
+        z_index: 0,
       }]);
       await onSuccess();
     },
@@ -135,6 +147,7 @@ export function moveElementCommand(
         height: null,
         sublayer_override: null,
         style_overrides: null,
+        z_index: 0,
       }]);
       await onSuccess();
     },
@@ -234,6 +247,26 @@ export function deleteRelationshipCommand(
         description: relationship.description ?? undefined,
         specialisation: relationship.specialisation ?? undefined,
       });
+      await onSuccess();
+    },
+  };
+}
+
+/** Remove elements from view only (model unchanged). Undo re-adds them. */
+export function removeFromViewCommand(
+  viewId: string,
+  elementIds: string[],
+  savedViewElements: ViewElement[],
+  onSuccess: () => Promise<void>,
+): Command {
+  return {
+    description: `Remove ${elementIds.length} element(s) from view`,
+    execute: async () => {
+      await api.removeViewElements(viewId, elementIds);
+      await onSuccess();
+    },
+    undo: async () => {
+      await api.updateViewElements(viewId, savedViewElements);
       await onSuccess();
     },
   };

@@ -36,6 +36,14 @@ export const WF_REL_TYPES = [
   { value: 'wf-binds-to',      label: 'Binds To' },
 ];
 
+export const DM_REL_TYPES = [
+  { value: 'dm-has-attribute',  label: 'Has Attribute' },
+  { value: 'dm-references',     label: 'References' },
+  { value: 'dm-one-to-one',     label: 'One-to-One' },
+  { value: 'dm-one-to-many',    label: 'One-to-Many' },
+  { value: 'dm-many-to-many',   label: 'Many-to-Many' },
+];
+
 export interface PendingConnection {
   sourceId: string;
   targetId: string;
@@ -53,7 +61,7 @@ export function RelationshipTypePicker({
   sourceType: string;
   targetType: string;
   validRelationships: ValidRelationship[];
-  sourceNotation?: 'archimate' | 'uml' | 'wireframe';
+  sourceNotation?: 'archimate' | 'uml' | 'wireframe' | 'data';
 }) {
   const isDark = theme === 'dark';
   const bg = isDark ? '#1E293B' : '#FFFFFF';
@@ -65,6 +73,7 @@ export function RelationshipTypePicker({
   // Select relationship type list based on source notation
   const relTypes = sourceNotation === 'uml' ? UML_REL_TYPES
     : sourceNotation === 'wireframe' ? WF_REL_TYPES
+    : sourceNotation === 'data' ? DM_REL_TYPES
     : ARCHIMATE_REL_TYPES;
 
   // Build a set of valid relationship types for this source→target pair

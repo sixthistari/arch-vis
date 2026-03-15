@@ -38,6 +38,7 @@ import { WaypointUpdateContext } from './context';
 import { getNotation } from '../../model/notation';
 import { useLayerVisibilityStore } from '../../store/layer-visibility';
 import { useDataOverlayStore } from '../../store/data-overlay';
+import { useInteractionStore } from '../../store/interaction';
 import React from 'react';
 
 import { buildOrderMaps } from './layout-computation';
@@ -48,11 +49,16 @@ import { computeElkLayout } from '../../layout/elk';
 import type { LayoutInput, SublayerEntry } from '../../layout/types';
 
 import { RelationshipTypePicker } from './RelationshipTypePicker';
+import { MagicConnectorDialog } from './MagicConnectorDialog';
 import { AlignmentToolbar, type AlignAction } from './AlignmentToolbar';
 import { SnaplineOverlay } from './SnaplineOverlay';
-import { EdgeContextMenu, type EdgeContextMenuState } from './EdgeContextMenu';
+import { EdgeContextMenu, type EdgeContextMenuState, type EdgeMenuAction } from './EdgeContextMenu';
+import { CanvasSearch } from '../../ui/CanvasSearch';
+import { useClipboardStore } from '../../interaction/clipboard';
+import type { ClipboardEntry } from '../../interaction/clipboard';
 import { useCanvasKeyboard } from './hooks/useCanvasKeyboard';
 import { useCanvasConnection } from './hooks/useCanvasConnection';
+import { Legend } from '../../ui/Legend';
 
 // ═══════════════════════════════════════
 // Canvas component — fully controlled mode
@@ -67,16 +73,24 @@ interface XYFlowCanvasProps {
   sublayerConfig?: SublayerConfig | null;
   onNodeClick?: (elementId: string) => void;
   onPositionChange?: (positions: { element_id: string; x: number; y: number }[]) => void;
+  onDragComplete?: (moves: { element_id: string; fromX: number; fromY: number; toX: number; toY: number }[]) => void;
   onLabelChange?: (elementId: string, newLabel: string) => void;
   onElementsDelete?: (elementIds: string[]) => void;
+  onRemoveFromView?: (elementIds: string[]) => void;
   onRelationshipsDelete?: (relationshipIds: string[]) => void;
   onDropElement?: (archimateType: string, layer: string, x: number, y: number) => void;
   onDropTreeElement?: (elementId: string, x: number, y: number) => void;
   onCreateRelationship?: (sourceId: string, targetId: string, relType: string) => void;
+  /** Magic connector: create element + relationship in one step when connection is dropped on empty canvas */
+  onMagicConnect?: (sourceId: string, elementType: string, elementLayer: string, elementName: string, relType: string, x: number, y: number) => void;
   onClearSelection?: () => void;
   onNodeContextMenu?: (elementId: string, x: number, y: number) => void;
+  onPasteElements?: (entries: { name: string; archimateType: string; layer: string; x: number; y: number }[]) => void;
+  onRelationshipUpdate?: (id: string, data: Partial<Omit<Relationship, 'id' | 'created_at' | 'updated_at'>>) => Promise<Relationship>;
   validRelationships?: ValidRelationship[];
   viewpointType?: string;
+  /** Incrementing key that forces a full position rebuild from viewElements (used after undo/redo). */
+  positionResetKey?: number;
 }
 
 // ── Bridge: captures screenToFlowPosition inside the ReactFlow provider ───
@@ -85,11 +99,17 @@ function ScreenToFlowBridge({
   fitViewRef,
 }: {
   bridgeRef: React.MutableRefObject<((pos: { x: number; y: number }) => { x: number; y: number }) | null>;
-  fitViewRef: React.MutableRefObject<(() => void) | null>;
+  fitViewRef: React.MutableRefObject<((nodeIds?: string[]) => void) | null>;
 }) {
   const { screenToFlowPosition, fitView } = useReactFlow();
   bridgeRef.current = screenToFlowPosition;
-  fitViewRef.current = () => fitView({ padding: 0.15 });
+  fitViewRef.current = (nodeIds?: string[]) => {
+    if (nodeIds && nodeIds.length > 0) {
+      fitView({ nodes: nodeIds.map(id => ({ id })), padding: 0.3, duration: 300 });
+    } else {
+      fitView({ padding: 0.15 });
+    }
+  };
   return null;
 }
 
@@ -102,16 +122,22 @@ export function XYFlowCanvas({
   sublayerConfig,
   onNodeClick,
   onPositionChange,
+  onDragComplete,
   onLabelChange,
   onElementsDelete,
+  onRemoveFromView,
   onRelationshipsDelete,
   onDropElement,
   onDropTreeElement,
   onCreateRelationship,
+  onMagicConnect,
   onClearSelection,
   onNodeContextMenu,
+  onPasteElements,
+  onRelationshipUpdate,
   validRelationships = [],
   viewpointType,
+  positionResetKey,
 }: XYFlowCanvasProps) {
   // Derive layout order maps from sublayer config (or fallback to hardcoded)
   const { layerOrder, sublayerOrder, layerLabels } = React.useMemo(
@@ -128,14 +154,20 @@ export function XYFlowCanvas({
 
   // screenToFlowPosition + fitView captured from inside the ReactFlow provider via ScreenToFlowBridge
   const screenToFlowRef = React.useRef<((pos: { x: number; y: number }) => { x: number; y: number }) | null>(null);
-  const fitViewRef = React.useRef<(() => void) | null>(null);
+  const fitViewRef = React.useRef<((nodeIds?: string[]) => void) | null>(null);
+
+  // Drag start positions for undo coalescing
+  const dragStartRef = React.useRef<Map<string, { x: number; y: number }>>(new Map());
+
+  // Position reset key — when it changes, rebuild from viewElements (used after undo/redo)
+  const prevResetKeyRef = React.useRef<number | undefined>(positionResetKey);
 
   // Connection creation state + handlers (extracted to hook)
   const {
-    pendingConnection, handleConnect, handleConnectEnd,
-    handleRelTypeSelect, handleRelTypeCancel, containerMouseRef,
-    setPendingConnection, pendingConnRef,
-  } = useCanvasConnection({ onCreateRelationship });
+    pendingConnection, magicConnector, handleConnect, handleConnectStart, handleConnectEnd,
+    handleRelTypeSelect, handleRelTypeCancel, handleMagicCancel, setMagicConnector,
+    containerMouseRef, setPendingConnection, pendingConnRef,
+  } = useCanvasConnection({ onCreateRelationship, screenToFlowRef: screenToFlowRef });
 
   // Layer visibility / lock controls
   const hiddenLayers = useLayerVisibilityStore(s => s.hiddenLayers);
@@ -164,11 +196,21 @@ export function XYFlowCanvas({
   // Alignment snaplines shown during node drag
   const [snaplines, setSnaplines] = React.useState<{ x?: number; y?: number }[]>([]);
 
+  // Canvas search (Ctrl+F)
+  const [searchOpen, setSearchOpen] = React.useState(false);
+
   // Stable callback refs — avoid stale closures in keyboard useEffect
   const onPositionChangeRef = React.useRef(onPositionChange);
   onPositionChangeRef.current = onPositionChange;
   const onClearSelectionRef = React.useRef(onClearSelection);
   onClearSelectionRef.current = onClearSelection;
+  // Stable ref for onLabelChange — prevents elementsToNodes from creating new
+  // node data objects (and triggering React reconciliation) on every render.
+  const onLabelChangeRef = React.useRef(onLabelChange);
+  onLabelChangeRef.current = onLabelChange;
+  const stableOnLabelChange = React.useCallback((id: string, newLabel: string) => {
+    onLabelChangeRef.current?.(id, newLabel);
+  }, []);
   // Timer ref for debouncing nudge position saves
   const nudgeSaveTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -207,13 +249,21 @@ export function XYFlowCanvas({
   const viewChanged = currentViewRef.current !== viewId;
   if (viewChanged) {
     currentViewRef.current = viewId;
-    nodesRef.current = elementsToNodes(elements, viewElements, theme, layerOrder, sublayerOrder, layerLabels, onLabelChange, overlayConfig, relationships, viewpointType);
+    nodesRef.current = elementsToNodes(elements, viewElements, theme, layerOrder, sublayerOrder, layerLabels, stableOnLabelChange, overlayConfig, relationships, viewpointType);
+    edgesRef.current = relationshipsToEdges(relationships, buildPositionMap(nodesRef.current), theme);
+    prevResetKeyRef.current = positionResetKey;
+  }
+
+  // Detect position reset (after undo/redo) → rebuild from viewElements
+  if (!viewChanged && positionResetKey !== undefined && positionResetKey !== prevResetKeyRef.current) {
+    prevResetKeyRef.current = positionResetKey;
+    nodesRef.current = elementsToNodes(elements, viewElements, theme, layerOrder, sublayerOrder, layerLabels, stableOnLabelChange, overlayConfig, relationships, viewpointType);
     edgesRef.current = relationshipsToEdges(relationships, buildPositionMap(nodesRef.current), theme);
   }
 
   // Initial load — if ref is empty, compute
   if (nodesRef.current.length === 0 && elements.length > 0) {
-    nodesRef.current = elementsToNodes(elements, viewElements, theme, layerOrder, sublayerOrder, layerLabels, onLabelChange, overlayConfig, relationships, viewpointType);
+    nodesRef.current = elementsToNodes(elements, viewElements, theme, layerOrder, sublayerOrder, layerLabels, stableOnLabelChange, overlayConfig, relationships, viewpointType);
     edgesRef.current = relationshipsToEdges(relationships, buildPositionMap(nodesRef.current), theme);
   }
 
@@ -230,7 +280,7 @@ export function XYFlowCanvas({
       return p ? { ...ve, x: p.x, y: p.y } : ve;
     });
 
-    nodesRef.current = elementsToNodes(elements, liveVE, theme, layerOrder, sublayerOrder, layerLabels, onLabelChange, overlayConfig, relationships, viewpointType);
+    nodesRef.current = elementsToNodes(elements, liveVE, theme, layerOrder, sublayerOrder, layerLabels, stableOnLabelChange, overlayConfig, relationships, viewpointType);
     edgesRef.current = relationshipsToEdges(relationships, buildPositionMap(nodesRef.current), theme);
     forceRender(n => n + 1);
     // Intentionally excludes viewElements, theme, layerOrder, sublayerOrder, layerLabels,
@@ -242,12 +292,69 @@ export function XYFlowCanvas({
   const nodes = nodesRef.current;
   const edges = edgesRef.current;
 
+  // ── Stable position/topology hash ──────────────────────────────────────────
+  // Only changes when node positions actually move or edge topology changes.
+  // Avoids re-running expensive A* routing on every forceRender (which creates
+  // new node array references even when positions are unchanged).
+  const positionHashRef = React.useRef('');
+  const currentPositionHash = React.useMemo(() => {
+    // Build a cheap hash from node positions + edge source/target pairs
+    const parts: string[] = [];
+    for (const n of nodes) {
+      if (n.type === 'layer-band') continue;
+      // Round to 1px to avoid float jitter triggering re-routes
+      parts.push(`${n.id}:${Math.round(n.position.x)},${Math.round(n.position.y)}`);
+    }
+    parts.push('|');
+    for (const e of edges) {
+      parts.push(`${e.source}>${e.target}`);
+    }
+    return parts.join(';');
+  }, [nodes, edges]);
+
+  // Track whether hash actually changed (memoisation key for routing)
+  const posHashChanged = currentPositionHash !== positionHashRef.current;
+  if (posHashChanged) positionHashRef.current = currentPositionHash;
+
+  // Routing generation counter — only increments when positions actually change
+  const routeGenRef = React.useRef(0);
+  if (posHashChanged) routeGenRef.current++;
+  const routeGen = routeGenRef.current;
+
+  // ── Debounced routing ─────────────────────────────────────────────────────
+  // For large diagrams (>100 edges), debounce A* routing to avoid blocking
+  // the main thread during drag operations.
+  const routeTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [debouncedRouteGen, setDebouncedRouteGen] = React.useState(routeGen);
+
+  // Threshold for disabling A* entirely — views with >100 edges use step edges
+  const ROUTE_EDGE_LIMIT = 100;
+  const edgeCountExceedsLimit = edges.length > ROUTE_EDGE_LIMIT;
+
+  React.useEffect(() => {
+    if (edgeCountExceedsLimit) return; // skip routing for very large views
+    if (routeGen === debouncedRouteGen) return;
+    // First route is immediate (gen 1); subsequent changes are debounced
+    if (routeGen <= 1) {
+      setDebouncedRouteGen(routeGen);
+      return;
+    }
+    if (routeTimerRef.current) clearTimeout(routeTimerRef.current);
+    routeTimerRef.current = setTimeout(() => {
+      setDebouncedRouteGen(routeGen);
+    }, 150); // 150ms debounce during drag
+    return () => {
+      if (routeTimerRef.current) clearTimeout(routeTimerRef.current);
+    };
+  }, [routeGen, debouncedRouteGen, edgeCountExceedsLimit]);
+
   // ── Memoised routing ───────────────────────────────────────────────────────
-  // Re-runs only when node positions or edge topology change — NOT on selection
-  // changes, theme changes, or other UI state updates.  This eliminates the
-  // main source of choppiness: full A* re-routing on every forceRender call.
+  // Re-runs only when debounced route generation changes — NOT on every render.
   const routedPaths = React.useMemo((): Map<string, RoutedEdge> => {
     const empty = new Map<string, RoutedEdge>();
+
+    // Skip A* routing for large views — too expensive
+    if (edgeCountExceedsLimit) return empty;
 
     // Build element bounds map with ABSOLUTE positions (resolving parent-child nesting)
     const absMap = buildPositionMap(nodes);
@@ -291,10 +398,8 @@ export function XYFlowCanvas({
     }));
 
     return computeOrthogonalRoutes(routeEdges, routeElements);
-    // buildPositionMap is a pure function of its argument (nodes), not of component state.
-    // assignPorts, detectPortSide, computeOrthogonalRoutes are module-level stable references.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodes, edges]);
+  }, [debouncedRouteGen]);
   // ───────────────────────────────────────────────────────────────────────────
 
   const onNodesChange: OnNodesChange = useCallback((changes) => {
@@ -329,32 +434,71 @@ export function XYFlowCanvas({
     return abs(node);
   }
 
+  // Capture drag start positions for undo coalescing
+  const handleNodeDragStart: NodeMouseHandler = useCallback((_event, node) => {
+    dragStartRef.current.clear();
+    if (node.type === 'layer-band') {
+      for (const n of nodesRef.current) {
+        if (n.parentId === node.id && n.type !== 'layer-band') {
+          const abs = resolveAbsolutePos(n.id);
+          dragStartRef.current.set(n.id, abs);
+        }
+      }
+    } else {
+      // Capture all selected nodes (they move together in multi-select)
+      for (const n of nodesRef.current) {
+        if (n.selected && n.type !== 'layer-band') {
+          const abs = resolveAbsolutePos(n.id);
+          dragStartRef.current.set(n.id, abs);
+        }
+      }
+      // Always include the dragged node
+      if (!dragStartRef.current.has(node.id)) {
+        const abs = resolveAbsolutePos(node.id);
+        dragStartRef.current.set(node.id, abs);
+      }
+    }
+  }, []);
+
   const handleNodeDragStop: NodeMouseHandler = useCallback((_event, node) => {
     setSnaplines([]);
+
+    let positions: { element_id: string; x: number; y: number }[] = [];
 
     if (node.type === 'layer-band') {
       // Layer band dragged — all children moved with it, save their absolute positions
       forceRender(n => n + 1);
-      if (onPositionChange) {
-        const children = nodesRef.current.filter(
-          n => n.parentId === node.id && n.type !== 'layer-band',
-        );
-        const positions = children.map(n => {
-          const abs = resolveAbsolutePos(n.id);
-          return { element_id: n.id, x: abs.x, y: abs.y };
-        });
-        if (positions.length > 0) onPositionChange(positions);
-      }
+      const children = nodesRef.current.filter(
+        n => n.parentId === node.id && n.type !== 'layer-band',
+      );
+      positions = children.map(n => {
+        const abs = resolveAbsolutePos(n.id);
+        return { element_id: n.id, x: abs.x, y: abs.y };
+      });
     } else {
       // Element node dragged — refit the parent band, save element position
       nodesRef.current = recomputeBands(nodesRef.current, layerLabels, theme);
       forceRender(n => n + 1);
-      if (onPositionChange) {
-        const abs = resolveAbsolutePos(node.id);
-        onPositionChange([{ element_id: node.id, x: abs.x, y: abs.y }]);
+      const abs = resolveAbsolutePos(node.id);
+      positions = [{ element_id: node.id, x: abs.x, y: abs.y }];
+    }
+
+    if (positions.length > 0) {
+      if (onDragComplete && dragStartRef.current.size > 0) {
+        // Build from/to moves for undo coalescing
+        const moves = positions
+          .filter(p => dragStartRef.current.has(p.element_id))
+          .map(p => {
+            const from = dragStartRef.current.get(p.element_id)!;
+            return { element_id: p.element_id, fromX: from.x, fromY: from.y, toX: p.x, toY: p.y };
+          });
+        if (moves.length > 0) onDragComplete(moves);
+        dragStartRef.current.clear();
+      } else if (onPositionChange) {
+        onPositionChange(positions);
       }
     }
-  }, [onPositionChange, layerLabels, theme]);
+  }, [onPositionChange, onDragComplete, layerLabels, theme]);
 
   // Alignment snaplines during drag — show guides when near other nodes' edges/centres
   const handleNodeDrag: NodeMouseHandler = useCallback((_event, draggedNode) => {
@@ -413,24 +557,37 @@ export function XYFlowCanvas({
   const handleSelectionDragStop = useCallback((_event: React.MouseEvent, movedNodes: Node[]) => {
     nodesRef.current = recomputeBands(nodesRef.current, layerLabels, theme);
     forceRender(n => n + 1);
-    if (onPositionChange) {
-      const elementNodes = movedNodes.filter(n => n.type !== 'layer-band');
-      // If a layer band was in the selection, also include its children
-      const bandIds = new Set(movedNodes.filter(n => n.type === 'layer-band').map(n => n.id));
-      if (bandIds.size > 0) {
-        for (const n of nodesRef.current) {
-          if (n.parentId && bandIds.has(n.parentId) && n.type !== 'layer-band') {
-            if (!elementNodes.find(en => en.id === n.id)) elementNodes.push(n);
-          }
+
+    const elementNodes = movedNodes.filter(n => n.type !== 'layer-band');
+    // If a layer band was in the selection, also include its children
+    const bandIds = new Set(movedNodes.filter(n => n.type === 'layer-band').map(n => n.id));
+    if (bandIds.size > 0) {
+      for (const n of nodesRef.current) {
+        if (n.parentId && bandIds.has(n.parentId) && n.type !== 'layer-band') {
+          if (!elementNodes.find(en => en.id === n.id)) elementNodes.push(n);
         }
       }
-      const positions = elementNodes.map(n => {
-        const abs = resolveAbsolutePos(n.id);
-        return { element_id: n.id, x: abs.x, y: abs.y };
-      });
-      if (positions.length > 0) onPositionChange(positions);
     }
-  }, [onPositionChange, layerLabels, theme]);
+    const positions = elementNodes.map(n => {
+      const abs = resolveAbsolutePos(n.id);
+      return { element_id: n.id, x: abs.x, y: abs.y };
+    });
+
+    if (positions.length > 0) {
+      if (onDragComplete && dragStartRef.current.size > 0) {
+        const moves = positions
+          .filter(p => dragStartRef.current.has(p.element_id))
+          .map(p => {
+            const from = dragStartRef.current.get(p.element_id)!;
+            return { element_id: p.element_id, fromX: from.x, fromY: from.y, toX: p.x, toY: p.y };
+          });
+        if (moves.length > 0) onDragComplete(moves);
+        dragStartRef.current.clear();
+      } else if (onPositionChange) {
+        onPositionChange(positions);
+      }
+    }
+  }, [onPositionChange, onDragComplete, layerLabels, theme]);
 
   // Edge reconnection handler
   const handleReconnect = useCallback((oldEdge: Edge, newConnection: Connection) => {
@@ -471,24 +628,35 @@ export function XYFlowCanvas({
     });
   }, []);
 
-  const handleEdgeMenuSelect = useCallback((edgeId: string, action: 'straight' | 'bezier' | 'step' | 'delete') => {
-    if (action === 'delete') {
+  const handleEdgeMenuAction = useCallback((edgeId: string, action: EdgeMenuAction) => {
+    if (action.kind === 'delete') {
       edgesRef.current = edgesRef.current.filter(e => e.id !== edgeId);
-    } else {
+      setEdgeMenu(null);
+      forceRender(n => n + 1);
+    } else if (action.kind === 'lineType') {
       edgesRef.current = edgesRef.current.map(e => {
         if (e.id !== edgeId) return e;
-        return {
-          ...e,
-          data: {
-            ...e.data,
-            lineType: action as LineType,
-          },
-        };
+        return { ...e, data: { ...e.data, lineType: action.value as LineType } };
       });
+      setEdgeMenu(null);
+      forceRender(n => n + 1);
+    } else if (action.kind === 'changeType') {
+      setEdgeMenu(null);
+      if (onRelationshipUpdate) {
+        onRelationshipUpdate(edgeId, { archimate_type: action.value as Relationship['archimate_type'] })
+          .then(() => forceRender(n => n + 1))
+          .catch(err => console.error('Failed to change relationship type:', err));
+      }
+    } else if (action.kind === 'reverse') {
+      setEdgeMenu(null);
+      const rel = relationships.find(r => r.id === edgeId);
+      if (rel && onRelationshipUpdate) {
+        onRelationshipUpdate(edgeId, { source_id: rel.target_id, target_id: rel.source_id })
+          .then(() => forceRender(n => n + 1))
+          .catch(err => console.error('Failed to reverse relationship:', err));
+      }
     }
-    setEdgeMenu(null);
-    forceRender(n => n + 1);
-  }, []);
+  }, [relationships, onRelationshipUpdate]);
 
   const handleCloseEdgeMenu = useCallback(() => {
     setEdgeMenu(null);
@@ -498,21 +666,94 @@ export function XYFlowCanvas({
   const handlePaneClick = useCallback(() => {
     setEdgeMenu(null);
     setPendingConnection(null);
+    setMagicConnector(null);
     pendingConnRef.current = null;
   }, []);
 
-  // Track selected nodes for connected-edge highlighting
+  // Track selected nodes for connected-edge highlighting + sync to interaction store
   const handleSelectionChange = useCallback(({ nodes }: OnSelectionChangeParams) => {
-    setSelectedNodeIds(new Set(
+    const ids = new Set(
       nodes.map(n => n.id).filter(id => !id.startsWith('__band-')),
-    ));
+    );
+    setSelectedNodeIds(ids);
+    useInteractionStore.getState().setSelectedNodeIds(ids);
   }, []);
 
-  // Keyboard shortcuts: arrow nudge, Escape deselect, Ctrl+A select all
+  // Stable refs for copy/paste callbacks
+  const onElementsDeleteRef = React.useRef(onElementsDelete);
+  onElementsDeleteRef.current = onElementsDelete;
+  const onRemoveFromViewRef = React.useRef(onRemoveFromView);
+  onRemoveFromViewRef.current = onRemoveFromView;
+  const onRelationshipsDeleteRef = React.useRef(onRelationshipsDelete);
+  onRelationshipsDeleteRef.current = onRelationshipsDelete;
+  const onPasteElementsRef = React.useRef(onPasteElements);
+  onPasteElementsRef.current = onPasteElements;
+
+  // Keyboard shortcuts: arrow nudge, Escape deselect, Ctrl+A select all, Ctrl+F search, Ctrl+C/V/X
   useCanvasKeyboard({
     nodesRef, edgesRef, setSelectedNodeIds, forceRender,
     onClearSelectionRef, onPositionChangeRef, nudgeSaveTimerRef,
     layerLabels, theme, resolveAbsolutePos,
+    onToggleSearch: () => setSearchOpen(prev => !prev),
+    onCopy: () => {
+      const selected = nodesRef.current.filter(n => n.selected && n.type !== 'layer-band');
+      if (selected.length === 0) return;
+      const minX = Math.min(...selected.map(n => n.position.x));
+      const minY = Math.min(...selected.map(n => n.position.y));
+      const entries: ClipboardEntry[] = selected.map(n => {
+        const data = n.data as Record<string, unknown>;
+        return {
+          originalId: n.id,
+          name: (data.label as string) ?? n.id,
+          archimateType: (data.archimateType as string) ?? 'application-component',
+          layer: (data.layer as string) ?? 'application',
+          relX: n.position.x - minX,
+          relY: n.position.y - minY,
+        };
+      });
+      useClipboardStore.getState().copy(entries);
+    },
+    onPaste: () => {
+      const entries = useClipboardStore.getState().entries;
+      if (entries.length === 0 || !onPasteElementsRef.current) return;
+      const OFFSET = 20;
+      onPasteElementsRef.current(entries.map(e => ({
+        name: `${e.name} (copy)`,
+        archimateType: e.archimateType,
+        layer: e.layer,
+        x: e.relX + OFFSET,
+        y: e.relY + OFFSET,
+      })));
+    },
+    onRemoveFromView: (ids: string[]) => {
+      onRemoveFromViewRef.current?.(ids);
+    },
+    onDeleteFromModel: (nodeIds: string[], edgeIds: string[]) => {
+      if (nodeIds.length > 0) onElementsDeleteRef.current?.(nodeIds);
+      if (edgeIds.length > 0) onRelationshipsDeleteRef.current?.(edgeIds);
+    },
+    onCut: () => {
+      // Copy first
+      const selected = nodesRef.current.filter(n => n.selected && n.type !== 'layer-band');
+      if (selected.length === 0) return;
+      const minX = Math.min(...selected.map(n => n.position.x));
+      const minY = Math.min(...selected.map(n => n.position.y));
+      const entries: ClipboardEntry[] = selected.map(n => {
+        const data = n.data as Record<string, unknown>;
+        return {
+          originalId: n.id,
+          name: (data.label as string) ?? n.id,
+          archimateType: (data.archimateType as string) ?? 'application-component',
+          layer: (data.layer as string) ?? 'application',
+          relX: n.position.x - minX,
+          relY: n.position.y - minY,
+        };
+      });
+      useClipboardStore.getState().copy(entries);
+      // Then delete
+      const ids = selected.map(n => n.id);
+      onElementsDeleteRef.current?.(ids);
+    },
   });
 
   // Alignment — applies to all currently selected archimate nodes
@@ -640,6 +881,13 @@ export function XYFlowCanvas({
     forceRender(n => n + 1);
   }, []);
 
+  // Magic connector confirm — create element + relationship in one step
+  const handleMagicConfirm = useCallback((elementType: string, elementLayer: string, elementName: string, relType: string) => {
+    if (!magicConnector) return;
+    onMagicConnect?.(magicConnector.sourceId, elementType, elementLayer, elementName, relType, magicConnector.flowX, magicConnector.flowY);
+    setMagicConnector(null);
+  }, [magicConnector, onMagicConnect, setMagicConnector]);
+
   const isDark = theme === 'dark';
   const bgColour = isDark ? '#0F172A' : '#FFFFFF';
   const gridColour = isDark ? '#1E293B' : '#F1F5F9';
@@ -654,73 +902,83 @@ export function XYFlowCanvas({
   }
 
   // ── Apply memoised routes + connected-edge highlighting ──────────────────
-  // routedPaths was computed by useMemo([nodes, edges]) — not re-run here.
-  let displayEdges = routedPaths.size > 0
-    ? edges.map(e => {
-        const routed = routedPaths.get(e.id);
-        if (!routed) return e;
-        const hasUserWps = ((e.data?.waypoints as unknown[]) ?? []).length > 0;
-        return {
-          ...e,
-          data: {
-            ...e.data,
-            customPath: routed.path,
-            ...(!hasUserWps && { routedWaypoints: routed.pts }),
-          },
-        };
-      })
-    : edges;
+  // Memoised to avoid creating new edge objects on every render.
+  const displayEdges = React.useMemo(() => {
+    let result = routedPaths.size > 0
+      ? edges.map(e => {
+          const routed = routedPaths.get(e.id);
+          if (!routed) return e;
+          const hasUserWps = ((e.data?.waypoints as unknown[]) ?? []).length > 0;
+          return {
+            ...e,
+            data: {
+              ...e.data,
+              customPath: routed.path,
+              ...(!hasUserWps && { routedWaypoints: routed.pts }),
+            },
+          };
+        })
+      : edges;
 
-  // ── Connected-edge highlighting — mark edges attached to selected nodes ──
-  if (selectedNodeIds.size > 0) {
-    displayEdges = displayEdges.map(e => ({
-      ...e,
-      data: {
-        ...e.data,
-        highlighted: selectedNodeIds.has(e.source) || selectedNodeIds.has(e.target),
-      },
-    }));
-  }
-  // ────────────────────────────────────────────────────────────────────────
+    // Connected-edge highlighting — mark edges attached to selected nodes
+    if (selectedNodeIds.size > 0) {
+      result = result.map(e => ({
+        ...e,
+        data: {
+          ...e.data,
+          highlighted: selectedNodeIds.has(e.source) || selectedNodeIds.has(e.target),
+        },
+      }));
+    }
+    return result;
+  }, [edges, routedPaths, selectedNodeIds]);
 
   // ── Layer visibility, lock, and opacity filtering ─────────────────────
   const hasLayerFilters = hiddenLayers.size > 0 || lockedLayers.size > 0
     || Object.keys(layerOpacityMap).length > 0;
 
-  const displayNodes = hasLayerFilters
-    ? nodes.map(n => {
-        if (n.type === 'layer-band') {
-          const bandLayer = n.id.replace('__band-', '');
-          if (hiddenLayers.has(bandLayer)) return { ...n, hidden: true };
-          return n;
-        }
-        const nodeLayer = (n.data as Record<string, unknown>)?.layer as string | undefined;
-        if (!nodeLayer) return n;
-        if (hiddenLayers.has(nodeLayer)) return { ...n, hidden: true };
-        let result = n;
-        if (lockedLayers.has(nodeLayer)) {
-          result = { ...result, draggable: false, selectable: false };
-        }
-        const opacity = layerOpacityMap[nodeLayer];
-        if (opacity !== undefined && opacity < 1) {
-          result = { ...result, style: { ...result.style, opacity } };
-        }
-        return result;
-      })
-    : nodes;
+  const displayNodes = React.useMemo(() => {
+    if (!hasLayerFilters) return nodes;
+    return nodes.map(n => {
+      if (n.type === 'layer-band') {
+        const bandLayer = n.id.replace('__band-', '');
+        if (hiddenLayers.has(bandLayer)) return { ...n, hidden: true };
+        return n;
+      }
+      const nodeLayer = (n.data as Record<string, unknown>)?.layer as string | undefined;
+      if (!nodeLayer) return n;
+      if (hiddenLayers.has(nodeLayer)) return { ...n, hidden: true };
+      let result = n;
+      if (lockedLayers.has(nodeLayer)) {
+        result = { ...result, draggable: false, selectable: false };
+      }
+      const opacity = layerOpacityMap[nodeLayer];
+      if (opacity !== undefined && opacity < 1) {
+        result = { ...result, style: { ...result.style, opacity } };
+      }
+      return result;
+    });
+  }, [nodes, hasLayerFilters, hiddenLayers, lockedLayers, layerOpacityMap]);
 
-  const filteredEdges = !showRelationships
-    ? displayEdges.map(e => ({ ...e, hidden: true }))
-    : hiddenLayers.size > 0
-      ? displayEdges.map(e => {
-          const srcNode = displayNodes.find(n => n.id === e.source);
-          const tgtNode = displayNodes.find(n => n.id === e.target);
-          if (srcNode?.hidden === true || tgtNode?.hidden === true) {
-            return { ...e, hidden: true };
-          }
-          return e;
-        })
-      : displayEdges;
+  const filteredEdges = React.useMemo(() => {
+    if (!showRelationships) {
+      return displayEdges.map(e => ({ ...e, hidden: true }));
+    }
+    if (hiddenLayers.size > 0) {
+      // Build a lookup set of hidden node IDs for O(1) checks instead of O(n) .find()
+      const hiddenNodeIds = new Set<string>();
+      for (const n of displayNodes) {
+        if (n.hidden === true) hiddenNodeIds.add(n.id);
+      }
+      return displayEdges.map(e => {
+        if (hiddenNodeIds.has(e.source) || hiddenNodeIds.has(e.target)) {
+          return { ...e, hidden: true };
+        }
+        return e;
+      });
+    }
+    return displayEdges;
+  }, [displayEdges, displayNodes, showRelationships, hiddenLayers]);
   // ────────────────────────────────────────────────────────────────────────
 
   return (
@@ -743,6 +1001,7 @@ export function XYFlowCanvas({
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodeClick={handleNodeClick}
+        onNodeDragStart={handleNodeDragStart}
         onNodeDrag={handleNodeDrag}
         onNodeDragStop={handleNodeDragStop}
         onSelectionDragStop={handleSelectionDragStop}
@@ -756,6 +1015,7 @@ export function XYFlowCanvas({
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onConnect={handleConnect}
+        onConnectStart={handleConnectStart}
         onConnectEnd={handleConnectEnd}
         edgesReconnectable={true}
         nodeTypes={nodeTypes}
@@ -768,7 +1028,7 @@ export function XYFlowCanvas({
         maxZoom={4}
         multiSelectionKeyCode="Shift"
         selectionOnDrag={true}
-        deleteKeyCode={['Backspace', 'Delete']}
+        deleteKeyCode={null}
         defaultEdgeOptions={{ type: 'archimate' }}
         proOptions={{ hideAttribution: true }}
         style={{ background: bgColour }}
@@ -781,7 +1041,7 @@ export function XYFlowCanvas({
             onClick={() => {
               // Force auto-layout: zero all saved positions so elementsToNodes uses grid layout
               const resetVE = viewElements.map(ve => ({ ...ve, x: 0, y: 0 }));
-              nodesRef.current = elementsToNodes(elements, resetVE, theme, layerOrder, sublayerOrder, layerLabels, onLabelChange, overlayConfig, relationships, viewpointType);
+              nodesRef.current = elementsToNodes(elements, resetVE, theme, layerOrder, sublayerOrder, layerLabels, stableOnLabelChange, overlayConfig, relationships, viewpointType);
               edgesRef.current = relationshipsToEdges(relationships, buildPositionMap(nodesRef.current), theme);
               forceRender(n => n + 1);
               // Save the new absolute positions
@@ -908,9 +1168,12 @@ export function XYFlowCanvas({
       {edgeMenu && (
         <EdgeContextMenu
           menu={edgeMenu}
-          onSelect={handleEdgeMenuSelect}
+          onAction={handleEdgeMenuAction}
           onClose={handleCloseEdgeMenu}
           theme={theme}
+          relationship={relationships.find(r => r.id === edgeMenu.edgeId) ?? null}
+          elements={elements}
+          validRelationships={validRelationships}
         />
       )}
       {pendingConnection && (() => {
@@ -925,7 +1188,25 @@ export function XYFlowCanvas({
             sourceType={srcEl?.archimate_type ?? ''}
             targetType={tgtEl?.archimate_type ?? ''}
             validRelationships={validRelationships}
-            sourceNotation={srcEl ? getNotation(srcEl.archimate_type) : undefined}
+            sourceNotation={(() => {
+              if (!srcEl) return undefined;
+              const n = getNotation(srcEl.archimate_type);
+              return n === 'any' ? undefined : n;
+            })()}
+          />
+        );
+      })()}
+      {magicConnector && (() => {
+        const srcEl = elements.find(e => e.id === magicConnector.sourceId);
+        return (
+          <MagicConnectorDialog
+            state={magicConnector}
+            onConfirm={handleMagicConfirm}
+            onCancel={handleMagicCancel}
+            theme={theme}
+            sourceType={srcEl?.archimate_type ?? ''}
+            validRelationships={validRelationships}
+            viewpointType={viewpointType}
           />
         );
       })()}
@@ -934,7 +1215,21 @@ export function XYFlowCanvas({
         onAlign={handleAlign}
         theme={theme}
       />
+      {searchOpen && (
+        <CanvasSearch
+          nodes={nodesRef.current
+            .filter(n => n.type !== 'layer-band')
+            .map(n => ({
+              id: n.id,
+              label: ((n.data as Record<string, unknown>)?.label as string) ?? n.id,
+            }))}
+          onFocusNode={(nodeId) => fitViewRef.current?.([nodeId])}
+          onClose={() => setSearchOpen(false)}
+          theme={theme}
+        />
+      )}
       </WaypointUpdateContext.Provider>
+      <Legend elements={elements} theme={theme} />
     </div>
   );
 }

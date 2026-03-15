@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
-import { toPng, toSvg } from 'html-to-image';
-import { exportArchimateXml, exportCsv, exportModelBatch } from '../api/client';
+import { toPng, toSvg, toCanvas } from 'html-to-image';
+import { jsPDF } from 'jspdf';
+import { exportArchimateXml, exportCsv, exportModelBatch, exportHtmlReport } from '../api/client';
 import { useViewStore } from '../store/view';
 
 /** Filter out minimap, controls, and panel overlays from image export. */
@@ -66,6 +67,28 @@ export function ExportMenu(): React.ReactElement {
     setOpen(false);
   }, [viewSlug]);
 
+  const exportPDF = useCallback(async () => {
+    const el = getFlowElement();
+    if (!el) return;
+    try {
+      const canvas = await toCanvas(el, {
+        pixelRatio: 2,
+        filter: exportFilter,
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const w = canvas.width;
+      const h = canvas.height;
+      // Choose landscape or portrait based on aspect ratio
+      const orientation = w > h ? 'landscape' : 'portrait';
+      const pdf = new jsPDF({ orientation, unit: 'px', format: [w, h] });
+      pdf.addImage(imgData, 'PNG', 0, 0, w, h);
+      pdf.save(`${viewSlug}.pdf`);
+    } catch (err) {
+      console.error('PDF export failed:', err);
+    }
+    setOpen(false);
+  }, [viewSlug]);
+
   const exportXml = useCallback(async () => {
     try {
       const xml = await exportArchimateXml();
@@ -97,6 +120,40 @@ export function ExportMenu(): React.ReactElement {
       }
     } catch (err) {
       console.error('CSV export failed:', err);
+    }
+    setOpen(false);
+  }, []);
+
+  const exportHtml = useCallback(async () => {
+    try {
+      await exportHtmlReport();
+    } catch (err) {
+      console.error('HTML report export failed:', err);
+    }
+    setOpen(false);
+  }, []);
+
+  const copyToClipboard = useCallback(async () => {
+    const el = getFlowElement();
+    if (!el) return;
+    try {
+      const canvas = await toCanvas(el, {
+        pixelRatio: 2,
+        filter: exportFilter,
+      });
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+        try {
+          await navigator.clipboard.write([
+            new ClipboardItem({ 'image/png': blob }),
+          ]);
+        } catch {
+          // Fallback: some browsers don't support ClipboardItem
+          console.warn('Clipboard API not available');
+        }
+      }, 'image/png');
+    } catch (err) {
+      console.error('Copy to clipboard failed:', err);
     }
     setOpen(false);
   }, []);
@@ -152,10 +209,14 @@ export function ExportMenu(): React.ReactElement {
         >
           <button onClick={exportSVG} style={menuItemStyle()} title="Vector image, print quality">Export SVG</button>
           <button onClick={exportPNG} style={menuItemStyle()} title="Rasterised image, 2x retina">Export PNG</button>
+          <button onClick={exportPDF} style={menuItemStyle()} title="PDF document, auto landscape/portrait">Export PDF</button>
+          <button onClick={copyToClipboard} style={menuItemStyle()} title="Copy diagram as PNG to clipboard">Copy to Clipboard</button>
+          <button onClick={() => { window.print(); setOpen(false); }} style={menuItemStyle()} title="Print diagram (Ctrl+P)">Print Diagram</button>
           <div style={{ borderTop: '1px solid var(--border-primary)' }} />
           <button onClick={exportJson} style={menuItemStyle()} title="Full model backup as JSON">Export JSON</button>
           <button onClick={exportXml} style={menuItemStyle()} title="ArchiMate Open Exchange format">Export ArchiMate XML</button>
           <button onClick={exportCsvFiles} style={menuItemStyle()} title="Archi-compatible CSV files">Export CSV (Archi)</button>
+          <button onClick={exportHtml} style={menuItemStyle()} title="Self-contained HTML report of the full model">Export HTML Report</button>
         </div>
       )}
     </div>

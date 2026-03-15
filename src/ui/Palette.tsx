@@ -8,6 +8,7 @@ import { useModelStore } from '../store/model';
 import { useViewStore } from '../store/view';
 import type { ArchimateType } from '../model/types';
 import { archimateTypeValues } from '../model/types';
+import { getAllowedElementTypes, getArchiMateViewpoint } from '../notation/archimate-viewpoints';
 
 interface LayerGroup {
   key: string;
@@ -52,7 +53,7 @@ function buildLayerGroups(sublayerConfig: unknown): LayerGroup[] {
     }
   }
 
-  const remaining = archimateTypeValues.filter(t => !seen.has(t) && t !== 'grouping' && t !== 'junction' && t !== 'location');
+  const remaining = archimateTypeValues.filter(t => !seen.has(t) && t !== 'grouping' && t !== 'junction' && t !== 'location' && t !== 'annotation');
   if (remaining.length > 0) {
     groups.push({ key: 'other', label: 'Other', colorKey: 'implementation', types: remaining as unknown as ArchimateType[] });
   }
@@ -621,6 +622,7 @@ const UML_CLASS_GROUPS: SimpleGroup[] = [
 const UML_ACTIVITY_GROUPS: SimpleGroup[] = [
   { key: 'act-nodes', label: 'Action Nodes', types: ['uml-action', 'uml-decision', 'uml-merge'] },
   { key: 'act-control', label: 'Control Nodes', types: ['uml-initial-node', 'uml-final-node', 'uml-flow-final', 'uml-fork', 'uml-join'] },
+  { key: 'act-partitions', label: 'Partitions', types: ['uml-swimlane'] },
 ];
 
 const UML_USECASE_GROUPS: SimpleGroup[] = [
@@ -631,6 +633,36 @@ const UML_SEQUENCE_GROUPS: SimpleGroup[] = [
   { key: 'seq-elements', label: 'Elements', types: ['uml-lifeline', 'uml-activation', 'uml-fragment'] },
 ];
 
+// Notation-agnostic annotation group — appended to every palette
+const ANNOTATION_GROUP: SimpleGroup = {
+  key: 'annotations', label: 'Annotations', types: ['annotation'],
+};
+
+/**
+ * Render a mini shape icon for the annotation type (sticky note).
+ */
+function renderAnnotationMiniShape(_type: string, stroke: string): React.ReactElement {
+  const w = ICON_W, h = ICON_H, x = 1, y = 1, sw = 1.2;
+  const fold = 3;
+  return React.createElement('svg', { width: ICON_W + 2, height: ICON_H + 2, viewBox: ICON_VB, style: { flexShrink: 0 } },
+    // Fill
+    React.createElement('path', {
+      key: 'bg',
+      d: `M${x},${y} L${x + w - fold},${y} L${x + w},${y + fold} L${x + w},${y + h} L${x},${y + h} Z`,
+      stroke, fill: '#FEF3C7', strokeWidth: sw,
+    }),
+    // Fold
+    React.createElement('path', {
+      key: 'f',
+      d: `M${x + w - fold},${y} L${x + w - fold},${y + fold} L${x + w},${y + fold}`,
+      stroke, fill: 'none', strokeWidth: sw * 0.7, opacity: 0.5,
+    }),
+    // Text lines
+    React.createElement('line', { key: 'l1', x1: x + 2, y1: y + 4, x2: x + w - fold - 2, y2: y + 4, stroke, strokeWidth: sw * 0.5, opacity: 0.4 }),
+    React.createElement('line', { key: 'l2', x1: x + 2, y1: y + 7, x2: x + w - fold - 4, y2: y + 7, stroke, strokeWidth: sw * 0.5, opacity: 0.4 }),
+  );
+}
+
 const WIREFRAME_GROUPS: SimpleGroup[] = [
   { key: 'layout', label: 'Layout', types: ['wf-page', 'wf-section', 'wf-card', 'wf-modal', 'wf-header'] },
   { key: 'controls', label: 'Controls', types: ['wf-button', 'wf-input', 'wf-textarea', 'wf-select', 'wf-checkbox', 'wf-radio'] },
@@ -638,6 +670,100 @@ const WIREFRAME_GROUPS: SimpleGroup[] = [
   { key: 'navigation', label: 'Navigation', types: ['wf-nav', 'wf-link', 'wf-tab-group'] },
   { key: 'content', label: 'Content', types: ['wf-text', 'wf-image', 'wf-icon', 'wf-placeholder'] },
 ];
+
+// ── Data Modelling palette groups ─────────────────────────────────
+
+const DATA_CONCEPTUAL_GROUPS: SimpleGroup[] = [
+  { key: 'dm-conceptual', label: 'Entities', types: ['dm-entity'] },
+];
+
+const DATA_LOGICAL_GROUPS: SimpleGroup[] = [
+  { key: 'dm-logical-ent', label: 'Entities', types: ['dm-entity'] },
+  { key: 'dm-logical-attr', label: 'Attributes', types: ['dm-attribute', 'dm-primary-key', 'dm-foreign-key'] },
+];
+
+const DATA_PHYSICAL_GROUPS: SimpleGroup[] = [
+  { key: 'dm-physical-tbl', label: 'Tables', types: ['dm-table'] },
+  { key: 'dm-physical-col', label: 'Columns', types: ['dm-column', 'dm-primary-key', 'dm-foreign-key', 'dm-index'] },
+];
+
+/**
+ * Render a mini shape icon for data modelling element types (20x14 SVG).
+ */
+function renderDmMiniShape(type: string, stroke: string): React.ReactElement {
+  const w = ICON_W, h = ICON_H, x = 1, y = 1, sw = 1.2;
+  const children: React.ReactElement[] = [];
+
+  switch (type) {
+    case 'dm-entity': {
+      // Entity box with header divider
+      children.push(
+        React.createElement('rect', { key: 'r', x, y, width: w, height: h, stroke, fill: 'none', strokeWidth: sw, rx: 1 }),
+        React.createElement('line', { key: 'hdr', x1: x, y1: y + 4, x2: x + w, y2: y + 4, stroke, strokeWidth: sw * 0.7 }),
+        React.createElement('line', { key: 'a1', x1: x + 2, y1: y + 7, x2: x + w - 2, y2: y + 7, stroke, strokeWidth: sw * 0.4, opacity: 0.5 }),
+        React.createElement('line', { key: 'a2', x1: x + 2, y1: y + 10, x2: x + w - 2, y2: y + 10, stroke, strokeWidth: sw * 0.4, opacity: 0.5 }),
+      );
+      break;
+    }
+    case 'dm-table': {
+      // Table with grid lines
+      children.push(
+        React.createElement('rect', { key: 'r', x, y, width: w, height: h, stroke, fill: 'none', strokeWidth: sw, rx: 1 }),
+        React.createElement('rect', { key: 'hdr', x: x + 0.5, y: y + 0.5, width: w - 1, height: 3.5, fill: stroke, opacity: 0.15, rx: 0.5 }),
+        React.createElement('line', { key: 'h1', x1: x, y1: y + 4, x2: x + w, y2: y + 4, stroke, strokeWidth: sw * 0.7 }),
+        React.createElement('line', { key: 'h2', x1: x, y1: y + 8, x2: x + w, y2: y + 8, stroke, strokeWidth: sw * 0.5, opacity: 0.4 }),
+        React.createElement('line', { key: 'v1', x1: x + 5, y1: y + 4, x2: x + 5, y2: y + h, stroke, strokeWidth: sw * 0.4, opacity: 0.3 }),
+      );
+      break;
+    }
+    case 'dm-column':
+    case 'dm-attribute': {
+      // Small horizontal bar
+      children.push(
+        React.createElement('rect', { key: 'r', x: x + 1, y: y + 3, width: w - 2, height: h - 6, stroke, fill: 'none', strokeWidth: sw, rx: 1 }),
+      );
+      break;
+    }
+    case 'dm-primary-key': {
+      // Key icon — circle + stem
+      const cx = x + w / 2;
+      children.push(
+        React.createElement('circle', { key: 'c', cx: cx - 2, cy: y + h / 2, r: 3, stroke, fill: 'none', strokeWidth: sw }),
+        React.createElement('line', { key: 'stem', x1: cx + 1, y1: y + h / 2, x2: x + w - 2, y2: y + h / 2, stroke, strokeWidth: sw }),
+        React.createElement('line', { key: 't1', x1: x + w - 4, y1: y + h / 2, x2: x + w - 4, y2: y + h / 2 + 2.5, stroke, strokeWidth: sw * 0.7 }),
+        React.createElement('line', { key: 't2', x1: x + w - 2, y1: y + h / 2, x2: x + w - 2, y2: y + h / 2 + 2.5, stroke, strokeWidth: sw * 0.7 }),
+      );
+      break;
+    }
+    case 'dm-foreign-key': {
+      // Arrow pointing to key
+      children.push(
+        React.createElement('line', { key: 'l', x1: x + 2, y1: y + h / 2, x2: x + w - 2, y2: y + h / 2, stroke, strokeWidth: sw }),
+        React.createElement('path', { key: 'arr', d: `M${x + w - 5},${y + h / 2 - 3} L${x + w - 2},${y + h / 2} L${x + w - 5},${y + h / 2 + 3}`, stroke, fill: 'none', strokeWidth: sw }),
+        React.createElement('line', { key: 'bar', x1: x + 2, y1: y + 2, x2: x + 2, y2: y + h - 2, stroke, strokeWidth: sw * 0.7 }),
+      );
+      break;
+    }
+    case 'dm-index': {
+      // Sorted list icon
+      children.push(
+        React.createElement('line', { key: 'l1', x1: x + 2, y1: y + 2, x2: x + w - 2, y2: y + 2, stroke, strokeWidth: sw * 0.7 }),
+        React.createElement('line', { key: 'l2', x1: x + 2, y1: y + 5, x2: x + w - 4, y2: y + 5, stroke, strokeWidth: sw * 0.7 }),
+        React.createElement('line', { key: 'l3', x1: x + 2, y1: y + 8, x2: x + w - 6, y2: y + 8, stroke, strokeWidth: sw * 0.7 }),
+        React.createElement('line', { key: 'l4', x1: x + 2, y1: y + 11, x2: x + w - 8, y2: y + 11, stroke, strokeWidth: sw * 0.7 }),
+      );
+      break;
+    }
+    default: {
+      children.push(
+        React.createElement('rect', { key: 'r', x, y, width: w, height: h, stroke, fill: 'none', strokeWidth: sw, rx: 1 }),
+      );
+      break;
+    }
+  }
+
+  return React.createElement('svg', { width: ICON_W + 2, height: ICON_H + 2, viewBox: ICON_VB, style: { flexShrink: 0 } }, ...children);
+}
 
 // ── Relationship mini SVG preview ────────────────────────────────
 const REL_SVG_W = 40;
@@ -681,6 +807,19 @@ function renderRelationshipPreview(relType: string, stroke: string): React.React
         children.push(React.createElement('circle', { key: 'sm', cx: xStart + 2, cy: y, r: 2, fill: stroke }));
         break;
       }
+      case 'dm-one': {
+        children.push(React.createElement('line', { key: 'sm', x1: xStart + 2, y1: y - 3, x2: xStart + 2, y2: y + 3, stroke, strokeWidth: 1.2 }));
+        break;
+      }
+      case 'dm-many': {
+        // Crow's foot at source
+        children.push(
+          React.createElement('line', { key: 'sm1', x1: xStart, y1: y, x2: xStart + 5, y2: y - 3, stroke, strokeWidth: 0.8 }),
+          React.createElement('line', { key: 'sm2', x1: xStart, y1: y, x2: xStart + 5, y2: y, stroke, strokeWidth: 0.8 }),
+          React.createElement('line', { key: 'sm3', x1: xStart, y1: y, x2: xStart + 5, y2: y + 3, stroke, strokeWidth: 0.8 }),
+        );
+        break;
+      }
     }
   }
 
@@ -705,6 +844,19 @@ function renderRelationshipPreview(relType: string, stroke: string): React.React
         children.push(React.createElement('path', { key: 'tm', d, fill: 'var(--bg-primary, #fff)', stroke, strokeWidth: 0.7 }));
         break;
       }
+      case 'dm-one': {
+        children.push(React.createElement('line', { key: 'tm', x1: xEnd - 2, y1: y - 3, x2: xEnd - 2, y2: y + 3, stroke, strokeWidth: 1.2 }));
+        break;
+      }
+      case 'dm-many': {
+        // Crow's foot at target
+        children.push(
+          React.createElement('line', { key: 'tm1', x1: xEnd, y1: y, x2: xEnd - 5, y2: y - 3, stroke, strokeWidth: 0.8 }),
+          React.createElement('line', { key: 'tm2', x1: xEnd, y1: y, x2: xEnd - 5, y2: y, stroke, strokeWidth: 0.8 }),
+          React.createElement('line', { key: 'tm3', x1: xEnd, y1: y, x2: xEnd - 5, y2: y + 3, stroke, strokeWidth: 0.8 }),
+        );
+        break;
+      }
     }
   }
 
@@ -724,7 +876,20 @@ export function Palette(): React.ReactElement {
   const [collapsed, setCollapsed] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
-  const layerGroups = useMemo(() => buildLayerGroups(sublayerConfig), [sublayerConfig]);
+  const layerGroupsBase = useMemo(() => buildLayerGroups(sublayerConfig), [sublayerConfig]);
+
+  // Filter layer groups by the active ArchiMate viewpoint (if one is set)
+  const allowedTypes = useMemo(() => getAllowedElementTypes(viewpointType), [viewpointType]);
+  const namedViewpoint = useMemo(() => getArchiMateViewpoint(viewpointType), [viewpointType]);
+  const layerGroups = useMemo(() => {
+    if (!allowedTypes) return layerGroupsBase; // No named viewpoint → show everything
+    return layerGroupsBase
+      .map(g => ({
+        ...g,
+        types: g.types.filter(t => allowedTypes.has(t)),
+      }))
+      .filter(g => g.types.length > 0);
+  }, [layerGroupsBase, allowedTypes]);
 
   const toggleGroup = useCallback((key: string) => {
     setExpandedGroups(prev => {
@@ -746,22 +911,32 @@ export function Palette(): React.ReactElement {
   const isUmlUseCase = viewpointType === 'uml_usecase';
   const isUml = !isUmlSequence && !isUmlActivity && !isUmlUseCase && (viewpointType === 'uml_class' || viewpointType === 'uml_component');
   const isWireframe = viewpointType === 'wireframe';
+  const isDataConceptual = viewpointType === 'data_conceptual';
+  const isDataLogical = viewpointType === 'data_logical';
+  const isDataPhysical = viewpointType === 'data_physical';
+  const isData = isDataConceptual || isDataLogical || isDataPhysical;
 
   const paletteTitle = isUmlSequence ? 'Sequence Elements'
     : isUmlActivity ? 'Activity Elements'
     : isUmlUseCase ? 'Use Case Elements'
     : isUml ? 'UML Elements'
     : isWireframe ? 'Wireframe Elements'
+    : isDataConceptual ? 'Conceptual Model'
+    : isDataLogical ? 'Logical Model'
+    : isDataPhysical ? 'Physical Model'
+    : namedViewpoint ? namedViewpoint.name
     : 'Elements';
 
   // Determine notation key for relationship types
-  const notationKey: 'archimate' | 'uml' | 'wireframe' =
+  const notationKey: 'archimate' | 'uml' | 'wireframe' | 'data' =
     (isUml || isUmlSequence || isUmlActivity || isUmlUseCase) ? 'uml'
     : isWireframe ? 'wireframe'
+    : isData ? 'data'
     : 'archimate';
   const relationshipTypes = NOTATION_RELATIONSHIP_TYPES[notationKey];
   const relBorderColour = notationKey === 'uml' ? '#4A90D9'
     : notationKey === 'wireframe' ? '#8E8E93'
+    : notationKey === 'data' ? '#60A5FA'
     : '#888';
 
   // Render a simple (non-ArchiMate) group for UML / wireframe palettes
@@ -875,6 +1050,7 @@ export function Palette(): React.ReactElement {
       style: { padding: '0 6px 6px' },
     },
       ...UML_SEQUENCE_GROUPS.map(g => renderSimpleGroup(g, '#4A90D9', 'rgba(74,144,217,0.08)', 'application', renderUmlMiniShape)),
+      renderSimpleGroup(ANNOTATION_GROUP, '#D97706', 'rgba(217,119,6,0.08)', 'none', renderAnnotationMiniShape),
     ),
 
     // Body — UML Activity palette
@@ -882,6 +1058,7 @@ export function Palette(): React.ReactElement {
       style: { padding: '0 6px 6px' },
     },
       ...UML_ACTIVITY_GROUPS.map(g => renderSimpleGroup(g, '#4A90D9', 'rgba(74,144,217,0.08)', 'application', renderUmlMiniShape)),
+      renderSimpleGroup(ANNOTATION_GROUP, '#D97706', 'rgba(217,119,6,0.08)', 'none', renderAnnotationMiniShape),
     ),
 
     // Body — UML Use Case palette
@@ -889,6 +1066,7 @@ export function Palette(): React.ReactElement {
       style: { padding: '0 6px 6px' },
     },
       ...UML_USECASE_GROUPS.map(g => renderSimpleGroup(g, '#4A90D9', 'rgba(74,144,217,0.08)', 'application', renderUmlMiniShape)),
+      renderSimpleGroup(ANNOTATION_GROUP, '#D97706', 'rgba(217,119,6,0.08)', 'none', renderAnnotationMiniShape),
     ),
 
     // Body — UML class/component palette
@@ -896,6 +1074,7 @@ export function Palette(): React.ReactElement {
       style: { padding: '0 6px 6px' },
     },
       ...UML_CLASS_GROUPS.map(g => renderSimpleGroup(g, '#4A90D9', 'rgba(74,144,217,0.08)', 'application', renderUmlMiniShape)),
+      renderSimpleGroup(ANNOTATION_GROUP, '#D97706', 'rgba(217,119,6,0.08)', 'none', renderAnnotationMiniShape),
     ),
 
     // Body — Wireframe palette
@@ -903,10 +1082,22 @@ export function Palette(): React.ReactElement {
       style: { padding: '0 6px 6px' },
     },
       ...WIREFRAME_GROUPS.map(g => renderSimpleGroup(g, '#8E8E93', 'rgba(142,142,147,0.08)', 'implementation', renderWfMiniShape)),
+      renderSimpleGroup(ANNOTATION_GROUP, '#D97706', 'rgba(217,119,6,0.08)', 'none', renderAnnotationMiniShape),
+    ),
+
+    // Body — Data Modelling palette
+    !collapsed && isData && React.createElement('div', {
+      style: { padding: '0 6px 6px' },
+    },
+      ...(isDataConceptual ? DATA_CONCEPTUAL_GROUPS
+        : isDataPhysical ? DATA_PHYSICAL_GROUPS
+        : DATA_LOGICAL_GROUPS
+      ).map(g => renderSimpleGroup(g, '#60A5FA', 'rgba(96,165,250,0.08)', 'data', renderDmMiniShape)),
+      renderSimpleGroup(ANNOTATION_GROUP, '#D97706', 'rgba(217,119,6,0.08)', 'none', renderAnnotationMiniShape),
     ),
 
     // Body — ArchiMate palette (default)
-    !collapsed && !isUml && !isUmlSequence && !isUmlActivity && !isUmlUseCase && !isWireframe && React.createElement('div', {
+    !collapsed && !isUml && !isUmlSequence && !isUmlActivity && !isUmlUseCase && !isWireframe && !isData && React.createElement('div', {
       style: { padding: '0 6px 6px' },
     },
       ...layerGroups.map(group => {
@@ -988,6 +1179,7 @@ export function Palette(): React.ReactElement {
           ),
         );
       }),
+      renderSimpleGroup(ANNOTATION_GROUP, '#D97706', 'rgba(217,119,6,0.08)', 'none', renderAnnotationMiniShape),
     ),
 
     // ── Relationships section (informational) ──────────────────────

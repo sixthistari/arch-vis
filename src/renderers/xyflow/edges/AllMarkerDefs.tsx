@@ -67,6 +67,21 @@ export function AllMarkerDefs() {
         <marker id="uml-filled-arrow" viewBox="0 0 12 10" refX={12} refY={5} markerWidth={12} markerHeight={10} orient="auto">
           <polygon points="0,0 12,5 0,10" fill="currentColor" />
         </marker>
+
+        {/* ── Data modelling (crow's foot) markers ──────────────────── */}
+
+        {/* One — single perpendicular line */}
+        <marker id="dm-one" viewBox="0 0 10 12" refX={8} refY={6} markerWidth={10} markerHeight={12} orient="auto">
+          <line x1={8} y1={0} x2={8} y2={12} stroke="currentColor" strokeWidth={1.5} />
+        </marker>
+
+        {/* Many — crow's foot (three lines fanning from edge point) */}
+        <marker id="dm-many" viewBox="0 0 14 14" refX={12} refY={7} markerWidth={14} markerHeight={14} orient="auto">
+          <line x1={12} y1={0} x2={12} y2={14} stroke="currentColor" strokeWidth={1.2} />
+          <line x1={0} y1={7} x2={12} y2={1} stroke="currentColor" strokeWidth={1.2} />
+          <line x1={0} y1={7} x2={12} y2={7} stroke="currentColor" strokeWidth={1.2} />
+          <line x1={0} y1={7} x2={12} y2={13} stroke="currentColor" strokeWidth={1.2} />
+        </marker>
       </defs>
     </svg>
   );

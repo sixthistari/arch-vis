@@ -17,6 +17,8 @@ export type MarkerType =
   | 'uml-hollow-diamond'
   | 'uml-open-arrow'
   | 'uml-filled-arrow'
+  | 'dm-one'
+  | 'dm-many'
   | 'none';
 
 export interface UnifiedEdgeStyle {
@@ -166,6 +168,28 @@ const STYLES: Record<string, UnifiedEdgeStyle> = {
   'wf-contains': {
     strokeStyle: 'solid', dashArray: '', width: 1.0,
     sourceMarker: null, targetMarker: null,
+  },
+
+  // ── Data Modelling ──────────────────────────────────────────────
+  'dm-has-attribute': {
+    strokeStyle: 'solid', dashArray: '', width: 1.0,
+    sourceMarker: null, targetMarker: 'filled-arrow',
+  },
+  'dm-references': {
+    strokeStyle: 'dashed', dashArray: '6 3', width: 1.0,
+    sourceMarker: null, targetMarker: 'open-arrow',
+  },
+  'dm-one-to-one': {
+    strokeStyle: 'solid', dashArray: '', width: 1.2,
+    sourceMarker: 'dm-one', targetMarker: 'dm-one',
+  },
+  'dm-one-to-many': {
+    strokeStyle: 'solid', dashArray: '', width: 1.2,
+    sourceMarker: 'dm-one', targetMarker: 'dm-many',
+  },
+  'dm-many-to-many': {
+    strokeStyle: 'solid', dashArray: '', width: 1.2,
+    sourceMarker: 'dm-many', targetMarker: 'dm-many',
   },
 };
 

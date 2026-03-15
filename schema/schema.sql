@@ -44,11 +44,13 @@ CREATE TABLE IF NOT EXISTS elements (
     parent_id TEXT REFERENCES elements(id), -- hierarchy (capability trees, function decomposition)
     created_by TEXT DEFAULT 'manual',       -- who/what created it
     source TEXT DEFAULT 'manual',           -- creation pathway: 'manual','archimate-xml','csv','api','pfc'
+    folder TEXT,                            -- user folder path e.g. 'Infrastructure/Network'
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_elements_layer ON elements(layer);
+CREATE INDEX IF NOT EXISTS idx_elements_folder ON elements(folder);
 CREATE INDEX IF NOT EXISTS idx_elements_domain ON elements(domain_id);
 CREATE INDEX IF NOT EXISTS idx_elements_archetype ON elements(archimate_type);
 CREATE INDEX IF NOT EXISTS idx_elements_specialisation ON elements(specialisation);
@@ -136,6 +138,7 @@ CREATE TABLE IF NOT EXISTS view_elements (
     height REAL,
     sublayer_override TEXT,
     style_overrides JSON,
+    z_index INTEGER DEFAULT 0,
     PRIMARY KEY (view_id, element_id)
 );
 

@@ -18,6 +18,7 @@ interface ModelState {
   updateElement: (id: string, data: Omit<UpdateElementInput, 'id'>) => Promise<Element>;
   deleteElement: (id: string) => Promise<void>;
   updateElementStatus: (id: string, status: Element['status']) => Promise<void>;
+  updateRelationship: (id: string, data: Partial<Omit<Relationship, 'id' | 'created_at' | 'updated_at'>>) => Promise<Relationship>;
 }
 
 let loadAllPromise: Promise<void> | null = null;
@@ -231,6 +232,86 @@ export const useModelStore = create<ModelState>((set, get) => ({
         rolled[currentIdx] = previous;
         updateElementInGraph(get().graph, previous);
         set({ elements: rolled });
+      }
+      throw err;
+    }
+  },
+
+  updateRelationship: async (id: string, data: Partial<Omit<Relationship, 'id' | 'created_at' | 'updated_at'>>) => {
+    const { relationships, graph } = get();
+    const idx = relationships.findIndex(r => r.id === id);
+    const previous = idx >= 0 ? relationships[idx] : null;
+
+    // Optimistic update
+    if (previous) {
+      const optimistic = { ...previous, ...data } as Relationship;
+      const next = [...relationships];
+      next[idx] = optimistic;
+
+      // If source/target changed, re-wire the graph edge
+      if (data.source_id || data.target_id) {
+        if (graph.hasEdge(id)) graph.dropEdge(id);
+        const src = data.source_id ?? previous.source_id;
+        const tgt = data.target_id ?? previous.target_id;
+        if (graph.hasNode(src) && graph.hasNode(tgt)) {
+          graph.addEdgeWithKey(id, src, tgt, {
+            id: optimistic.id,
+            archimate_type: optimistic.archimate_type,
+            specialisation: optimistic.specialisation,
+            label: optimistic.label,
+            source_id: src,
+            target_id: tgt,
+          });
+        }
+      } else if (graph.hasEdge(id)) {
+        graph.replaceEdgeAttributes(id, {
+          id: optimistic.id,
+          archimate_type: optimistic.archimate_type,
+          specialisation: optimistic.specialisation,
+          label: optimistic.label,
+          source_id: optimistic.source_id,
+          target_id: optimistic.target_id,
+        });
+      }
+
+      set({ relationships: next });
+    }
+
+    try {
+      const rel = await api.updateRelationship(id, data);
+      // Apply server response
+      const current = get().relationships;
+      const currentIdx = current.findIndex(r => r.id === id);
+      if (currentIdx >= 0) {
+        const next = [...current];
+        next[currentIdx] = rel;
+        set({ relationships: next });
+      }
+      return rel;
+    } catch (err) {
+      // Rollback on error
+      if (previous) {
+        const current = get().relationships;
+        const currentIdx = current.findIndex(r => r.id === id);
+        if (currentIdx >= 0) {
+          const next = [...current];
+          next[currentIdx] = previous;
+
+          // Restore graph edge
+          if (graph.hasEdge(id)) graph.dropEdge(id);
+          if (graph.hasNode(previous.source_id) && graph.hasNode(previous.target_id)) {
+            graph.addEdgeWithKey(id, previous.source_id, previous.target_id, {
+              id: previous.id,
+              archimate_type: previous.archimate_type,
+              specialisation: previous.specialisation,
+              label: previous.label,
+              source_id: previous.source_id,
+              target_id: previous.target_id,
+            });
+          }
+
+          set({ relationships: next });
+        }
       }
       throw err;
     }

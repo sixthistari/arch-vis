@@ -5,6 +5,7 @@ import { ErrorBoundary } from './ui/ErrorBoundary';
 import { useModelStore } from './store/model';
 import { useViewStore } from './store/view';
 import { useThemeStore } from './store/theme';
+import { usePanelStore } from './store/panel';
 
 export function App(): React.ReactElement {
   const theme = useThemeStore(s => s.theme);
@@ -29,6 +30,7 @@ export function App(): React.ReactElement {
     if (viewList.length > 0 && !currentView) {
       const defaultView = viewList.find(v => v.id === 'view-flat-layered') ?? viewList.find(v => v.render_mode === 'flat') ?? viewList[0];
       if (defaultView) {
+        usePanelStore.getState().openTab(defaultView.id, defaultView.name);
         switchView(defaultView.id);
       }
     }

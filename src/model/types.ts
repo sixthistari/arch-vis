@@ -100,6 +100,7 @@ export const archimateTypeValues = [
   'uml-initial-node',
   'uml-final-node',
   'uml-flow-final',
+  'uml-swimlane',
   'uml-note',
   'uml-package',
   // Wireframe element types (Phase 3)
@@ -125,6 +126,16 @@ export const archimateTypeValues = [
   'wf-form',
   'wf-placeholder',
   'wf-feedback',
+  // Data modelling types
+  'dm-entity',
+  'dm-table',
+  'dm-column',
+  'dm-attribute',
+  'dm-primary-key',
+  'dm-foreign-key',
+  'dm-index',
+  // Annotation (notation-agnostic)
+  'annotation',
   // UML sequence diagram types (Phase 4)
   'uml-lifeline',
   'uml-activation',
@@ -167,6 +178,12 @@ export const relationshipTypeValues = [
   'wf-contains',
   'wf-navigates-to',
   'wf-binds-to',
+  // Data modelling relationship types
+  'dm-has-attribute',
+  'dm-references',
+  'dm-one-to-one',
+  'dm-one-to-many',
+  'dm-many-to-many',
 ] as const;
 
 export type RelationshipType = (typeof relationshipTypeValues)[number];
@@ -237,6 +254,45 @@ export const specialisationValues = [
 
 export type Specialisation = (typeof specialisationValues)[number];
 
+/** Predefined specialisations grouped by category for UI pickers. */
+export const SPECIALISATION_CATEGORIES: Record<string, readonly string[]> = {
+  'Motivation': [
+    'ai-guardrail', 'autonomy-level', 'explanation-requirement',
+    'track-crossing-protocol', 'human-in-the-loop-gate', 'safety-case',
+    'data-classification-policy', 'retrieval-quality', 'generation-quality',
+    'graph-quality', 'extraction-quality', 'end-to-end-quality', 'quality-gate',
+  ],
+  'Strategy': [
+    'knowledge-capability', 'domain-boundary', 'ai-use-case',
+  ],
+  'Business': [
+    'authority-rule', 'domain-vocabulary', 'ground-truth-dataset',
+    'scoring-profile', 'extraction-rule', 'chunking-strategy',
+    'content-type-registry', 'review-cycle-policy',
+  ],
+  'Application': [
+    'domain-agent', 'orchestration-engine', 'query-router',
+    'knowledge-retrieval-service', 'context-engine', 'entity-resolution-service',
+    'reasoning-trace', 'ingestion-pipeline', 'reflection-loop',
+    'plan-execute-split', 'compliance-assessment',
+  ],
+  'Technology': [
+    'search-engine', 'graph-database', 'llm-gateway', 'embedding-service',
+    'document-intelligence', 'guardrail-engine', 'observability-platform',
+    'agent-framework',
+  ],
+  'Data': [
+    'knowledge-store', 'core-ontology', 'ontology-extension', 'vector-index',
+    'medallion-store', 'graph-instance', 'source-connector', 'fallback-path',
+    'prompt-library', 'decision-trace-log', 'session-memory-store', 'model-catalogue',
+  ],
+} as const;
+
+/** Human-friendly label for a specialisation slug (title-case, hyphens to spaces). */
+export function specialisationLabel(slug: string): string {
+  return slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
 export const viewpointTypeValues = [
   'layered',
   'knowledge_cognition',
@@ -253,6 +309,33 @@ export const viewpointTypeValues = [
   'uml_sequence',
   'uml_activity',
   'uml_usecase',
+  'data_conceptual',
+  'data_logical',
+  'data_physical',
+  // ArchiMate 3.2 named viewpoints (§14)
+  'am_organisation',
+  'am_application_cooperation',
+  'am_application_usage',
+  'am_business_process_cooperation',
+  'am_implementation_deployment',
+  'am_information_structure',
+  'am_layered',
+  'am_migration',
+  'am_motivation',
+  'am_physical',
+  'am_product',
+  'am_requirements_realisation',
+  'am_service_realisation',
+  'am_stakeholder',
+  'am_strategy',
+  'am_technology',
+  'am_technology_usage',
+  'am_goal_realisation',
+  'am_application_structure',
+  'am_application_interaction',
+  'am_business_cooperation',
+  'am_business_function',
+  'am_business_product',
 ] as const;
 
 export type ViewpointType = (typeof viewpointTypeValues)[number];
@@ -365,6 +448,21 @@ export const WfSelectPropertiesSchema = z.object({
 
 export type WfSelectProperties = z.infer<typeof WfSelectPropertiesSchema>;
 
+const DmAttributeSchema = z.object({
+  name: z.string(),
+  type: z.string().optional(),
+  isPK: z.boolean().optional(),
+  isFK: z.boolean().optional(),
+  nullable: z.boolean().optional(),
+  isIndex: z.boolean().optional(),
+});
+
+export const DmEntityPropertiesSchema = z.object({
+  attributes: z.array(DmAttributeSchema).optional(),
+});
+
+export type DmEntityProperties = z.infer<typeof DmEntityPropertiesSchema>;
+
 /** Map from archimate_type to the expected properties schema. */
 export const propertiesSchemaByType: Partial<Record<ArchimateType, z.ZodType>> = {
   'uml-class': UmlClassPropertiesSchema,
@@ -377,6 +475,8 @@ export const propertiesSchemaByType: Partial<Record<ArchimateType, z.ZodType>> =
   'wf-input': WfInputPropertiesSchema,
   'wf-textarea': WfInputPropertiesSchema,
   'wf-select': WfSelectPropertiesSchema,
+  'dm-entity': DmEntityPropertiesSchema,
+  'dm-table': DmEntityPropertiesSchema,
 };
 
 /**
@@ -441,6 +541,7 @@ export const ElementSchema = z.object({
   parent_id: z.string().nullable(),
   created_by: z.string().nullable(),
   source: z.string().nullable(),
+  folder: z.string().nullable(),
   created_at: z.string().nullable(),
   updated_at: z.string().nullable(),
 });
@@ -461,6 +562,7 @@ export const CreateElementSchema = ElementSchema.omit({
   parent_id: true,
   created_by: true,
   source: true,
+  folder: true,
 });
 
 export type CreateElementInput = z.infer<typeof CreateElementSchema>;
@@ -614,6 +716,7 @@ export const ViewElementSchema = z.object({
   height: z.number().nullable(),
   sublayer_override: z.string().nullable(),
   style_overrides: z.record(z.unknown()).nullable(),
+  z_index: z.number(),
 });
 
 export type ViewElement = z.infer<typeof ViewElementSchema>;

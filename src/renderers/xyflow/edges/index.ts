@@ -6,6 +6,7 @@ export const edgeTypes: EdgeTypes = {
   'uml-edge': UnifiedEdge,
   'sequence-message': UnifiedEdge,
   'wireframe': UnifiedEdge,
+  'data-edge': UnifiedEdge,
 };
 
 export { UnifiedEdge } from './UnifiedEdge';

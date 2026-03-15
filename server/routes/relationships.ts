@@ -140,6 +140,40 @@ router.put('/relationships/:id', (req: Request, res: Response) => {
     return;
   }
 
+  // Validate against metamodel if archimate_type, source_id, or target_id changed
+  if ('archimate_type' in bodyRecord || 'source_id' in bodyRecord || 'target_id' in bodyRecord) {
+    const currentRow = db.prepare('SELECT archimate_type, source_id, target_id FROM relationships WHERE id = ?')
+      .get(id) as { archimate_type: string; source_id: string; target_id: string };
+
+    const newType = (bodyRecord.archimate_type as string) ?? currentRow.archimate_type;
+    const newSourceId = (bodyRecord.source_id as string) ?? currentRow.source_id;
+    const newTargetId = (bodyRecord.target_id as string) ?? currentRow.target_id;
+
+    const sourceEl = db.prepare('SELECT archimate_type FROM elements WHERE id = ?').get(newSourceId) as { archimate_type: string } | undefined;
+    const targetEl = db.prepare('SELECT archimate_type FROM elements WHERE id = ?').get(newTargetId) as { archimate_type: string } | undefined;
+
+    if (!sourceEl) {
+      res.status(400).json({ error: `Source element '${newSourceId}' not found` });
+      return;
+    }
+    if (!targetEl) {
+      res.status(400).json({ error: `Target element '${newTargetId}' not found` });
+      return;
+    }
+
+    const validRel = db.prepare(
+      `SELECT 1 FROM valid_relationships
+       WHERE source_archimate_type = ? AND target_archimate_type = ? AND relationship_type = ?`
+    ).get(sourceEl.archimate_type, targetEl.archimate_type, newType);
+
+    if (!validRel) {
+      res.status(400).json({
+        error: `Invalid relationship: '${newType}' is not allowed from '${sourceEl.archimate_type}' to '${targetEl.archimate_type}'`,
+      });
+      return;
+    }
+  }
+
   fields.push("updated_at = datetime('now')");
   params.push(id);
 

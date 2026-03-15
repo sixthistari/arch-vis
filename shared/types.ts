@@ -23,6 +23,7 @@ export interface ElementRow {
   parent_id: string | null;
   created_by: string | null;
   source: string | null;
+  folder: string | null;
   created_at: string;
   updated_at: string;
 }

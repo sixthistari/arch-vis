@@ -10,6 +10,8 @@ import exportRouter from './routes/export.js';
 import batchRouter from './routes/batch.js';
 import archimateIoRouter from './routes/archimate-io.js';
 import csvIoRouter from './routes/csv-io.js';
+import reportsRouter from './routes/reports.js';
+import modelFileRouter from './routes/model-file.js';
 
 const PORT = 3001;
 
@@ -21,7 +23,7 @@ const app = express();
 app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
 }));
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
 
 // Health check
 app.get('/api/health', (_req, res) => {
@@ -37,6 +39,8 @@ app.use('/api', exportRouter);
 app.use('/api', batchRouter);
 app.use('/api', archimateIoRouter);
 app.use('/api', csvIoRouter);
+app.use('/api', reportsRouter);
+app.use('/api', modelFileRouter);
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`[arch-vis] Server listening on 0.0.0.0:${PORT}`);

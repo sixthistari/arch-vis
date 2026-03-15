@@ -11,9 +11,11 @@ import { useInteractionStore } from '../store/interaction';
 import { useViewStore } from '../store/view';
 import { useModelStore } from '../store/model';
 import { useThemeStore } from '../store/theme';
+import { usePanelStore } from '../store/panel';
 import { fetchElementViews } from '../api/client';
 import * as api from '../api/client';
 import type { View } from '../model/types';
+import { useUndoRedoStore, removeFromViewCommand, deleteElementCommand } from '../interaction/undo-redo';
 
 // ═══════════════════════════════════════
 // Legacy ContextMenu (prop-driven, used by spatial Canvas)
@@ -195,9 +197,15 @@ export function NodeContextMenu(): React.ReactElement | null {
   const relationships = useModelStore(s => s.relationships);
   const loadAll = useModelStore(s => s.loadAll);
   const switchView = useViewStore(s => s.switchView);
+  const viewList = useViewStore(s => s.viewList);
   const createView = useViewStore(s => s.createView);
   const currentView = useViewStore(s => s.currentView);
+  const viewElements = useViewStore(s => s.viewElements);
+  const clearSelection = useInteractionStore(s => s.clearSelection);
+  const selectedNodeIds = useInteractionStore(s => s.selectedNodeIds);
+  const openTab = usePanelStore(s => s.openTab);
   const theme = useThemeStore(s => s.theme);
+  const run = useUndoRedoStore(s => s.run);
 
   const [otherViews, setOtherViews] = useState<View[]>([]);
   const [jumpExpanded, setJumpExpanded] = useState(false);
@@ -271,9 +279,11 @@ export function NodeContextMenu(): React.ReactElement | null {
   }, [contextMenu, relationships, setHighlight, hideContextMenu]);
 
   const handleJumpToView = useCallback((viewId: string) => {
+    const view = viewList.find(v => v.id === viewId);
+    openTab(viewId, view?.name ?? 'Untitled');
     switchView(viewId);
     hideContextMenu();
-  }, [switchView, hideContextMenu]);
+  }, [viewList, openTab, switchView, hideContextMenu]);
 
   const handleCreateLinkedView = useCallback(async () => {
     if (!contextMenu) return;
@@ -315,13 +325,152 @@ export function NodeContextMenu(): React.ReactElement | null {
       height: null,
       sublayer_override: null,
       style_overrides: null,
+      z_index: 0,
     }));
 
     await api.updateViewElements(newCurrentView.id, viewEls);
     await loadAll();
+    openTab(newCurrentView.id, newCurrentView.name);
     await switchView(newCurrentView.id);
     hideContextMenu();
-  }, [contextMenu, elements, relationships, createView, switchView, hideContextMenu, loadAll]);
+  }, [contextMenu, elements, relationships, createView, openTab, switchView, hideContextMenu, loadAll]);
+
+  const loadView = useViewStore(s => s.loadView);
+
+  const handleDuplicate = useCallback(async () => {
+    if (!contextMenu || !currentView) return;
+    const el = elements.find(e => e.id === contextMenu.elementId);
+    if (!el) return;
+
+    // Create a copy of the element
+    const newElement = await api.createElement({
+      id: `el-${crypto.randomUUID()}`,
+      name: `Copy of ${el.name}`,
+      archimate_type: el.archimate_type,
+      specialisation: el.specialisation,
+      layer: el.layer,
+      sublayer: el.sublayer,
+      domain_id: el.domain_id,
+      status: el.status,
+      description: el.description,
+      properties: el.properties,
+      confidence: el.confidence,
+      parent_id: el.parent_id,
+    });
+
+    // Find original position on current view
+    const origVE = viewElements.find(ve => ve.element_id === contextMenu.elementId);
+    const x = (origVE?.x ?? 100) + 20;
+    const y = (origVE?.y ?? 100) + 20;
+
+    // Place the new element on the current view offset by (20, 20)
+    await api.updateViewElements(currentView.id, [
+      ...viewElements,
+      {
+        view_id: currentView.id,
+        element_id: newElement.id,
+        x,
+        y,
+        width: origVE?.width ?? null,
+        height: origVE?.height ?? null,
+        sublayer_override: origVE?.sublayer_override ?? null,
+        style_overrides: origVE?.style_overrides ?? null,
+        z_index: origVE?.z_index ?? 0,
+      },
+    ]);
+
+    await loadAll();
+    await loadView(currentView.id);
+    hideContextMenu();
+  }, [contextMenu, currentView, elements, viewElements, loadAll, loadView, hideContextMenu]);
+
+  const handleBringToFront = useCallback(async () => {
+    if (!contextMenu || !currentView) return;
+    const maxZ = viewElements.reduce((max, ve) => Math.max(max, ve.z_index ?? 0), 0);
+    const updated = viewElements.map(ve =>
+      ve.element_id === contextMenu.elementId
+        ? { ...ve, z_index: maxZ + 1 }
+        : ve,
+    );
+    await api.updateViewElements(currentView.id, updated);
+    await loadView(currentView.id);
+    hideContextMenu();
+  }, [contextMenu, currentView, viewElements, loadView, hideContextMenu]);
+
+  const handleSendToBack = useCallback(async () => {
+    if (!contextMenu || !currentView) return;
+    const minZ = viewElements.reduce((min, ve) => Math.min(min, ve.z_index ?? 0), 0);
+    const updated = viewElements.map(ve =>
+      ve.element_id === contextMenu.elementId
+        ? { ...ve, z_index: minZ - 1 }
+        : ve,
+    );
+    await api.updateViewElements(currentView.id, updated);
+    await loadView(currentView.id);
+    hideContextMenu();
+  }, [contextMenu, currentView, viewElements, loadView, hideContextMenu]);
+
+  const handleRemoveFromView = useCallback(async () => {
+    if (!contextMenu || !currentView) return;
+    const saved = viewElements.filter(ve => ve.element_id === contextMenu.elementId);
+    const viewId = currentView.id;
+    await run(removeFromViewCommand(
+      viewId,
+      [contextMenu.elementId],
+      saved,
+      async () => { await loadView(viewId); clearSelection(); },
+    ));
+    hideContextMenu();
+  }, [contextMenu, currentView, viewElements, run, loadView, clearSelection, hideContextMenu]);
+
+  const handleDeleteFromModel = useCallback(async () => {
+    if (!contextMenu) return;
+    const el = elements.find(e => e.id === contextMenu.elementId);
+    if (!el) return;
+    if (!window.confirm(`Delete "${el.name}" from the model? This cannot be undone from other views.`)) return;
+    await run(deleteElementCommand(el, async () => { await loadAll(); clearSelection(); }));
+    hideContextMenu();
+  }, [contextMenu, elements, run, loadAll, clearSelection, hideContextMenu]);
+
+  const handleGenerateViewFromSelection = useCallback(async () => {
+    if (selectedNodeIds.size < 2) return;
+    const viewName = window.prompt('Name for new view:', 'New View');
+    if (!viewName?.trim()) { hideContextMenu(); return; }
+
+    // Determine viewpoint type from the first selected element
+    const firstEl = elements.find(e => selectedNodeIds.has(e.id));
+    let viewpointType = 'custom';
+    if (firstEl) {
+      if (firstEl.archimate_type.startsWith('uml-')) viewpointType = 'uml_class';
+      else if (firstEl.archimate_type.startsWith('wf-')) viewpointType = 'wireframe';
+      else if (firstEl.archimate_type.startsWith('dm-')) viewpointType = 'data_logical';
+    }
+
+    await createView(viewName.trim(), viewpointType);
+    const newCurrentView = useViewStore.getState().currentView;
+    if (!newCurrentView) { hideContextMenu(); return; }
+
+    // Place selected elements in a grid layout
+    const ids = Array.from(selectedNodeIds);
+    const cols = Math.max(3, Math.ceil(Math.sqrt(ids.length)));
+    const viewEls = ids.map((eid, i) => ({
+      view_id: newCurrentView.id,
+      element_id: eid,
+      x: (i % cols) * 200 + 50,
+      y: Math.floor(i / cols) * 160 + 50,
+      width: null,
+      height: null,
+      sublayer_override: null,
+      style_overrides: null,
+      z_index: 0,
+    }));
+
+    await api.updateViewElements(newCurrentView.id, viewEls);
+    await loadAll();
+    openTab(newCurrentView.id, newCurrentView.name);
+    await switchView(newCurrentView.id);
+    hideContextMenu();
+  }, [selectedNodeIds, elements, createView, openTab, switchView, hideContextMenu, loadAll]);
 
   if (!contextMenu) return null;
 
@@ -457,5 +606,57 @@ export function NodeContextMenu(): React.ReactElement | null {
       style: itemStyle,
       ...hoverHandlers(),
     }, 'Create Linked View'),
+
+    // Generate View from Selection (only when multiple nodes selected)
+    selectedNodeIds.size >= 2 && React.createElement('div', {
+      onClick: handleGenerateViewFromSelection,
+      style: itemStyle,
+      ...hoverHandlers(),
+    }, 'Generate View from Selection'),
+
+    // Duplicate Element
+    React.createElement('div', {
+      onClick: handleDuplicate,
+      style: itemStyle,
+      ...hoverHandlers(),
+    }, 'Duplicate'),
+
+    // Separator before z-order actions
+    React.createElement('div', {
+      style: { height: 1, background: border, margin: '4px 0' },
+    }),
+
+    // Bring to Front
+    React.createElement('div', {
+      onClick: handleBringToFront,
+      style: itemStyle,
+      ...hoverHandlers(),
+    }, 'Bring to Front'),
+
+    // Send to Back
+    React.createElement('div', {
+      onClick: handleSendToBack,
+      style: itemStyle,
+      ...hoverHandlers(),
+    }, 'Send to Back'),
+
+    // Separator before delete actions
+    React.createElement('div', {
+      style: { height: 1, background: border, margin: '4px 0' },
+    }),
+
+    // Remove from View
+    React.createElement('div', {
+      onClick: handleRemoveFromView,
+      style: itemStyle,
+      ...hoverHandlers(),
+    }, 'Remove from View'),
+
+    // Delete from Model (danger)
+    React.createElement('div', {
+      onClick: handleDeleteFromModel,
+      style: { ...itemStyle, color: '#e05252' },
+      ...hoverHandlers(),
+    }, 'Delete from Model'),
   );
 }

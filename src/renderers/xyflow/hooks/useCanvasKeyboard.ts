@@ -17,6 +17,12 @@ export function useCanvasKeyboard({
   layerLabels,
   theme,
   resolveAbsolutePos,
+  onToggleSearch,
+  onCopy,
+  onPaste,
+  onCut,
+  onRemoveFromView,
+  onDeleteFromModel,
 }: {
   nodesRef: React.MutableRefObject<Node[]>;
   edgesRef: React.MutableRefObject<Edge[]>;
@@ -28,12 +34,46 @@ export function useCanvasKeyboard({
   layerLabels: Record<string, string>;
   theme: 'dark' | 'light';
   resolveAbsolutePos: (nodeId: string) => { x: number; y: number };
+  onToggleSearch?: () => void;
+  onCopy?: () => void;
+  onPaste?: () => void;
+  onCut?: () => void;
+  onRemoveFromView?: (elementIds: string[]) => void;
+  onDeleteFromModel?: (elementIds: string[], edgeIds: string[]) => void;
 }): void {
   React.useEffect(() => {
+    function getSelectedIds() {
+      const nodeIds = nodesRef.current
+        .filter(n => n.selected && n.type !== 'layer-band')
+        .map(n => n.id);
+      const edgeIds = edgesRef.current
+        .filter(e => e.selected)
+        .map(e => e.id);
+      return { nodeIds, edgeIds };
+    }
+
     function onKeyDown(e: KeyboardEvent) {
       const target = e.target as HTMLElement;
       // Don't intercept when focus is inside a text input
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
+
+      // Delete / Backspace — remove from view (default) or delete from model (Shift)
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        const { nodeIds, edgeIds } = getSelectedIds();
+        if (nodeIds.length === 0 && edgeIds.length === 0) return;
+
+        if (e.shiftKey) {
+          // Shift+Delete — delete from model (destructive)
+          onDeleteFromModel?.(nodeIds, edgeIds);
+        } else {
+          // Delete — remove from view only (elements stay in model)
+          if (nodeIds.length > 0) onRemoveFromView?.(nodeIds);
+          // Edges: always delete from model (view_relationships not yet independent)
+          if (edgeIds.length > 0) onDeleteFromModel?.([], edgeIds);
+        }
+        return;
+      }
 
       // Escape — clear selection
       if (e.key === 'Escape') {
@@ -60,6 +100,34 @@ export function useCanvasKeyboard({
           nodesRef.current.filter(n => n.type !== 'layer-band').map(n => n.id),
         ));
         forceRender(n => n + 1);
+        return;
+      }
+
+      // Ctrl+F — open canvas search
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        onToggleSearch?.();
+        return;
+      }
+
+      // Ctrl+C — copy selected nodes
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+        e.preventDefault();
+        onCopy?.();
+        return;
+      }
+
+      // Ctrl+V — paste from internal clipboard
+      if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+        e.preventDefault();
+        onPaste?.();
+        return;
+      }
+
+      // Ctrl+X — cut selected nodes
+      if ((e.ctrlKey || e.metaKey) && e.key === 'x') {
+        e.preventDefault();
+        onCut?.();
         return;
       }
 
@@ -110,5 +178,5 @@ export function useCanvasKeyboard({
 
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [layerLabels, theme, nodesRef, edgesRef, setSelectedNodeIds, forceRender, onClearSelectionRef, onPositionChangeRef, nudgeSaveTimerRef, resolveAbsolutePos]);
+  }, [layerLabels, theme, nodesRef, edgesRef, setSelectedNodeIds, forceRender, onClearSelectionRef, onPositionChangeRef, nudgeSaveTimerRef, resolveAbsolutePos, onToggleSearch, onCopy, onPaste, onCut, onRemoveFromView, onDeleteFromModel]);
 }

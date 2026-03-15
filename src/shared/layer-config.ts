@@ -94,7 +94,7 @@ export interface RelationshipTypeOption {
   label: string;
 }
 
-export const NOTATION_RELATIONSHIP_TYPES: Record<'archimate' | 'uml' | 'wireframe', RelationshipTypeOption[]> = {
+export const NOTATION_RELATIONSHIP_TYPES: Record<'archimate' | 'uml' | 'wireframe' | 'data', RelationshipTypeOption[]> = {
   archimate: [
     { value: 'association',    label: 'Association' },
     { value: 'serving',        label: 'Serving' },
@@ -122,5 +122,12 @@ export const NOTATION_RELATIONSHIP_TYPES: Record<'archimate' | 'uml' | 'wirefram
     { value: 'wf-contains',      label: 'Contains' },
     { value: 'wf-navigates-to',  label: 'Navigates To' },
     { value: 'wf-binds-to',      label: 'Binds To' },
+  ],
+  data: [
+    { value: 'dm-has-attribute',  label: 'Has Attribute' },
+    { value: 'dm-references',     label: 'References' },
+    { value: 'dm-one-to-one',     label: 'One-to-One' },
+    { value: 'dm-one-to-many',    label: 'One-to-Many' },
+    { value: 'dm-many-to-many',   label: 'Many-to-Many' },
   ],
 };
