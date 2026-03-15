@@ -16,6 +16,7 @@ import {
   getBezierPath,
   getStraightPath,
   getSmoothStepPath,
+  Position,
   useReactFlow,
   type EdgeProps,
   type Edge,
@@ -85,6 +86,56 @@ function buildRoundedPath(pts: { x: number; y: number }[], r = 4): string {
   }
   d += ` L${pts[pts.length - 1]!.x},${pts[pts.length - 1]!.y}`;
   return d;
+}
+
+/**
+ * Orthogonal fallback — guaranteed H/V-only path when no A* routing is available.
+ * Extends from source/target perpendicular to their exit side, then connects via midpoint.
+ */
+function buildOrthogonalFallback(
+  sx: number, sy: number, sPos: Position,
+  tx: number, ty: number, tPos: Position,
+  offset: number,
+): string {
+  // Extend from source perpendicular to its exit side
+  let s1x = sx, s1y = sy;
+  if (sPos === Position.Left)   s1x = sx - offset;
+  if (sPos === Position.Right)  s1x = sx + offset;
+  if (sPos === Position.Top)    s1y = sy - offset;
+  if (sPos === Position.Bottom) s1y = sy + offset;
+
+  // Extend from target perpendicular to its exit side
+  let t1x = tx, t1y = ty;
+  if (tPos === Position.Left)   t1x = tx - offset;
+  if (tPos === Position.Right)  t1x = tx + offset;
+  if (tPos === Position.Top)    t1y = ty - offset;
+  if (tPos === Position.Bottom) t1y = ty + offset;
+
+  // Connect through H/V segments
+  const pts: { x: number; y: number }[] = [{ x: sx, y: sy }, { x: s1x, y: s1y }];
+
+  const srcHorizontal = sPos === Position.Left || sPos === Position.Right;
+  const tgtHorizontal = tPos === Position.Left || tPos === Position.Right;
+
+  if (srcHorizontal && tgtHorizontal) {
+    // Both exit horizontally — connect via vertical midline
+    const midX = (s1x + t1x) / 2;
+    pts.push({ x: midX, y: s1y }, { x: midX, y: t1y });
+  } else if (!srcHorizontal && !tgtHorizontal) {
+    // Both exit vertically — connect via horizontal midline
+    const midY = (s1y + t1y) / 2;
+    pts.push({ x: s1x, y: midY }, { x: t1x, y: midY });
+  } else {
+    // Mixed — one H, one V: connect with single bend
+    if (srcHorizontal) {
+      pts.push({ x: t1x, y: s1y });
+    } else {
+      pts.push({ x: s1x, y: t1y });
+    }
+  }
+
+  pts.push({ x: t1x, y: t1y }, { x: tx, y: ty });
+  return buildRoundedPath(pts);
 }
 
 function customPathMidpoint(pathStr: string): { x: number; y: number } | null {
@@ -286,15 +337,24 @@ function UnifiedEdgeComponent(props: EdgeProps<UnifiedEdgeType>) {
   }
 
   // Active waypoints: user-set takes priority over A*-routed
-  const activeWps: { x: number; y: number }[] = waypoints.length > 0 ? waypoints : routedWaypoints;
-  const fullPath = [{ x: sourceX, y: sourceY }, ...activeWps, { x: targetX, y: targetY }];
+  const hasUserWps = waypoints.length > 0;
+  const hasRoutedPath = !hasUserWps && routedWaypoints.length >= 2;
+
+  // When A* routing provides a full path (including endpoints), use it directly
+  // instead of mixing A* interior points with xyflow handle coordinates.
+  const fullPath = hasRoutedPath
+    ? routedWaypoints                    // A* endpoints are authoritative
+    : [{ x: sourceX, y: sourceY }, ...waypoints, { x: targetX, y: targetY }];
 
   // Display path
   let displayPath = edgePath;
-  if (activeWps.length > 0) {
+  if (hasRoutedPath || hasUserWps) {
     displayPath = buildRoundedPath(fullPath);
   } else if (data?.customPath && typeof data.customPath === 'string') {
     displayPath = data.customPath;
+  } else if (lineType === 'step') {
+    // Orthogonal fallback — guaranteed H/V segments when no routing available
+    displayPath = buildOrthogonalFallback(sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, stepOffset);
   }
 
   // Label midpoint
@@ -310,8 +370,8 @@ function UnifiedEdgeComponent(props: EdgeProps<UnifiedEdgeType>) {
 
   const handleSegmentMouseDown = useCallback((e: React.MouseEvent, segIdx: number) => {
     e.stopPropagation();
-    const base = waypoints.length > 0 ? [...waypoints] : [...routedWaypoints];
-    const initFull = [{ x: sourceX, y: sourceY }, ...base, { x: targetX, y: targetY }];
+    // Use fullPath directly — it already includes correct endpoints
+    const initFull = fullPath.map(p => ({ ...p }));
     const d = segDir(initFull[segIdx]!, initFull[segIdx + 1]!);
     if (d === 'd') return;
     const startFlow = screenToFlowPosition({ x: e.clientX, y: e.clientY });
@@ -329,15 +389,16 @@ function UnifiedEdgeComponent(props: EdgeProps<UnifiedEdgeType>) {
     const onUp = () => { segDragRef.current = null; window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
-  }, [id, waypoints, routedWaypoints, sourceX, sourceY, targetX, targetY, screenToFlowPosition, updateWaypoints]);
+  }, [id, fullPath, screenToFlowPosition, updateWaypoints]);
 
   // ── Waypoint (bend) drag ──────────────────────────────────────────────
   const wpDragRef = useRef<{ idx: number; pts: { x: number; y: number }[] } | null>(null);
 
   const startWaypointDrag = useCallback((e: React.MouseEvent, idx: number) => {
     e.stopPropagation();
-    const base = waypoints.length > 0 ? [...waypoints] : [...routedWaypoints];
-    wpDragRef.current = { idx, pts: base };
+    // Interior waypoints = fullPath without endpoints
+    const base = fullPath.slice(1, -1);
+    wpDragRef.current = { idx, pts: [...base] };
     const onMove = (ev: MouseEvent) => {
       if (!wpDragRef.current) return;
       const fp = screenToFlowPosition({ x: ev.clientX, y: ev.clientY });
@@ -349,18 +410,26 @@ function UnifiedEdgeComponent(props: EdgeProps<UnifiedEdgeType>) {
     const onUp = () => { wpDragRef.current = null; window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
-  }, [id, waypoints, routedWaypoints, screenToFlowPosition, updateWaypoints]);
+  }, [id, fullPath, screenToFlowPosition, updateWaypoints]);
 
   // ── Ctrl+click → insert bend at cursor ────────────────────────────────
-  const handlePathClick = useCallback((e: React.MouseEvent) => {
+  const handlePathMouseDown = useCallback((e: React.MouseEvent) => {
     if (!e.ctrlKey) return;
     e.stopPropagation();
+    e.preventDefault();
     const fp = screenToFlowPosition({ x: e.clientX, y: e.clientY });
     const si = nearestSegIdx(fullPath, fp.x, fp.y);
     const insertPt = closestOnSeg(fullPath, si, fp.x, fp.y);
-    const base = waypoints.length > 0 ? [...waypoints] : [...routedWaypoints];
-    updateWaypoints?.(id, [...base.slice(0, si), insertPt, ...base.slice(si)]);
-  }, [fullPath, waypoints, routedWaypoints, id, screenToFlowPosition, updateWaypoints]);
+    // When using A* full path, strip endpoints to get interior waypoints
+    const base = hasUserWps
+      ? [...waypoints]
+      : hasRoutedPath
+        ? routedWaypoints.slice(1, -1)
+        : [];
+    // si is in fullPath coords; for user waypoints it's offset by 1 (endpoint)
+    const insertIdx = hasRoutedPath ? Math.max(0, si - 1) : si;
+    updateWaypoints?.(id, [...base.slice(0, insertIdx), insertPt, ...base.slice(insertIdx)]);
+  }, [fullPath, waypoints, routedWaypoints, hasUserWps, hasRoutedPath, id, screenToFlowPosition, updateWaypoints]);
 
   // Interior segment indices
   const n = fullPath.length;
@@ -381,8 +450,8 @@ function UnifiedEdgeComponent(props: EdgeProps<UnifiedEdgeType>) {
         stroke="transparent"
         strokeWidth={12}
         fill="none"
-        style={{ cursor: selected ? 'crosshair' : 'default', pointerEvents: 'stroke' }}
-        onClick={handlePathClick}
+        style={{ cursor: selected ? 'crosshair' : 'pointer', pointerEvents: 'stroke' }}
+        onMouseDown={handlePathMouseDown}
       />
 
       <BaseEdge
@@ -442,8 +511,8 @@ function UnifiedEdgeComponent(props: EdgeProps<UnifiedEdgeType>) {
             <div className="nodrag nopan" style={{ ...endpointHandleStyle, left: sourceX, top: sourceY }} />
             <div className="nodrag nopan" style={{ ...endpointHandleStyle, left: targetX, top: targetY }} />
 
-            {/* Waypoint (bend) drag handles */}
-            {activeWps.map((wp, i) => (
+            {/* Waypoint (bend) drag handles — show interior points (skip endpoints) */}
+            {fullPath.slice(1, -1).map((wp, i) => (
               <div key={`wp-${i}`} className="nodrag nopan"
                 style={{ ...wpHandleStyle, left: wp.x, top: wp.y }}
                 onMouseDown={(e) => startWaypointDrag(e, i)}

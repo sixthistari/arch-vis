@@ -13,10 +13,10 @@ import { getEdgeType } from '../../model/notation';
  * Determine direction between two nodes and pick the best side.
  * Returns the side ('t', 'b', 'l', 'r') for source and target.
  *
- * Logic:
- *   - If vertical distance < 40px (same row), use left/right handles.
- *   - If target is below with significant gap, use bottom→top.
- *   - If target is above, use top→bottom.
+ * Uses angle-based quadrant selection: the angle from source centre to
+ * target centre is compared against the node's aspect-ratio threshold.
+ * This ensures edges always leave perpendicular to the node edge they exit from,
+ * even for diagonally placed nodes.
  */
 export function computeHandleSides(
   srcPos: { x: number; y: number },
@@ -33,22 +33,23 @@ export function computeHandleSides(
 
   const dx = tgtCx - srcCx;
   const dy = tgtCy - srcCy;
-  const absDy = Math.abs(dy);
 
-  // Same row — use left/right
-  if (absDy < Math.max(srcH, tgtH)) {
+  // Aspect-ratio-aware threshold: angle at which the diagonal of the
+  // source node's bounding box crosses from "mostly horizontal" to "mostly vertical"
+  const angle = Math.atan2(Math.abs(dy), Math.abs(dx));
+  const threshold = Math.atan2(srcH / 2, srcW / 2);
+
+  if (angle < threshold) {
+    // Predominantly horizontal → use left/right
     return dx > 0
       ? { srcSide: 'r', tgtSide: 'l' }
       : { srcSide: 'l', tgtSide: 'r' };
   }
 
-  // Target below → bottom→top
-  if (dy > 0) {
-    return { srcSide: 'b', tgtSide: 't' };
-  }
-
-  // Target above → top→bottom
-  return { srcSide: 't', tgtSide: 'b' };
+  // Predominantly vertical → use top/bottom
+  return dy > 0
+    ? { srcSide: 'b', tgtSide: 't' }
+    : { srcSide: 't', tgtSide: 'b' };
 }
 
 // Handle IDs per side — 5 positions at 15%, 30%, 50%, 70%, 85%

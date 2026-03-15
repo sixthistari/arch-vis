@@ -235,6 +235,369 @@ function renderMiniIcon(iconType: string, ix: number, iy: number, stroke: string
   }
 }
 
+/**
+ * Render a mini shape icon for UML element types (20×14 SVG).
+ */
+function renderUmlMiniShape(type: string, stroke: string): React.ReactElement {
+  const w = 18, h = 12, x = 1, y = 1, sw = 0.8;
+  const children: React.ReactElement[] = [];
+
+  switch (type) {
+    case 'uml-class':
+    case 'uml-abstract-class': {
+      // 3-compartment box
+      children.push(
+        React.createElement('rect', { key: 'r', x, y, width: w, height: h, stroke, fill: 'none', strokeWidth: sw, rx: 0.5 }),
+        React.createElement('line', { key: 'l1', x1: x, y1: y + 4, x2: x + w, y2: y + 4, stroke, strokeWidth: sw * 0.7 }),
+        React.createElement('line', { key: 'l2', x1: x, y1: y + 8, x2: x + w, y2: y + 8, stroke, strokeWidth: sw * 0.7 }),
+      );
+      if (type === 'uml-abstract-class') {
+        children.push(React.createElement('text', { key: 'i', x: x + w / 2, y: y + 3.2, textAnchor: 'middle', fontSize: 3, fill: stroke, fontStyle: 'italic' }, 'A'));
+      }
+      break;
+    }
+    case 'uml-interface': {
+      // Lollipop: circle + stem
+      const cx = x + w / 2;
+      children.push(
+        React.createElement('circle', { key: 'c', cx, cy: y + 3, r: 2.5, stroke, fill: 'none', strokeWidth: sw }),
+        React.createElement('line', { key: 'l', x1: cx, y1: y + 5.5, x2: cx, y2: y + h, stroke, strokeWidth: sw }),
+      );
+      break;
+    }
+    case 'uml-enum': {
+      // Box with «E» label
+      children.push(
+        React.createElement('rect', { key: 'r', x, y, width: w, height: h, stroke, fill: 'none', strokeWidth: sw, rx: 0.5 }),
+        React.createElement('line', { key: 'l1', x1: x, y1: y + 4, x2: x + w, y2: y + 4, stroke, strokeWidth: sw * 0.7 }),
+        React.createElement('text', { key: 't', x: x + w / 2, y: y + 3.2, textAnchor: 'middle', fontSize: 3, fill: stroke }, '\u00ABE\u00BB'),
+      );
+      break;
+    }
+    case 'uml-package': {
+      // Package tab + body
+      const tabW = 7, tabH = 3;
+      children.push(
+        React.createElement('rect', { key: 'tab', x, y, width: tabW, height: tabH, stroke, fill: 'none', strokeWidth: sw, rx: 0.5 }),
+        React.createElement('rect', { key: 'body', x, y: y + tabH, width: w, height: h - tabH, stroke, fill: 'none', strokeWidth: sw, rx: 0.5 }),
+      );
+      break;
+    }
+    case 'uml-component': {
+      // Box with two small nubs on left
+      children.push(
+        React.createElement('rect', { key: 'r', x: x + 2, y, width: w - 2, height: h, stroke, fill: 'none', strokeWidth: sw, rx: 0.5 }),
+        React.createElement('rect', { key: 'n1', x, y: y + 2, width: 3, height: 2, stroke, fill: 'none', strokeWidth: sw * 0.7 }),
+        React.createElement('rect', { key: 'n2', x, y: y + 7, width: 3, height: 2, stroke, fill: 'none', strokeWidth: sw * 0.7 }),
+      );
+      break;
+    }
+    case 'uml-actor': {
+      // Stick figure
+      const cx = x + w / 2;
+      children.push(
+        React.createElement('circle', { key: 'head', cx, cy: y + 2, r: 1.8, stroke, fill: 'none', strokeWidth: sw }),
+        React.createElement('line', { key: 'body', x1: cx, y1: y + 3.8, x2: cx, y2: y + 8, stroke, strokeWidth: sw }),
+        React.createElement('line', { key: 'arms', x1: cx - 3, y1: y + 5.5, x2: cx + 3, y2: y + 5.5, stroke, strokeWidth: sw }),
+        React.createElement('line', { key: 'll', x1: cx, y1: y + 8, x2: cx - 2.5, y2: y + h, stroke, strokeWidth: sw }),
+        React.createElement('line', { key: 'rl', x1: cx, y1: y + 8, x2: cx + 2.5, y2: y + h, stroke, strokeWidth: sw }),
+      );
+      break;
+    }
+    case 'uml-use-case': {
+      // Oval
+      children.push(
+        React.createElement('ellipse', { key: 'e', cx: x + w / 2, cy: y + h / 2, rx: w / 2, ry: h / 2, stroke, fill: 'none', strokeWidth: sw }),
+      );
+      break;
+    }
+    case 'uml-note': {
+      // Folded corner
+      const fold = 3;
+      children.push(
+        React.createElement('path', { key: 'r', d: `M${x},${y} L${x + w - fold},${y} L${x + w},${y + fold} L${x + w},${y + h} L${x},${y + h} Z`, stroke, fill: 'none', strokeWidth: sw }),
+        React.createElement('path', { key: 'f', d: `M${x + w - fold},${y} L${x + w - fold},${y + fold} L${x + w},${y + fold}`, stroke, fill: 'none', strokeWidth: sw * 0.7, opacity: 0.5 }),
+      );
+      break;
+    }
+    case 'uml-state':
+    case 'uml-activity':
+    case 'uml-action': {
+      // Rounded rect
+      children.push(
+        React.createElement('rect', { key: 'r', x, y, width: w, height: h, stroke, fill: 'none', strokeWidth: sw, rx: 3, ry: 3 }),
+      );
+      break;
+    }
+    case 'uml-decision':
+    case 'uml-merge': {
+      // Diamond
+      const cx = x + w / 2, cy = y + h / 2;
+      children.push(
+        React.createElement('path', { key: 'd', d: `M${cx},${y} L${x + w},${cy} L${cx},${y + h} L${x},${cy} Z`, stroke, fill: 'none', strokeWidth: sw }),
+      );
+      break;
+    }
+    case 'uml-initial-node': {
+      // Filled circle
+      children.push(
+        React.createElement('circle', { key: 'c', cx: x + w / 2, cy: y + h / 2, r: 4, fill: stroke }),
+      );
+      break;
+    }
+    case 'uml-final-node': {
+      // Double circle (outer ring + filled inner)
+      const cx = x + w / 2, cy = y + h / 2;
+      children.push(
+        React.createElement('circle', { key: 'o', cx, cy, r: 5, stroke, fill: 'none', strokeWidth: sw }),
+        React.createElement('circle', { key: 'i', cx, cy, r: 3, fill: stroke }),
+      );
+      break;
+    }
+    case 'uml-flow-final': {
+      // Circle with X
+      const cx = x + w / 2, cy = y + h / 2, r = 4.5;
+      children.push(
+        React.createElement('circle', { key: 'c', cx, cy, r, stroke, fill: 'none', strokeWidth: sw }),
+        React.createElement('line', { key: 'x1', x1: cx - 3, y1: cy - 3, x2: cx + 3, y2: cy + 3, stroke, strokeWidth: sw }),
+        React.createElement('line', { key: 'x2', x1: cx + 3, y1: cy - 3, x2: cx - 3, y2: cy + 3, stroke, strokeWidth: sw }),
+      );
+      break;
+    }
+    case 'uml-fork':
+    case 'uml-join': {
+      // Thick horizontal bar
+      children.push(
+        React.createElement('rect', { key: 'bar', x, y: y + h / 2 - 1.5, width: w, height: 3, fill: stroke, rx: 0.5 }),
+      );
+      break;
+    }
+    case 'uml-lifeline': {
+      // Head box + dashed line
+      children.push(
+        React.createElement('rect', { key: 'r', x: x + 3, y, width: w - 6, height: 5, stroke, fill: 'none', strokeWidth: sw, rx: 0.5 }),
+        React.createElement('line', { key: 'l', x1: x + w / 2, y1: y + 5, x2: x + w / 2, y2: y + h, stroke, strokeWidth: sw, strokeDasharray: '1.5 1' }),
+      );
+      break;
+    }
+    case 'uml-activation': {
+      // Narrow vertical rect
+      children.push(
+        React.createElement('rect', { key: 'r', x: x + w / 2 - 2, y, width: 4, height: h, stroke, fill: 'none', strokeWidth: sw }),
+      );
+      break;
+    }
+    case 'uml-fragment': {
+      // Dashed rect with label tab
+      children.push(
+        React.createElement('rect', { key: 'r', x, y, width: w, height: h, stroke, fill: 'none', strokeWidth: sw, strokeDasharray: '2 1', rx: 0.5 }),
+        React.createElement('path', { key: 'tab', d: `M${x},${y + 4} L${x + 5},${y + 4} L${x + 6},${y + 3} L${x + 6},${y} `, stroke, fill: 'none', strokeWidth: sw * 0.7 }),
+      );
+      break;
+    }
+    default: {
+      // Generic box fallback
+      children.push(
+        React.createElement('rect', { key: 'r', x, y, width: w, height: h, stroke, fill: 'none', strokeWidth: sw, rx: 1 }),
+      );
+      break;
+    }
+  }
+
+  return React.createElement('svg', { width: 20, height: 14, viewBox: '0 0 20 14', style: { flexShrink: 0 } }, ...children);
+}
+
+/**
+ * Render a mini shape icon for wireframe element types (20×14 SVG).
+ */
+function renderWfMiniShape(type: string, stroke: string): React.ReactElement {
+  const w = 18, h = 12, x = 1, y = 1, sw = 0.8;
+  const children: React.ReactElement[] = [];
+
+  switch (type) {
+    case 'wf-page': {
+      // Browser chrome: title bar + body
+      children.push(
+        React.createElement('rect', { key: 'r', x, y, width: w, height: h, stroke, fill: 'none', strokeWidth: sw, rx: 1 }),
+        React.createElement('line', { key: 'bar', x1: x, y1: y + 3, x2: x + w, y2: y + 3, stroke, strokeWidth: sw * 0.7 }),
+        React.createElement('circle', { key: 'd1', cx: x + 2, cy: y + 1.5, r: 0.7, fill: stroke }),
+        React.createElement('circle', { key: 'd2', cx: x + 4, cy: y + 1.5, r: 0.7, fill: stroke }),
+        React.createElement('circle', { key: 'd3', cx: x + 6, cy: y + 1.5, r: 0.7, fill: stroke }),
+      );
+      break;
+    }
+    case 'wf-section': {
+      // Dashed rect
+      children.push(
+        React.createElement('rect', { key: 'r', x, y, width: w, height: h, stroke, fill: 'none', strokeWidth: sw, strokeDasharray: '2 1.5', rx: 1 }),
+      );
+      break;
+    }
+    case 'wf-card':
+    case 'wf-modal': {
+      // Rounded card
+      children.push(
+        React.createElement('rect', { key: 'r', x, y, width: w, height: h, stroke, fill: 'none', strokeWidth: sw, rx: 2 }),
+      );
+      if (type === 'wf-modal') {
+        // X button
+        children.push(
+          React.createElement('line', { key: 'x1', x1: x + w - 3, y1: y + 1, x2: x + w - 1, y2: y + 3, stroke, strokeWidth: sw * 0.7 }),
+          React.createElement('line', { key: 'x2', x1: x + w - 1, y1: y + 1, x2: x + w - 3, y2: y + 3, stroke, strokeWidth: sw * 0.7 }),
+        );
+      }
+      break;
+    }
+    case 'wf-header': {
+      // Rect with fill band
+      children.push(
+        React.createElement('rect', { key: 'r', x, y, width: w, height: h, stroke, fill: 'none', strokeWidth: sw, rx: 1 }),
+        React.createElement('rect', { key: 'f', x: x + 0.5, y: y + 0.5, width: w - 1, height: 3, fill: stroke, opacity: 0.2, rx: 0.5 }),
+      );
+      break;
+    }
+    case 'wf-button': {
+      // Pill
+      children.push(
+        React.createElement('rect', { key: 'r', x, y: y + 2, width: w, height: h - 4, stroke, fill: 'none', strokeWidth: sw, rx: (h - 4) / 2 }),
+      );
+      break;
+    }
+    case 'wf-input':
+    case 'wf-textarea': {
+      // Input field
+      children.push(
+        React.createElement('rect', { key: 'r', x, y: y + (type === 'wf-textarea' ? 0 : 2), width: w, height: type === 'wf-textarea' ? h : h - 4, stroke, fill: 'none', strokeWidth: sw, rx: 1 }),
+        React.createElement('line', { key: 'cursor', x1: x + 2, y1: y + (type === 'wf-textarea' ? 2 : 4), x2: x + 2, y2: y + (type === 'wf-textarea' ? 5 : 8), stroke, strokeWidth: sw * 0.5, opacity: 0.5 }),
+      );
+      break;
+    }
+    case 'wf-select': {
+      // Dropdown
+      children.push(
+        React.createElement('rect', { key: 'r', x, y: y + 2, width: w, height: h - 4, stroke, fill: 'none', strokeWidth: sw, rx: 1 }),
+        React.createElement('path', { key: 'arr', d: `M${x + w - 5},${y + 4} L${x + w - 3},${y + 6.5} L${x + w - 1},${y + 4}`, stroke, fill: 'none', strokeWidth: sw }),
+      );
+      break;
+    }
+    case 'wf-checkbox': {
+      children.push(
+        React.createElement('rect', { key: 'r', x: x + 5, y: y + 2, width: 8, height: 8, stroke, fill: 'none', strokeWidth: sw, rx: 1 }),
+        React.createElement('path', { key: 'ck', d: `M${x + 7},${y + 6} L${x + 9},${y + 8} L${x + 12},${y + 4}`, stroke, fill: 'none', strokeWidth: sw }),
+      );
+      break;
+    }
+    case 'wf-radio': {
+      children.push(
+        React.createElement('circle', { key: 'o', cx: x + w / 2, cy: y + h / 2, r: 4, stroke, fill: 'none', strokeWidth: sw }),
+        React.createElement('circle', { key: 'i', cx: x + w / 2, cy: y + h / 2, r: 2, fill: stroke }),
+      );
+      break;
+    }
+    case 'wf-table': {
+      // Grid
+      children.push(
+        React.createElement('rect', { key: 'r', x, y, width: w, height: h, stroke, fill: 'none', strokeWidth: sw }),
+        React.createElement('line', { key: 'h1', x1: x, y1: y + 4, x2: x + w, y2: y + 4, stroke, strokeWidth: sw * 0.7 }),
+        React.createElement('line', { key: 'h2', x1: x, y1: y + 8, x2: x + w, y2: y + 8, stroke, strokeWidth: sw * 0.7 }),
+        React.createElement('line', { key: 'v1', x1: x + 6, y1: y, x2: x + 6, y2: y + h, stroke, strokeWidth: sw * 0.7 }),
+        React.createElement('line', { key: 'v2', x1: x + 12, y1: y, x2: x + 12, y2: y + h, stroke, strokeWidth: sw * 0.7 }),
+      );
+      break;
+    }
+    case 'wf-list': {
+      // Stacked lines
+      for (let i = 0; i < 3; i++) {
+        const ly = y + 1 + i * 4;
+        children.push(
+          React.createElement('circle', { key: `b${i}`, cx: x + 2, cy: ly + 1, r: 0.8, fill: stroke }),
+          React.createElement('line', { key: `l${i}`, x1: x + 4, y1: ly + 1, x2: x + w - 1, y2: ly + 1, stroke, strokeWidth: sw * 0.7 }),
+        );
+      }
+      break;
+    }
+    case 'wf-form': {
+      // Stacked input fields
+      children.push(
+        React.createElement('rect', { key: 'r1', x, y, width: w, height: 4, stroke, fill: 'none', strokeWidth: sw, rx: 0.5 }),
+        React.createElement('rect', { key: 'r2', x, y: y + 5.5, width: w, height: 4, stroke, fill: 'none', strokeWidth: sw, rx: 0.5 }),
+        React.createElement('rect', { key: 'btn', x: x + w - 7, y: y + h - 1.5, width: 7, height: 1.5, fill: stroke, opacity: 0.4, rx: 0.5 }),
+      );
+      break;
+    }
+    case 'wf-nav': {
+      // Horizontal bar with dots
+      children.push(
+        React.createElement('rect', { key: 'r', x, y: y + 3, width: w, height: 6, stroke, fill: 'none', strokeWidth: sw, rx: 1 }),
+        React.createElement('line', { key: 'l1', x1: x + 3, y1: y + 5, x2: x + 7, y2: y + 5, stroke, strokeWidth: sw * 0.6, opacity: 0.5 }),
+        React.createElement('line', { key: 'l2', x1: x + 9, y1: y + 5, x2: x + 13, y2: y + 5, stroke, strokeWidth: sw * 0.6, opacity: 0.5 }),
+        React.createElement('line', { key: 'l3', x1: x + 15, y1: y + 5, x2: x + 18, y2: y + 5, stroke, strokeWidth: sw * 0.6, opacity: 0.5 }),
+      );
+      break;
+    }
+    case 'wf-link': {
+      // Underlined text
+      children.push(
+        React.createElement('line', { key: 'l', x1: x + 3, y1: y + h / 2 + 1, x2: x + w - 3, y2: y + h / 2 + 1, stroke, strokeWidth: sw }),
+        React.createElement('line', { key: 'u', x1: x + 3, y1: y + h / 2 + 3, x2: x + w - 3, y2: y + h / 2 + 3, stroke, strokeWidth: sw * 0.5 }),
+      );
+      break;
+    }
+    case 'wf-tab-group': {
+      // Tabs
+      children.push(
+        React.createElement('rect', { key: 'body', x, y: y + 3, width: w, height: h - 3, stroke, fill: 'none', strokeWidth: sw, rx: 0.5 }),
+        React.createElement('rect', { key: 't1', x, y, width: 6, height: 4, stroke, fill: 'none', strokeWidth: sw, rx: 0.5 }),
+        React.createElement('rect', { key: 't2', x: x + 6.5, y, width: 6, height: 4, stroke, fill: 'none', strokeWidth: sw * 0.6, rx: 0.5, opacity: 0.5 }),
+      );
+      break;
+    }
+    case 'wf-text': {
+      // Text lines
+      children.push(
+        React.createElement('line', { key: 'l1', x1: x, y1: y + 2, x2: x + w, y2: y + 2, stroke, strokeWidth: sw * 0.7 }),
+        React.createElement('line', { key: 'l2', x1: x, y1: y + 5, x2: x + w - 3, y2: y + 5, stroke, strokeWidth: sw * 0.7 }),
+        React.createElement('line', { key: 'l3', x1: x, y1: y + 8, x2: x + w - 6, y2: y + 8, stroke, strokeWidth: sw * 0.7 }),
+      );
+      break;
+    }
+    case 'wf-image': {
+      // Image placeholder with mountain icon
+      children.push(
+        React.createElement('rect', { key: 'r', x, y, width: w, height: h, stroke, fill: 'none', strokeWidth: sw, rx: 1 }),
+        React.createElement('path', { key: 'm', d: `M${x + 2},${y + h - 2} L${x + 6},${y + 3} L${x + 10},${y + 7} L${x + 13},${y + 5} L${x + w - 2},${y + h - 2} Z`, stroke, fill: 'none', strokeWidth: sw * 0.7 }),
+      );
+      break;
+    }
+    case 'wf-icon': {
+      // Star icon
+      const cx = x + w / 2, cy = y + h / 2;
+      children.push(
+        React.createElement('circle', { key: 'c', cx, cy, r: 5, stroke, fill: 'none', strokeWidth: sw }),
+        React.createElement('circle', { key: 'dot', cx, cy, r: 1.5, fill: stroke }),
+      );
+      break;
+    }
+    case 'wf-placeholder': {
+      // X in a box
+      children.push(
+        React.createElement('rect', { key: 'r', x, y, width: w, height: h, stroke, fill: 'none', strokeWidth: sw, strokeDasharray: '2 1', rx: 1 }),
+        React.createElement('line', { key: 'x1', x1: x + 2, y1: y + 2, x2: x + w - 2, y2: y + h - 2, stroke, strokeWidth: sw * 0.5, opacity: 0.4 }),
+        React.createElement('line', { key: 'x2', x1: x + w - 2, y1: y + 2, x2: x + 2, y2: y + h - 2, stroke, strokeWidth: sw * 0.5, opacity: 0.4 }),
+      );
+      break;
+    }
+    default: {
+      children.push(
+        React.createElement('rect', { key: 'r', x, y, width: w, height: h, stroke, fill: 'none', strokeWidth: sw, rx: 1 }),
+      );
+      break;
+    }
+  }
+
+  return React.createElement('svg', { width: 20, height: 14, viewBox: '0 0 20 14', style: { flexShrink: 0 } }, ...children);
+}
+
 // ── UML palette groups ──────────────────────────────────────────
 
 interface SimpleGroup {
@@ -309,7 +672,7 @@ export function Palette(): React.ReactElement {
     : 'Elements';
 
   // Render a simple (non-ArchiMate) group for UML / wireframe palettes
-  const renderSimpleGroup = (group: SimpleGroup, borderColour: string, chipBg: string, dropLayer: string) => {
+  const renderSimpleGroup = (group: SimpleGroup, borderColour: string, chipBg: string, dropLayer: string, miniShapeRenderer?: (type: string, stroke: string) => React.ReactElement) => {
     const isExpanded = expandedGroups.has(group.key);
     return React.createElement('div', {
       key: group.key,
@@ -340,7 +703,7 @@ export function Palette(): React.ReactElement {
           style: { fontSize: 7, opacity: 0.5 },
         }, isExpanded ? '\u25BC' : '\u25B6'),
       ),
-      // Type chips (text-only, no ArchiMate mini shapes)
+      // Type chips with optional mini shape icons
       isExpanded && React.createElement('div', {
         style: {
           padding: '3px 4px',
@@ -355,7 +718,7 @@ export function Palette(): React.ReactElement {
             draggable: true,
             onDragStart: (e: React.DragEvent) => handleDragStart(e, type, dropLayer),
             style: {
-              padding: '2px 6px',
+              padding: '2px 4px',
               fontSize: 9,
               cursor: 'grab',
               borderRadius: 3,
@@ -370,6 +733,7 @@ export function Palette(): React.ReactElement {
             },
             title: formatTypeName(type),
           },
+            miniShapeRenderer ? miniShapeRenderer(type, borderColour) : null,
             React.createElement('span', {
               style: {
                 overflow: 'hidden',
@@ -416,35 +780,35 @@ export function Palette(): React.ReactElement {
     !collapsed && isUmlSequence && React.createElement('div', {
       style: { padding: '0 6px 6px' },
     },
-      ...UML_SEQUENCE_GROUPS.map(g => renderSimpleGroup(g, '#4A90D9', 'rgba(74,144,217,0.08)', 'application')),
+      ...UML_SEQUENCE_GROUPS.map(g => renderSimpleGroup(g, '#4A90D9', 'rgba(74,144,217,0.08)', 'application', renderUmlMiniShape)),
     ),
 
     // Body — UML Activity palette
     !collapsed && isUmlActivity && React.createElement('div', {
       style: { padding: '0 6px 6px' },
     },
-      ...UML_ACTIVITY_GROUPS.map(g => renderSimpleGroup(g, '#4A90D9', 'rgba(74,144,217,0.08)', 'application')),
+      ...UML_ACTIVITY_GROUPS.map(g => renderSimpleGroup(g, '#4A90D9', 'rgba(74,144,217,0.08)', 'application', renderUmlMiniShape)),
     ),
 
     // Body — UML Use Case palette
     !collapsed && isUmlUseCase && React.createElement('div', {
       style: { padding: '0 6px 6px' },
     },
-      ...UML_USECASE_GROUPS.map(g => renderSimpleGroup(g, '#4A90D9', 'rgba(74,144,217,0.08)', 'application')),
+      ...UML_USECASE_GROUPS.map(g => renderSimpleGroup(g, '#4A90D9', 'rgba(74,144,217,0.08)', 'application', renderUmlMiniShape)),
     ),
 
     // Body — UML class/component palette
     !collapsed && isUml && React.createElement('div', {
       style: { padding: '0 6px 6px' },
     },
-      ...UML_CLASS_GROUPS.map(g => renderSimpleGroup(g, '#4A90D9', 'rgba(74,144,217,0.08)', 'application')),
+      ...UML_CLASS_GROUPS.map(g => renderSimpleGroup(g, '#4A90D9', 'rgba(74,144,217,0.08)', 'application', renderUmlMiniShape)),
     ),
 
     // Body — Wireframe palette
     !collapsed && isWireframe && React.createElement('div', {
       style: { padding: '0 6px 6px' },
     },
-      ...WIREFRAME_GROUPS.map(g => renderSimpleGroup(g, '#8E8E93', 'rgba(142,142,147,0.08)', 'implementation')),
+      ...WIREFRAME_GROUPS.map(g => renderSimpleGroup(g, '#8E8E93', 'rgba(142,142,147,0.08)', 'implementation', renderWfMiniShape)),
     ),
 
     // Body — ArchiMate palette (default)

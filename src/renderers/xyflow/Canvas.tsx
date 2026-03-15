@@ -22,7 +22,6 @@ import {
   applyEdgeChanges,
   reconnectEdge,
   useReactFlow,
-  useViewport,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
@@ -48,291 +47,16 @@ import { relationshipsToEdges, detectPortSide } from './edge-routing-integration
 import { computeElkLayout } from '../../layout/elk';
 import type { LayoutInput, SublayerEntry } from '../../layout/types';
 
+import { RelationshipTypePicker } from './RelationshipTypePicker';
+import { AlignmentToolbar, type AlignAction } from './AlignmentToolbar';
+import { SnaplineOverlay } from './SnaplineOverlay';
+import { EdgeContextMenu, type EdgeContextMenuState } from './EdgeContextMenu';
+import { useCanvasKeyboard } from './hooks/useCanvasKeyboard';
+import { useCanvasConnection } from './hooks/useCanvasConnection';
+
 // ═══════════════════════════════════════
 // Canvas component — fully controlled mode
 // ═══════════════════════════════════════
-
-// ═══════════════════════════════════════
-// Relationship type picker
-// ═══════════════════════════════════════
-
-const ARCHIMATE_REL_TYPES = [
-  { value: 'association',    label: 'Association' },
-  { value: 'serving',        label: 'Serving' },
-  { value: 'assignment',     label: 'Assignment' },
-  { value: 'realisation',    label: 'Realisation' },
-  { value: 'composition',    label: 'Composition' },
-  { value: 'aggregation',    label: 'Aggregation' },
-  { value: 'influence',      label: 'Influence' },
-  { value: 'triggering',     label: 'Triggering' },
-  { value: 'flow',           label: 'Flow' },
-  { value: 'access',         label: 'Access' },
-  { value: 'specialisation', label: 'Specialisation' },
-];
-
-const UML_REL_TYPES = [
-  { value: 'uml-inheritance',   label: 'Inheritance' },
-  { value: 'uml-realisation',   label: 'Realisation' },
-  { value: 'uml-composition',   label: 'Composition' },
-  { value: 'uml-aggregation',   label: 'Aggregation' },
-  { value: 'uml-association',   label: 'Association' },
-  { value: 'uml-dependency',    label: 'Dependency' },
-  { value: 'uml-control-flow',  label: 'Control Flow' },
-  { value: 'uml-object-flow',   label: 'Object Flow' },
-];
-
-const WF_REL_TYPES = [
-  { value: 'wf-contains',      label: 'Contains' },
-  { value: 'wf-navigates-to',  label: 'Navigates To' },
-  { value: 'wf-binds-to',      label: 'Binds To' },
-];
-
-interface PendingConnection {
-  sourceId: string;
-  targetId: string;
-  x: number;
-  y: number;
-}
-
-function RelationshipTypePicker({
-  conn, onSelect, onCancel, theme, sourceType, targetType, validRelationships, sourceNotation,
-}: {
-  conn: PendingConnection;
-  onSelect: (type: string) => void;
-  onCancel: () => void;
-  theme: 'dark' | 'light';
-  sourceType: string;
-  targetType: string;
-  validRelationships: ValidRelationship[];
-  sourceNotation?: 'archimate' | 'uml' | 'wireframe';
-}) {
-  const isDark = theme === 'dark';
-  const bg = isDark ? '#1E293B' : '#FFFFFF';
-  const border = isDark ? '#334155' : '#E2E8F0';
-  const textColour = isDark ? '#E5E7EB' : '#1F2937';
-  const invalidColour = isDark ? '#4B5563' : '#CBD5E1';
-  const hoverBg = isDark ? '#334155' : '#F1F5F9';
-
-  // Select relationship type list based on source notation
-  const relTypes = sourceNotation === 'uml' ? UML_REL_TYPES
-    : sourceNotation === 'wireframe' ? WF_REL_TYPES
-    : ARCHIMATE_REL_TYPES;
-
-  // Build a set of valid relationship types for this source→target pair
-  const validSet = React.useMemo(() => {
-    const set = new Set<string>();
-    // Association is universally valid
-    set.add('association');
-    // Specialisation is valid between same-type elements
-    if (sourceType === targetType) {
-      set.add('specialisation');
-    }
-    // Check the valid_relationships table
-    for (const vr of validRelationships) {
-      if (vr.source_archimate_type === sourceType && vr.target_archimate_type === targetType) {
-        set.add(vr.relationship_type);
-      }
-    }
-    return set;
-  }, [sourceType, targetType, validRelationships]);
-
-  // Sort: valid types first, then invalid
-  const sortedTypes = React.useMemo(() => {
-    const valid = relTypes.filter(rt => validSet.has(rt.value));
-    const invalid = relTypes.filter(rt => !validSet.has(rt.value));
-    return { valid, invalid };
-  }, [validSet, relTypes]);
-
-  // Keep picker inside the canvas bounds
-  const pickerW = 200;
-  const clampedX = Math.min(conn.x, window.innerWidth - pickerW - 20);
-
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        left: clampedX,
-        top: conn.y,
-        zIndex: 2000,
-        background: bg,
-        border: `1px solid ${border}`,
-        borderRadius: 6,
-        padding: '4px 0',
-        boxShadow: '0 4px 16px rgba(0,0,0,0.45)',
-        minWidth: pickerW,
-        fontFamily: 'Inter, system-ui, sans-serif',
-        maxHeight: '80vh',
-        overflowY: 'auto',
-      }}
-      onMouseDown={e => e.stopPropagation()}
-    >
-      <div style={{ padding: '4px 12px 6px', fontSize: 10, color: isDark ? '#6B7280' : '#9CA3AF', fontWeight: 600, letterSpacing: 0.5, textTransform: 'uppercase' }}>
-        Relationship type
-      </div>
-      {sortedTypes.valid.map(rt => (
-        <div
-          key={rt.value}
-          onClick={() => onSelect(rt.value)}
-          style={{ padding: '5px 12px', cursor: 'pointer', fontSize: 11, color: textColour }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = hoverBg; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-        >
-          {rt.label}
-        </div>
-      ))}
-      {sortedTypes.invalid.length > 0 && (
-        <>
-          <div style={{ borderTop: `1px solid ${border}`, margin: '4px 0' }} />
-          <div style={{ padding: '2px 12px 4px', fontSize: 9, color: isDark ? '#4B5563' : '#9CA3AF', fontWeight: 600, letterSpacing: 0.5, textTransform: 'uppercase' }}>
-            Not valid for this pair
-          </div>
-          {sortedTypes.invalid.map(rt => (
-            <div
-              key={rt.value}
-              onClick={() => onSelect(rt.value)}
-              title="Not valid per ArchiMate 3.2 metamodel for this element pair"
-              style={{ padding: '5px 12px', cursor: 'pointer', fontSize: 11, color: invalidColour, opacity: 0.6 }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = hoverBg; (e.currentTarget as HTMLElement).style.opacity = '0.8'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.opacity = '0.6'; }}
-            >
-              {rt.label}
-            </div>
-          ))}
-        </>
-      )}
-      <div style={{ borderTop: `1px solid ${border}`, margin: '4px 0' }} />
-      <div
-        onClick={onCancel}
-        style={{ padding: '5px 12px', cursor: 'pointer', fontSize: 11, color: '#EF4444' }}
-        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = hoverBg; }}
-        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-      >
-        Cancel
-      </div>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════
-// Alignment toolbar
-// ═══════════════════════════════════════
-
-type AlignAction = 'left' | 'centre-h' | 'right' | 'top' | 'centre-v' | 'bottom' | 'dist-h' | 'dist-v';
-
-const ALIGN_BTNS: { label: string; title: string; action: AlignAction; sep?: true }[] = [
-  { label: '⊢',  title: 'Align left edges',       action: 'left'     },
-  { label: '↔',  title: 'Centre horizontally',     action: 'centre-h' },
-  { label: '⊣',  title: 'Align right edges',       action: 'right',   sep: true },
-  { label: '⊤',  title: 'Align top edges',         action: 'top'      },
-  { label: '↕',  title: 'Centre vertically',       action: 'centre-v' },
-  { label: '⊥',  title: 'Align bottom edges',      action: 'bottom',  sep: true },
-  { label: '⇔',  title: 'Distribute horizontally', action: 'dist-h'   },
-  { label: '⇕',  title: 'Distribute vertically',   action: 'dist-v'   },
-];
-
-function AlignmentToolbar({
-  count, onAlign, theme,
-}: {
-  count: number;
-  onAlign: (action: AlignAction) => void;
-  theme: 'dark' | 'light';
-}) {
-  if (count < 2) return null;
-  const isDark = theme === 'dark';
-  const bg = isDark ? '#1E293B' : '#FFFFFF';
-  const border = isDark ? '#334155' : '#E2E8F0';
-  const text = isDark ? '#E5E7EB' : '#1F2937';
-  const hover = isDark ? '#334155' : '#E2E8F0';
-
-  return (
-    <div
-      style={{
-        position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)',
-        zIndex: 500, background: bg, border: `1px solid ${border}`, borderRadius: 6,
-        padding: '2px 6px', display: 'flex', alignItems: 'center', gap: 1,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.3)', userSelect: 'none',
-        fontFamily: 'Inter, system-ui, sans-serif',
-      }}
-      onMouseDown={e => e.stopPropagation()}
-    >
-      {ALIGN_BTNS.map(btn => (
-        <React.Fragment key={btn.action}>
-          <button
-            title={btn.title}
-            onClick={() => onAlign(btn.action)}
-            style={{
-              background: 'transparent', border: 'none', color: text,
-              cursor: 'pointer', padding: '3px 7px', fontSize: 14,
-              borderRadius: 3, lineHeight: 1,
-            }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = hover; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-          >
-            {btn.label}
-          </button>
-          {btn.sep && (
-            <div style={{ width: 1, height: 16, background: border, margin: '0 3px', flexShrink: 0 }} />
-          )}
-        </React.Fragment>
-      ))}
-    </div>
-  );
-}
-
-/* ---------- Alignment snapline overlay (rendered inside ReactFlow) ---------- */
-
-function SnaplineOverlay({ lines }: { lines: { x?: number; y?: number }[] }) {
-  const { x: vx, y: vy, zoom } = useViewport();
-  if (lines.length === 0) return null;
-
-  return (
-    <svg
-      style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        pointerEvents: 'none',
-        zIndex: 1000,
-      }}
-    >
-      {lines.map((line, i) => {
-        if (line.x !== undefined) {
-          const sx = line.x * zoom + vx;
-          return (
-            <line
-              key={`snap-x-${i}`}
-              x1={sx}
-              y1={0}
-              x2={sx}
-              y2="100%"
-              stroke="#F97316"
-              strokeWidth={1}
-              strokeDasharray="4 2"
-            />
-          );
-        }
-        if (line.y !== undefined) {
-          const sy = line.y * zoom + vy;
-          return (
-            <line
-              key={`snap-y-${i}`}
-              x1={0}
-              y1={sy}
-              x2="100%"
-              y2={sy}
-              stroke="#F97316"
-              strokeWidth={1}
-              strokeDasharray="4 2"
-            />
-          );
-        }
-        return null;
-      })}
-    </svg>
-  );
-}
 
 interface XYFlowCanvasProps {
   elements: Element[];
@@ -366,74 +90,6 @@ function ScreenToFlowBridge({
   bridgeRef.current = screenToFlowPosition;
   fitViewRef.current = () => fitView({ padding: 0.15 });
   return null;
-}
-
-// ═══════════════════════════════════════
-// Edge context menu component
-// ═══════════════════════════════════════
-
-interface EdgeContextMenuState {
-  edgeId: string;
-  x: number;
-  y: number;
-}
-
-interface EdgeContextMenuProps {
-  menu: EdgeContextMenuState;
-  onSelect: (edgeId: string, action: 'straight' | 'bezier' | 'step' | 'delete') => void;
-  onClose: () => void;
-  theme: 'dark' | 'light';
-}
-
-function EdgeContextMenu({ menu, onSelect, onClose, theme }: EdgeContextMenuProps) {
-  const isDark = theme === 'dark';
-  const bg = isDark ? '#1E293B' : '#FFFFFF';
-  const border = isDark ? '#334155' : '#E2E8F0';
-  const textColour = isDark ? '#E5E7EB' : '#1F2937';
-  const hoverBg = isDark ? '#334155' : '#F1F5F9';
-
-  const items: { label: string; action: 'straight' | 'bezier' | 'step' | 'delete' }[] = [
-    { label: 'Orthogonal (default)', action: 'step' },
-    { label: 'Straight', action: 'straight' },
-    { label: 'Curved', action: 'bezier' },
-    { label: 'Delete', action: 'delete' },
-  ];
-
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        top: menu.y,
-        left: menu.x,
-        zIndex: 1000,
-        background: bg,
-        border: `1px solid ${border}`,
-        borderRadius: 4,
-        padding: '4px 0',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-        minWidth: 160,
-      }}
-      onMouseLeave={onClose}
-    >
-      {items.map((item) => (
-        <div
-          key={item.action}
-          onClick={() => onSelect(menu.edgeId, item.action)}
-          style={{
-            padding: '6px 12px',
-            cursor: 'pointer',
-            fontSize: 11,
-            fontFamily: 'Inter, system-ui, sans-serif',
-            color: item.action === 'delete' ? '#EF4444' : textColour,
-          }}
-          onMouseEnter={(e) => { (e.target as HTMLElement).style.background = hoverBg; }}
-          onMouseLeave={(e) => { (e.target as HTMLElement).style.background = 'transparent'; }}
-        >
-          {item.label}
-        </div>
-      ))}
-    </div>
-  );
 }
 
 export function XYFlowCanvas({
@@ -472,11 +128,12 @@ export function XYFlowCanvas({
   const screenToFlowRef = React.useRef<((pos: { x: number; y: number }) => { x: number; y: number }) | null>(null);
   const fitViewRef = React.useRef<(() => void) | null>(null);
 
-  // Mouse position in canvas-local coordinates (used to position relationship picker)
-  const containerMouseRef = React.useRef({ x: 0, y: 0 });
-  // Pending connection set by onConnect; position filled by containerMouseRef on mouseup
-  const pendingConnRef = React.useRef<{ sourceId: string; targetId: string } | null>(null);
-  const [pendingConnection, setPendingConnection] = React.useState<PendingConnection | null>(null);
+  // Connection creation state + handlers (extracted to hook)
+  const {
+    pendingConnection, handleConnect, handleConnectEnd,
+    handleRelTypeSelect, handleRelTypeCancel, containerMouseRef,
+    setPendingConnection, pendingConnRef,
+  } = useCanvasConnection({ onCreateRelationship });
 
   // Layer visibility / lock controls
   const hiddenLayers = useLayerVisibilityStore(s => s.hiddenLayers);
@@ -836,88 +493,11 @@ export function XYFlowCanvas({
   }, []);
 
   // Keyboard shortcuts: arrow nudge, Escape deselect, Ctrl+A select all
-  React.useEffect(() => {
-    function onKeyDown(e: KeyboardEvent) {
-      const target = e.target as HTMLElement;
-      // Don't intercept when focus is inside a text input
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
-
-      // Escape — clear selection
-      if (e.key === 'Escape') {
-        // Deselect all xyflow nodes
-        nodesRef.current = nodesRef.current.map(n =>
-          n.selected ? { ...n, selected: false } : n,
-        );
-        edgesRef.current = edgesRef.current.map(e =>
-          e.selected ? { ...e, selected: false } : e,
-        );
-        setSelectedNodeIds(new Set());
-        forceRender(n => n + 1);
-        onClearSelectionRef.current?.();
-        return;
-      }
-
-      // Ctrl+A — select all element nodes
-      if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
-        e.preventDefault();
-        nodesRef.current = nodesRef.current.map(n =>
-          n.type !== 'layer-band' ? { ...n, selected: true } : n,
-        );
-        setSelectedNodeIds(new Set(
-          nodesRef.current.filter(n => n.type !== 'layer-band').map(n => n.id),
-        ));
-        forceRender(n => n + 1);
-        return;
-      }
-
-      // Arrow keys — nudge selected nodes
-      const NUDGE = e.shiftKey ? 10 : 1;
-      let dx = 0, dy = 0;
-      if (e.key === 'ArrowLeft')  dx = -NUDGE;
-      if (e.key === 'ArrowRight') dx =  NUDGE;
-      if (e.key === 'ArrowUp')    dy = -NUDGE;
-      if (e.key === 'ArrowDown')  dy =  NUDGE;
-      if (dx === 0 && dy === 0) return;
-
-      e.preventDefault();
-      // Nudge selected nodes (including layer bands — children move with them)
-      nodesRef.current = nodesRef.current.map(n => {
-        if (!n.selected) return n;
-        return { ...n, position: { x: n.position.x + dx, y: n.position.y + dy } };
-      });
-      nodesRef.current = recomputeBands(nodesRef.current, layerLabels, theme);
-      forceRender(n => n + 1);
-
-      // Collect absolute positions of all affected element nodes for save
-      const movedIds = new Set<string>();
-      for (const n of nodesRef.current) {
-        if (!n.selected) continue;
-        if (n.type === 'layer-band') {
-          // Layer band selected — all its children moved
-          for (const c of nodesRef.current) {
-            if (c.parentId === n.id && c.type !== 'layer-band') movedIds.add(c.id);
-          }
-        } else {
-          movedIds.add(n.id);
-        }
-      }
-      const movedPositions = [...movedIds].map(id => {
-        const abs = resolveAbsolutePos(id);
-        return { element_id: id, x: abs.x, y: abs.y };
-      });
-
-      // Debounce the position save so rapid key repeats don't flood the API
-      if (nudgeSaveTimerRef.current) clearTimeout(nudgeSaveTimerRef.current);
-      nudgeSaveTimerRef.current = setTimeout(() => {
-        if (movedPositions.length > 0) {
-          onPositionChangeRef.current?.(movedPositions);
-        }
-      }, 300);
-    }
-
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [layerLabels, theme]); // eslint-disable-line react-hooks/exhaustive-deps
+  useCanvasKeyboard({
+    nodesRef, edgesRef, setSelectedNodeIds, forceRender,
+    onClearSelectionRef, onPositionChangeRef, nudgeSaveTimerRef,
+    layerLabels, theme, resolveAbsolutePos,
+  });
 
   // Alignment — applies to all currently selected archimate nodes
   const handleAlign = useCallback((action: AlignAction) => {
@@ -1000,36 +580,6 @@ export function XYFlowCanvas({
     onPositionChangeRef.current?.(moved);
   }, [layerLabels, theme]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // User draws a connection by dragging from a connector handle to a target element
-  const handleConnect = useCallback((connection: Connection) => {
-    if (!connection.source || !connection.target) return;
-    // Skip self-connections
-    if (connection.source === connection.target) return;
-    // Store in ref; position will be filled when mouse button releases
-    pendingConnRef.current = { sourceId: connection.source, targetId: connection.target };
-  }, []);
-
-  // onConnectEnd fires after onConnect (or on failed drop) — capture mouse position then show picker
-  const handleConnectEnd = useCallback((_event: MouseEvent | TouchEvent) => {
-    if (!pendingConnRef.current) return;
-    setPendingConnection({
-      ...pendingConnRef.current,
-      x: containerMouseRef.current.x,
-      y: containerMouseRef.current.y,
-    });
-    pendingConnRef.current = null;
-  }, []);
-
-  const handleRelTypeSelect = useCallback((relType: string) => {
-    if (!pendingConnection) return;
-    onCreateRelationship?.(pendingConnection.sourceId, pendingConnection.targetId, relType);
-    setPendingConnection(null);
-  }, [pendingConnection, onCreateRelationship]);
-
-  const handleRelTypeCancel = useCallback(() => {
-    setPendingConnection(null);
-  }, []);
-
   // Palette drag-to-create
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -1096,7 +646,7 @@ export function XYFlowCanvas({
           data: {
             ...e.data,
             customPath: routed.path,
-            ...(!hasUserWps && { routedWaypoints: routed.pts.slice(1, -1) }),
+            ...(!hasUserWps && { routedWaypoints: routed.pts }),
           },
         };
       })
