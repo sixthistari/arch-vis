@@ -2,7 +2,8 @@
  * Process flow pseudo-state nodes — start (filled circle), end (double circle), timer (circle + clock).
  */
 import { memo } from 'react';
-import { Handle, Position, type NodeProps, type Node } from '@xyflow/react';
+import { type NodeProps, type Node } from '@xyflow/react';
+import { RoutingHandles } from '../shared/RoutingHandles';
 
 export interface PfPseudoNodeData {
   label: string;
@@ -31,8 +32,7 @@ function PfPseudoNodeComponent({ data, selected }: NodeProps<PfPseudoNodeType>) 
         <svg width={SIZE} height={SIZE} overflow="visible">
           <circle cx={cx} cy={cy} r={cx - 1} fill={accent} stroke={stroke} strokeWidth={1.5} />
         </svg>
-        <Handle type="source" position={Position.Bottom} style={{ visibility: 'hidden' }} />
-        <Handle type="source" position={Position.Right} style={{ visibility: 'hidden' }} />
+        <RoutingHandles />
       </div>
     );
   }
@@ -45,8 +45,7 @@ function PfPseudoNodeComponent({ data, selected }: NodeProps<PfPseudoNodeType>) 
           <circle cx={cx} cy={cy} r={r} fill="none" stroke={stroke} strokeWidth={2} />
           <circle cx={cx} cy={cy} r={r * 0.55} fill={accent} />
         </svg>
-        <Handle type="target" position={Position.Top} style={{ visibility: 'hidden' }} />
-        <Handle type="target" position={Position.Left} style={{ visibility: 'hidden' }} />
+        <RoutingHandles />
       </div>
     );
   }
@@ -67,10 +66,7 @@ function PfPseudoNodeComponent({ data, selected }: NodeProps<PfPseudoNodeType>) 
         <circle cx={cx} cy={cy + r - 2} r={0.8} fill={textFill} />
         <circle cx={cx - r + 2} cy={cy} r={0.8} fill={textFill} />
       </svg>
-      <Handle type="target" position={Position.Top} style={{ visibility: 'hidden' }} />
-      <Handle type="source" position={Position.Bottom} style={{ visibility: 'hidden' }} />
-      <Handle type="target" position={Position.Left} style={{ visibility: 'hidden' }} />
-      <Handle type="source" position={Position.Right} style={{ visibility: 'hidden' }} />
+      <RoutingHandles />
     </div>
   );
 }
