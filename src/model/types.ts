@@ -176,6 +176,8 @@ export const relationshipTypeValues = [
   'uml-association',
   'uml-dependency',
   'uml-assembly',
+  'uml-include',
+  'uml-extend',
   // UML activity diagram flow types
   'uml-control-flow',
   'uml-object-flow',

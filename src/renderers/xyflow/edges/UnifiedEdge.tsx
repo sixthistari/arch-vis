@@ -525,11 +525,14 @@ function UnifiedEdgeComponent(props: EdgeProps<UnifiedEdgeType>) {
         markerEnd={markerUrl(edgeStyle.targetMarker)}
       />
 
-      {/* Main label */}
-      {data?.label && !edgeStyle.isMessage && (
+      {/* Main label + stereotype */}
+      {!edgeStyle.isMessage && (data?.label || data?.stereotype || relType === 'uml-include' || relType === 'uml-extend') && (
         <text x={labelX} y={labelY - 4} textAnchor="middle" fontSize={7} fill="#9CA3AF"
           fontFamily="Inter, system-ui, sans-serif" style={{ pointerEvents: 'none', opacity: opacity * 1.2 }}>
-          {data.stereotype ? `\u00AB${data.stereotype}\u00BB ` : ''}{data.label as string}
+          {(data?.stereotype || relType === 'uml-include' || relType === 'uml-extend')
+            ? `\u00AB${data?.stereotype ?? (relType === 'uml-include' ? 'include' : 'extend')}\u00BB `
+            : ''}
+          {data?.label ? (data.label as string) : ''}
         </text>
       )}
 

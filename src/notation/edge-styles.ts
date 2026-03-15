@@ -115,6 +115,14 @@ const STYLES: Record<string, UnifiedEdgeStyle> = {
     strokeStyle: 'solid', dashArray: '', width: 1.0,
     sourceMarker: null, targetMarker: null,
   },
+  'uml-include': {
+    strokeStyle: 'dashed', dashArray: '6 3', width: 1.0,
+    sourceMarker: null, targetMarker: 'uml-open-arrow',
+  },
+  'uml-extend': {
+    strokeStyle: 'dashed', dashArray: '6 3', width: 1.0,
+    sourceMarker: null, targetMarker: 'uml-open-arrow',
+  },
 
   // ── UML sequence messages ──────────────────────────────────────────────
   'sync-message': {

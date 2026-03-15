@@ -68,6 +68,7 @@ CREATE TABLE IF NOT EXISTS relationships (
         -- UML relationship types (Phase 3)
         'uml-inheritance','uml-realisation','uml-composition','uml-aggregation',
         'uml-association','uml-dependency','uml-assembly',
+        'uml-include','uml-extend',
         -- UML sequence diagram message types (Phase 4)
         'uml-sync-message','uml-async-message','uml-return-message',
         'uml-create-message','uml-destroy-message','uml-self-message',

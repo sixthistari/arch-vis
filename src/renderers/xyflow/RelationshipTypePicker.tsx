@@ -26,6 +26,8 @@ export const UML_REL_TYPES = [
   { value: 'uml-aggregation',   label: 'Aggregation' },
   { value: 'uml-association',   label: 'Association' },
   { value: 'uml-dependency',    label: 'Dependency' },
+  { value: 'uml-include',       label: '\u00ABinclude\u00BB' },
+  { value: 'uml-extend',        label: '\u00ABextend\u00BB' },
   { value: 'uml-control-flow',  label: 'Control Flow' },
   { value: 'uml-object-flow',   label: 'Object Flow' },
 ];

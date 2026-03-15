@@ -220,6 +220,11 @@
     {"id": "pf-rel-decision-revise", "archimate_type": "pf-conditional-flow", "source_id": "pf-doc-decision", "target_id": "pf-doc-revise", "label": "No"},
     {"id": "pf-rel-approval-publish", "archimate_type": "pf-sequence-flow", "source_id": "pf-doc-approval", "target_id": "pf-doc-publish"},
     {"id": "pf-rel-publish-end", "archimate_type": "pf-sequence-flow", "source_id": "pf-doc-publish", "target_id": "pf-doc-end"},
-    {"id": "pf-rel-revise-review", "archimate_type": "pf-sequence-flow", "source_id": "pf-doc-revise", "target_id": "pf-doc-review"}
+    {"id": "pf-rel-revise-review", "archimate_type": "pf-sequence-flow", "source_id": "pf-doc-revise", "target_id": "pf-doc-review"},
+
+    {"id": "seq-msg-1", "archimate_type": "uml-sync-message", "source_id": "seq-seed-user", "target_id": "seq-seed-auth", "label": "login(user, pass)", "properties": {"sequenceNumber": 1}},
+    {"id": "seq-msg-2", "archimate_type": "uml-sync-message", "source_id": "seq-seed-auth", "target_id": "seq-seed-db", "label": "query(user)", "properties": {"sequenceNumber": 2}},
+    {"id": "seq-msg-3", "archimate_type": "uml-return-message", "source_id": "seq-seed-db", "target_id": "seq-seed-auth", "label": "userRecord", "properties": {"sequenceNumber": 3}},
+    {"id": "seq-msg-4", "archimate_type": "uml-return-message", "source_id": "seq-seed-auth", "target_id": "seq-seed-user", "label": "authToken", "properties": {"sequenceNumber": 4}}
   ]
 }
