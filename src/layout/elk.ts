@@ -11,13 +11,13 @@ interface ViewpointLayoutConfig {
 }
 
 const VIEWPOINT_LAYOUT: Record<string, ViewpointLayoutConfig> = {
-  uml_class:     { direction: 'UP',    nodeSpacing: 40, layerSpacing: 80 },
-  uml_component: { direction: 'RIGHT', nodeSpacing: 60, layerSpacing: 80 },
-  uml_activity:  { direction: 'DOWN',  nodeSpacing: 30, layerSpacing: 50 },
-  uml_state:     { direction: 'RIGHT', nodeSpacing: 40, layerSpacing: 60 },
+  uml_class:     { direction: 'UP',    nodeSpacing: 120, layerSpacing: 240 },
+  uml_component: { direction: 'RIGHT', nodeSpacing: 180, layerSpacing: 240 },
+  uml_activity:  { direction: 'DOWN',  nodeSpacing: 90,  layerSpacing: 150 },
+  uml_state:     { direction: 'RIGHT', nodeSpacing: 120, layerSpacing: 180 },
 };
 
-const DEFAULT_LAYOUT: ViewpointLayoutConfig = { direction: 'DOWN', nodeSpacing: 30, layerSpacing: 60 };
+const DEFAULT_LAYOUT: ViewpointLayoutConfig = { direction: 'DOWN', nodeSpacing: 90, layerSpacing: 180 };
 
 export async function computeElkLayout(
   elements: LayoutInput[],

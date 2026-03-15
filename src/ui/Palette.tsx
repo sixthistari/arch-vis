@@ -74,8 +74,24 @@ const ICON_H = 22;
 const ICON_VB = `0 0 ${ICON_W + 2} ${ICON_H + 2}`;
 
 /**
+ * Derive a behaviour glyph for ArchiMate behavioural types.
+ * Per ArchiMate 3.2 spec: function=→, process=↓ (chevron), service=⌒ (arc), interaction=↔.
+ */
+function getBehaviourGlyph(type: string): string | null {
+  if (type.endsWith('-function')) return '→';
+  if (type.endsWith('-process')) return '⇣';
+  if (type.endsWith('-service')) return '⌒';
+  if (type.endsWith('-interaction')) return '↔';
+  if (type === 'value-stream') return '»';
+  if (type === 'capability') return '◈';
+  if (type === 'course-of-action') return '⤳';
+  return null;
+}
+
+/**
  * Render a shape icon for a given ArchiMate type.
- * Returns an SVG element showing the notation silhouette.
+ * Returns an SVG element showing the notation silhouette with
+ * a behaviour glyph (for pills) or icon (for rect-with-icon).
  */
 function renderMiniShape(type: string, stroke: string): React.ReactElement {
   const shapeDef = getShapeDefinition(type);
@@ -89,12 +105,10 @@ function renderMiniShape(type: string, stroke: string): React.ReactElement {
 
   switch (shapeDef.shapeType) {
     case 'rect-with-icon': {
-      // Rectangle + icon indicator
       children.push(React.createElement('rect', {
         key: 'r', x, y, width: w, height: h,
         stroke, fill: 'none', strokeWidth: sw, rx: 1,
       }));
-      // Render mini icon in top-right
       if (shapeDef.iconType) {
         const ic = renderMiniIcon(shapeDef.iconType, x + w - 6, y + 1, stroke);
         if (ic) children.push(ic);
@@ -107,6 +121,15 @@ function renderMiniShape(type: string, stroke: string): React.ReactElement {
         stroke, fill: 'none', strokeWidth: sw,
         rx: h / 2, ry: h / 2,
       }));
+      // Add behaviour glyph inside pill
+      const glyph = getBehaviourGlyph(type);
+      if (glyph) {
+        children.push(React.createElement('text', {
+          key: 'g', x: x + w / 2, y: y + h / 2 + 1,
+          textAnchor: 'middle', dominantBaseline: 'middle',
+          fill: stroke, fontSize: 9, fontWeight: 600, opacity: 0.7,
+        }, glyph));
+      }
       break;
     }
     case 'rounded-rect': {
@@ -114,6 +137,15 @@ function renderMiniShape(type: string, stroke: string): React.ReactElement {
         key: 'r', x, y, width: w, height: h,
         stroke, fill: 'none', strokeWidth: sw, rx: 3, ry: 3,
       }));
+      // Add glyph for identifiable rounded-rect types
+      const rrGlyph = getBehaviourGlyph(type);
+      if (rrGlyph) {
+        children.push(React.createElement('text', {
+          key: 'g', x: x + w / 2, y: y + h / 2 + 1,
+          textAnchor: 'middle', dominantBaseline: 'middle',
+          fill: stroke, fontSize: 9, fontWeight: 600, opacity: 0.7,
+        }, rrGlyph));
+      }
       break;
     }
     case 'folded-corner': {
@@ -123,7 +155,6 @@ function renderMiniShape(type: string, stroke: string): React.ReactElement {
         d: `M${x},${y} L${x + w - fold},${y} L${x + w},${y + fold} L${x + w},${y + h} L${x},${y + h} Z`,
         stroke, fill: 'none', strokeWidth: sw,
       }));
-      // Fold line
       children.push(React.createElement('path', {
         key: 'f',
         d: `M${x + w - fold},${y} L${x + w - fold},${y + fold} L${x + w},${y + fold}`,
@@ -132,19 +163,16 @@ function renderMiniShape(type: string, stroke: string): React.ReactElement {
       break;
     }
     case 'box-3d': {
-      const d = 3; // depth
-      // Front face
+      const d = 3;
       children.push(React.createElement('rect', {
         key: 'front', x, y: y + d, width: w - d, height: h - d,
         stroke, fill: 'none', strokeWidth: sw,
       }));
-      // Top face
       children.push(React.createElement('path', {
         key: 'top',
         d: `M${x},${y + d} L${x + d},${y} L${x + w},${y} L${x + w - d},${y + d} Z`,
         stroke, fill: 'none', strokeWidth: sw,
       }));
-      // Right face
       children.push(React.createElement('path', {
         key: 'right',
         d: `M${x + w - d},${y + d} L${x + w},${y} L${x + w},${y + h - d} L${x + w - d},${y + h} Z`,
@@ -327,13 +355,23 @@ function renderUmlMiniShape(type: string, stroke: string): React.ReactElement {
       );
       break;
     }
-    case 'uml-state':
+    case 'uml-state': {
+      // Rounded rect with "S" indicator
+      children.push(
+        React.createElement('rect', { key: 'r', x, y, width: w, height: h, stroke, fill: 'none', strokeWidth: sw, rx: 3, ry: 3 }),
+        React.createElement('line', { key: 'l', x1: x, y1: y + 5, x2: x + w, y2: y + 5, stroke, strokeWidth: sw * 0.5, opacity: 0.4 }),
+      );
+      break;
+    }
     case 'uml-activity':
     case 'uml-action': {
-      // Rounded rect
+      // Rounded rect — action gets "do/" label
       children.push(
         React.createElement('rect', { key: 'r', x, y, width: w, height: h, stroke, fill: 'none', strokeWidth: sw, rx: 3, ry: 3 }),
       );
+      if (type === 'uml-activity') {
+        children.push(React.createElement('text', { key: 't', x: x + w / 2, y: y + h / 2 + 1, textAnchor: 'middle', fontSize: 5, fill: stroke, opacity: 0.5 }, 'act'));
+      }
       break;
     }
     case 'uml-decision':

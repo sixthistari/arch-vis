@@ -232,6 +232,33 @@
     {"id": "pf-doc-approval", "name": "Manager Approval", "archimate_type": "pf-approval-gate", "layer": "none", "status": "active", "description": "Manager must approve before publication"},
     {"id": "pf-doc-publish", "name": "Publish", "archimate_type": "pf-system-call", "layer": "none", "status": "active", "description": "System publishes document to knowledge base"},
     {"id": "pf-doc-revise", "name": "Revise Document", "archimate_type": "pf-agent-task", "layer": "none", "status": "active", "description": "AI agent revises document based on review feedback"},
-    {"id": "pf-doc-end", "name": "End", "archimate_type": "pf-end", "layer": "none", "status": "active"}
+    {"id": "pf-doc-end", "name": "End", "archimate_type": "pf-end", "layer": "none", "status": "active"},
+
+    {"id": "wf-seed-page-1", "name": "Dashboard Page", "archimate_type": "wf-page", "layer": "none"},
+    {"id": "wf-seed-nav-1", "name": "Main Navigation", "archimate_type": "wf-nav", "layer": "none"},
+    {"id": "wf-seed-section-1", "name": "Stats Section", "archimate_type": "wf-section", "layer": "none", "parent_id": "wf-seed-page-1"},
+    {"id": "wf-seed-card-1", "name": "Revenue Card", "archimate_type": "wf-card", "layer": "none", "parent_id": "wf-seed-section-1"},
+    {"id": "wf-seed-card-2", "name": "Users Card", "archimate_type": "wf-card", "layer": "none", "parent_id": "wf-seed-section-1"},
+    {"id": "wf-seed-table-1", "name": "Recent Orders", "archimate_type": "wf-table", "layer": "none", "parent_id": "wf-seed-page-1"},
+    {"id": "wf-seed-btn-1", "name": "Export Button", "archimate_type": "wf-button", "layer": "none", "parent_id": "wf-seed-page-1"},
+    {"id": "wf-seed-input-1", "name": "Search Input", "archimate_type": "wf-input", "layer": "none", "parent_id": "wf-seed-page-1"},
+    {"id": "wf-seed-modal-1", "name": "Confirm Dialog", "archimate_type": "wf-modal", "layer": "none"},
+    {"id": "wf-seed-btn-2", "name": "OK Button", "archimate_type": "wf-button", "layer": "none", "parent_id": "wf-seed-modal-1"},
+    {"id": "wf-seed-btn-3", "name": "Cancel Button", "archimate_type": "wf-button", "layer": "none", "parent_id": "wf-seed-modal-1"},
+    {"id": "wf-seed-feedback-1", "name": "Success Alert", "archimate_type": "wf-feedback", "layer": "none"},
+
+    {"id": "seq-seed-user", "name": "User", "archimate_type": "uml-lifeline", "layer": "none"},
+    {"id": "seq-seed-auth", "name": "AuthService", "archimate_type": "uml-lifeline", "layer": "none"},
+    {"id": "seq-seed-db", "name": "Database", "archimate_type": "uml-lifeline", "layer": "none"},
+    {"id": "seq-seed-act-1", "name": "Activation 1", "archimate_type": "uml-activation", "layer": "none", "parent_id": "seq-seed-auth"},
+    {"id": "seq-seed-frag-1", "name": "alt [valid credentials]", "archimate_type": "uml-fragment", "layer": "none"},
+
+    {"id": "state-seed-initial", "name": "Initial", "archimate_type": "uml-initial-node", "layer": "none"},
+    {"id": "state-seed-pending", "name": "Pending", "archimate_type": "uml-state", "layer": "none"},
+    {"id": "state-seed-processing", "name": "Processing", "archimate_type": "uml-state", "layer": "none"},
+    {"id": "state-seed-shipped", "name": "Shipped", "archimate_type": "uml-state", "layer": "none"},
+    {"id": "state-seed-delivered", "name": "Delivered", "archimate_type": "uml-state", "layer": "none"},
+    {"id": "state-seed-cancelled", "name": "Cancelled", "archimate_type": "uml-state", "layer": "none"},
+    {"id": "state-seed-final", "name": "Final", "archimate_type": "uml-final-node", "layer": "none"}
   ]
 }

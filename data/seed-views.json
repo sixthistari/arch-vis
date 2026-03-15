@@ -283,6 +283,57 @@
         {"id": "pf-doc-publish", "x": 550, "y": 310},
         {"id": "pf-doc-end", "x": 650, "y": 328}
       ]
+    },
+    {
+      "id": "view-wireframe-seed",
+      "name": "Sample Wireframe",
+      "viewpoint_type": "wireframe",
+      "render_mode": "flat",
+      "is_preset": 1,
+      "element_positions": [
+        {"id": "wf-seed-page-1", "x": 50, "y": 50, "width": 600, "height": 500},
+        {"id": "wf-seed-nav-1", "x": 50, "y": 0, "width": 600, "height": 40},
+        {"id": "wf-seed-section-1", "x": 70, "y": 100, "width": 560, "height": 150},
+        {"id": "wf-seed-card-1", "x": 80, "y": 120, "width": 200, "height": 100},
+        {"id": "wf-seed-card-2", "x": 320, "y": 120, "width": 200, "height": 100},
+        {"id": "wf-seed-table-1", "x": 70, "y": 280, "width": 560, "height": 200},
+        {"id": "wf-seed-btn-1", "x": 500, "y": 500, "width": 100, "height": 30},
+        {"id": "wf-seed-input-1", "x": 70, "y": 60, "width": 200, "height": 30},
+        {"id": "wf-seed-modal-1", "x": 700, "y": 100, "width": 300, "height": 200},
+        {"id": "wf-seed-btn-2", "x": 750, "y": 240, "width": 80, "height": 30},
+        {"id": "wf-seed-btn-3", "x": 860, "y": 240, "width": 80, "height": 30},
+        {"id": "wf-seed-feedback-1", "x": 700, "y": 350, "width": 300, "height": 50}
+      ]
+    },
+    {
+      "id": "view-sequence-seed",
+      "name": "Login Sequence",
+      "viewpoint_type": "uml_sequence",
+      "render_mode": "flat",
+      "is_preset": 1,
+      "element_positions": [
+        {"id": "seq-seed-user", "x": 100, "y": 20},
+        {"id": "seq-seed-auth", "x": 300, "y": 20},
+        {"id": "seq-seed-db", "x": 500, "y": 20},
+        {"id": "seq-seed-act-1", "x": 290, "y": 100, "height": 200},
+        {"id": "seq-seed-frag-1", "x": 80, "y": 80, "width": 500, "height": 250}
+      ]
+    },
+    {
+      "id": "view-state-seed",
+      "name": "Order State Machine",
+      "viewpoint_type": "uml_activity",
+      "render_mode": "flat",
+      "is_preset": 1,
+      "element_positions": [
+        {"id": "state-seed-initial", "x": 50, "y": 200},
+        {"id": "state-seed-pending", "x": 200, "y": 200},
+        {"id": "state-seed-processing", "x": 400, "y": 200},
+        {"id": "state-seed-shipped", "x": 600, "y": 150},
+        {"id": "state-seed-delivered", "x": 800, "y": 150},
+        {"id": "state-seed-cancelled", "x": 600, "y": 300},
+        {"id": "state-seed-final", "x": 900, "y": 200}
+      ]
     }
   ]
 }
