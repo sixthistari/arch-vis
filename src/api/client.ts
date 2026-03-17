@@ -14,6 +14,9 @@ import {
   type HealthResponse,
   type ElementFilters,
   type RelationshipFilters,
+  type Project,
+  type CreateProjectInput,
+  type UpdateProjectInput,
   DomainSchema,
   ElementSchema,
   RelationshipSchema,
@@ -23,8 +26,10 @@ import {
   SublayerConfigSchema,
   ValidRelationshipSchema,
   HealthResponseSchema,
+  ProjectSchema,
 } from '../model/types';
 import { z } from 'zod';
+import { notifySuccess, notifyError } from '../store/notification';
 
 const API_BASE = '/api';
 
@@ -76,6 +81,16 @@ async function requestVoid(
   }
 }
 
+function toastMutationError(operation: string, err: unknown, payload?: unknown): void {
+  const isApi = err instanceof ApiError;
+  notifyError(`${operation} failed`, {
+    operation,
+    status: isApi ? err.status : undefined,
+    errorMessage: err instanceof Error ? err.message : String(err),
+    payload: payload ? JSON.stringify(payload).slice(0, 300) : undefined,
+  });
+}
+
 function buildQuery(params: Record<string, string | undefined>): string {
   const entries = Object.entries(params).filter(
     (pair): pair is [string, string] => pair[1] !== undefined,
@@ -100,11 +115,18 @@ export function fetchDomains(): Promise<Domain[]> {
   return request('/domains', z.array(DomainSchema));
 }
 
-export function createDomain(data: CreateDomainInput): Promise<Domain> {
-  return request('/domains', DomainSchema, {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
+export async function createDomain(data: CreateDomainInput): Promise<Domain> {
+  try {
+    const result = await request('/domains', DomainSchema, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    notifySuccess('Domain created', result.name);
+    return result;
+  } catch (err) {
+    toastMutationError('Create domain', err, data);
+    throw err;
+  }
 }
 
 // ═══════════════════════════════════════
@@ -122,31 +144,52 @@ export function fetchElements(filters?: ElementFilters): Promise<Element[]> {
   return request(`/elements${query}`, z.array(ElementSchema));
 }
 
-export function createElement(data: CreateElementInput): Promise<Element> {
-  return request('/elements', ElementSchema, {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
+export async function createElement(data: CreateElementInput): Promise<Element> {
+  try {
+    const result = await request('/elements', ElementSchema, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    notifySuccess('Element created', result.name);
+    return result;
+  } catch (err) {
+    toastMutationError('Create element', err, data);
+    throw err;
+  }
 }
 
-export function updateElement(
+export async function updateElement(
   id: string,
   data: Omit<UpdateElementInput, 'id'>,
 ): Promise<Element> {
-  return request(`/elements/${encodeURIComponent(id)}`, ElementSchema, {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  });
+  try {
+    const result = await request(`/elements/${encodeURIComponent(id)}`, ElementSchema, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    notifySuccess('Element updated', result.name);
+    return result;
+  } catch (err) {
+    toastMutationError('Update element', err, data);
+    throw err;
+  }
 }
 
-export function bulkRenameSpecialisation(
+export async function bulkRenameSpecialisation(
   oldValue: string,
   newValue: string | null,
 ): Promise<{ updated: number }> {
-  return request('/elements/bulk-specialisation', z.object({ updated: z.number() }), {
-    method: 'POST',
-    body: JSON.stringify({ oldValue, newValue }),
-  });
+  try {
+    const result = await request('/elements/bulk-specialisation', z.object({ updated: z.number() }), {
+      method: 'POST',
+      body: JSON.stringify({ oldValue, newValue }),
+    });
+    notifySuccess('Specialisations renamed', `${result.updated} elements updated`);
+    return result;
+  } catch (err) {
+    toastMutationError('Bulk rename specialisation', err, { oldValue, newValue });
+    throw err;
+  }
 }
 
 export function fetchDistinctSpecialisations(): Promise<Array<{ specialisation: string; count: number }>> {
@@ -156,10 +199,16 @@ export function fetchDistinctSpecialisations(): Promise<Array<{ specialisation: 
   );
 }
 
-export function deleteElement(id: string): Promise<void> {
-  return requestVoid(`/elements/${encodeURIComponent(id)}`, {
-    method: 'DELETE',
-  });
+export async function deleteElement(id: string): Promise<void> {
+  try {
+    await requestVoid(`/elements/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+    notifySuccess('Element deleted');
+  } catch (err) {
+    toastMutationError('Delete element', err);
+    throw err;
+  }
 }
 
 // ═══════════════════════════════════════
@@ -179,29 +228,49 @@ export function fetchRelationships(
   return request(`/relationships${query}`, z.array(RelationshipSchema));
 }
 
-export function createRelationship(
+export async function createRelationship(
   data: CreateRelationshipInput,
 ): Promise<Relationship> {
-  return request('/relationships', RelationshipSchema, {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
+  try {
+    const result = await request('/relationships', RelationshipSchema, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    notifySuccess('Relationship created', result.label || result.archimate_type);
+    return result;
+  } catch (err) {
+    toastMutationError('Create relationship', err, data);
+    throw err;
+  }
 }
 
-export function updateRelationship(
+export async function updateRelationship(
   id: string,
   data: Partial<Omit<Relationship, 'id' | 'created_at' | 'updated_at'>>,
 ): Promise<Relationship> {
-  return request(`/relationships/${encodeURIComponent(id)}`, RelationshipSchema, {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  });
+  try {
+    const result = await request(`/relationships/${encodeURIComponent(id)}`, RelationshipSchema, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    notifySuccess('Relationship updated', result.label || result.archimate_type);
+    return result;
+  } catch (err) {
+    toastMutationError('Update relationship', err, data);
+    throw err;
+  }
 }
 
-export function deleteRelationship(id: string): Promise<void> {
-  return requestVoid(`/relationships/${encodeURIComponent(id)}`, {
-    method: 'DELETE',
-  });
+export async function deleteRelationship(id: string): Promise<void> {
+  try {
+    await requestVoid(`/relationships/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+    notifySuccess('Relationship deleted');
+  } catch (err) {
+    toastMutationError('Delete relationship', err);
+    throw err;
+  }
 }
 
 // ═══════════════════════════════════════
@@ -224,27 +293,47 @@ export function fetchView(id: string): Promise<ViewDetail> {
   return request(`/views/${encodeURIComponent(id)}`, ViewDetailSchema as z.ZodType<ViewDetail>);
 }
 
-export function createView(data: CreateViewInput): Promise<View> {
-  return request('/views', ViewSchema, {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
+export async function createView(data: CreateViewInput): Promise<View> {
+  try {
+    const result = await request('/views', ViewSchema, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    notifySuccess('View created', result.name);
+    return result;
+  } catch (err) {
+    toastMutationError('Create view', err, data);
+    throw err;
+  }
 }
 
-export function duplicateView(id: string): Promise<View> {
-  return request(`/views/${encodeURIComponent(id)}/duplicate`, ViewSchema, {
-    method: 'POST',
-  });
+export async function duplicateView(id: string): Promise<View> {
+  try {
+    const result = await request(`/views/${encodeURIComponent(id)}/duplicate`, ViewSchema, {
+      method: 'POST',
+    });
+    notifySuccess('View duplicated', result.name);
+    return result;
+  } catch (err) {
+    toastMutationError('Duplicate view', err);
+    throw err;
+  }
 }
 
-export function removeViewElements(
+export async function removeViewElements(
   viewId: string,
   elementIds: string[],
 ): Promise<void> {
-  return requestVoid(`/views/${encodeURIComponent(viewId)}/elements`, {
-    method: 'DELETE',
-    body: JSON.stringify({ element_ids: elementIds }),
-  });
+  try {
+    await requestVoid(`/views/${encodeURIComponent(viewId)}/elements`, {
+      method: 'DELETE',
+      body: JSON.stringify({ element_ids: elementIds }),
+    });
+    notifySuccess('Removed from view', `${elementIds.length} element${elementIds.length !== 1 ? 's' : ''}`);
+  } catch (err) {
+    toastMutationError('Remove from view', err);
+    throw err;
+  }
 }
 
 export function updateViewElements(
@@ -306,16 +395,23 @@ export interface BatchImportResult {
   viewId: string | null;
 }
 
-export function importModelBatch(payload: BatchImportPayload): Promise<BatchImportResult> {
-  return request('/import/model-batch', z.object({
-    success: z.boolean(),
-    elementsCreated: z.number(),
-    relationshipsCreated: z.number(),
-    viewId: z.string().nullable(),
-  }) as z.ZodType<BatchImportResult>, {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
+export async function importModelBatch(payload: BatchImportPayload): Promise<BatchImportResult> {
+  try {
+    const result = await request('/import/model-batch', z.object({
+      success: z.boolean(),
+      elementsCreated: z.number(),
+      relationshipsCreated: z.number(),
+      viewId: z.string().nullable(),
+    }) as z.ZodType<BatchImportResult>, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    notifySuccess('Batch import complete', `${result.elementsCreated} elements, ${result.relationshipsCreated} relationships`);
+    return result;
+  } catch (err) {
+    toastMutationError('Batch import', err);
+    throw err;
+  }
 }
 
 export function exportModelBatch(viewId?: string): Promise<unknown> {
@@ -337,11 +433,18 @@ const ArchimateImportResultSchema = z.object({
   relationshipsCreated: z.number(),
 });
 
-export function importArchimateXml(xml: string): Promise<ArchimateImportResult> {
-  return request('/import/archimate-xml', ArchimateImportResultSchema, {
-    method: 'POST',
-    body: JSON.stringify({ xml }),
-  });
+export async function importArchimateXml(xml: string): Promise<ArchimateImportResult> {
+  try {
+    const result = await request('/import/archimate-xml', ArchimateImportResultSchema, {
+      method: 'POST',
+      body: JSON.stringify({ xml }),
+    });
+    notifySuccess('ArchiMate XML imported', `${result.elementsCreated} elements, ${result.relationshipsCreated} relationships`);
+    return result;
+  } catch (err) {
+    toastMutationError('Import ArchiMate XML', err);
+    throw err;
+  }
 }
 
 export async function exportArchimateXml(): Promise<string> {
@@ -373,11 +476,18 @@ const CsvImportResultSchema = z.object({
   relationshipsCreated: z.number(),
 });
 
-export function importCsv(data: CsvImportPayload): Promise<CsvImportResult> {
-  return request('/import/csv', CsvImportResultSchema, {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
+export async function importCsv(data: CsvImportPayload): Promise<CsvImportResult> {
+  try {
+    const result = await request('/import/csv', CsvImportResultSchema, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    notifySuccess('CSV imported', `${result.elementsCreated} elements, ${result.relationshipsCreated} relationships`);
+    return result;
+  } catch (err) {
+    toastMutationError('Import CSV', err);
+    throw err;
+  }
 }
 
 export interface CsvExportResult {
@@ -474,11 +584,18 @@ export function exportModelFull(): Promise<ModelFileData> {
 }
 
 /** POST /api/import/model-full — replace model with .archvis file contents */
-export function importModelFull(data: ModelFileData): Promise<ModelImportResult> {
-  return request('/import/model-full', ModelImportResultSchema, {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
+export async function importModelFull(data: ModelFileData): Promise<ModelImportResult> {
+  try {
+    const result = await request('/import/model-full', ModelImportResultSchema, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    notifySuccess('Model imported', `${result.elementsImported} elements, ${result.relationshipsImported} relationships, ${result.viewsImported} views`);
+    return result;
+  } catch (err) {
+    toastMutationError('Import model', err);
+    throw err;
+  }
 }
 
 /** POST /api/model/reset — clear the model; optionally reload seed data */
@@ -550,37 +667,160 @@ export function fetchProcessSteps(processId: string): Promise<ProcessStep[]> {
   );
 }
 
-export function createProcessStep(data: CreateProcessStepInput): Promise<ProcessStep & { element_id: string }> {
-  return request(
-    '/process-steps',
-    ProcessStepSchema.extend({ element_id: z.string() }) as z.ZodType<ProcessStep & { element_id: string }>,
-    { method: 'POST', body: JSON.stringify(data) },
-  );
+export async function createProcessStep(data: CreateProcessStepInput): Promise<ProcessStep & { element_id: string }> {
+  try {
+    const result = await request(
+      '/process-steps',
+      ProcessStepSchema.extend({ element_id: z.string() }) as z.ZodType<ProcessStep & { element_id: string }>,
+      { method: 'POST', body: JSON.stringify(data) },
+    );
+    notifySuccess('Process step created', result.name);
+    return result;
+  } catch (err) {
+    toastMutationError('Create process step', err, data);
+    throw err;
+  }
 }
 
-export function updateProcessStep(
+export async function updateProcessStep(
   id: string,
   data: Partial<Omit<ProcessStep, 'id' | 'process_id' | 'sequence'>>,
 ): Promise<ProcessStep> {
-  return request(
-    `/process-steps/${encodeURIComponent(id)}`,
-    ProcessStepSchema,
-    { method: 'PUT', body: JSON.stringify(data) },
-  );
+  try {
+    const result = await request(
+      `/process-steps/${encodeURIComponent(id)}`,
+      ProcessStepSchema,
+      { method: 'PUT', body: JSON.stringify(data) },
+    );
+    notifySuccess('Process step updated', result.name);
+    return result;
+  } catch (err) {
+    toastMutationError('Update process step', err, data);
+    throw err;
+  }
 }
 
-export function deleteProcessStep(id: string): Promise<void> {
-  return requestVoid(`/process-steps/${encodeURIComponent(id)}`, {
-    method: 'DELETE',
-  });
+export async function deleteProcessStep(id: string): Promise<void> {
+  try {
+    await requestVoid(`/process-steps/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+    notifySuccess('Process step deleted');
+  } catch (err) {
+    toastMutationError('Delete process step', err);
+    throw err;
+  }
 }
 
-export function reorderProcessSteps(stepIds: string[]): Promise<{ success: boolean; count: number }> {
-  return request(
-    '/process-steps/reorder',
-    z.object({ success: z.boolean(), count: z.number() }),
-    { method: 'POST', body: JSON.stringify({ step_ids: stepIds }) },
-  );
+export async function reorderProcessSteps(stepIds: string[]): Promise<{ success: boolean; count: number }> {
+  try {
+    const result = await request(
+      '/process-steps/reorder',
+      z.object({ success: z.boolean(), count: z.number() }),
+      { method: 'POST', body: JSON.stringify({ step_ids: stepIds }) },
+    );
+    notifySuccess('Process steps reordered', `${result.count} steps`);
+    return result;
+  } catch (err) {
+    toastMutationError('Reorder process steps', err);
+    throw err;
+  }
+}
+
+// ═══════════════════════════════════════
+// Projects
+// ═══════════════════════════════════════
+
+export function fetchProjects(): Promise<Project[]> {
+  return request('/projects', z.array(ProjectSchema));
+}
+
+export function fetchCurrentProject(): Promise<Project> {
+  return request('/projects/current', ProjectSchema);
+}
+
+export async function createProject(data: CreateProjectInput): Promise<Project> {
+  try {
+    const result = await request('/projects', ProjectSchema, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    notifySuccess('Project created', result.name);
+    return result;
+  } catch (err) {
+    toastMutationError('Create project', err, data);
+    throw err;
+  }
+}
+
+export async function updateProject(id: string, data: UpdateProjectInput): Promise<Project> {
+  try {
+    const result = await request(`/projects/${encodeURIComponent(id)}`, ProjectSchema, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    notifySuccess('Project updated', result.name);
+    return result;
+  } catch (err) {
+    toastMutationError('Update project', err, data);
+    throw err;
+  }
+}
+
+export async function deleteProject(id: string): Promise<void> {
+  try {
+    await requestVoid(`/projects/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+    notifySuccess('Project deleted');
+  } catch (err) {
+    toastMutationError('Delete project', err);
+    throw err;
+  }
+}
+
+export async function switchProject(id: string): Promise<Project> {
+  try {
+    const result = await request('/projects/current', ProjectSchema, {
+      method: 'PUT',
+      body: JSON.stringify({ id }),
+    });
+    notifySuccess('Switched to project', result.name);
+    return result;
+  } catch (err) {
+    toastMutationError('Switch project', err);
+    throw err;
+  }
+}
+
+// ═══════════════════════════════════════
+// Promote / Demote
+// ═══════════════════════════════════════
+
+const AreaResultSchema = z.object({ id: z.string(), area: z.string() });
+
+export async function promoteElement(id: string): Promise<{ id: string; area: string }> {
+  return request(`/elements/${encodeURIComponent(id)}/promote`, AreaResultSchema, { method: 'POST' });
+}
+
+export async function demoteElement(id: string): Promise<{ id: string; area: string }> {
+  return request(`/elements/${encodeURIComponent(id)}/demote`, AreaResultSchema, { method: 'POST' });
+}
+
+export async function promoteRelationship(id: string): Promise<{ id: string; area: string }> {
+  return request(`/relationships/${encodeURIComponent(id)}/promote`, AreaResultSchema, { method: 'POST' });
+}
+
+export async function demoteRelationship(id: string): Promise<{ id: string; area: string }> {
+  return request(`/relationships/${encodeURIComponent(id)}/demote`, AreaResultSchema, { method: 'POST' });
+}
+
+export async function promoteView(id: string): Promise<{ id: string; area: string }> {
+  return request(`/views/${encodeURIComponent(id)}/promote`, AreaResultSchema, { method: 'POST' });
+}
+
+export async function demoteView(id: string): Promise<{ id: string; area: string }> {
+  return request(`/views/${encodeURIComponent(id)}/demote`, AreaResultSchema, { method: 'POST' });
 }
 
 export { ApiError };

@@ -3,6 +3,13 @@ import crypto from 'crypto';
 import db from '../db.js';
 import { CreateViewSchema } from '../../src/model/types.js';
 
+function getCurrentProjectId(req: Request): string {
+  const qp = req.query.project_id;
+  if (typeof qp === 'string' && qp) return qp;
+  const pref = db.prepare("SELECT value FROM preferences WHERE key = 'current_project_id'").get() as { value: string } | undefined;
+  return pref?.value ?? 'proj-default';
+}
+
 interface ViewRow {
   id: string;
   name: string;
@@ -73,14 +80,16 @@ function parseViewRelationship(row: ViewRelationshipRow) {
 
 const router = Router();
 
-// GET /api/views — return all views
-router.get('/views', (_req: Request, res: Response) => {
-  const rows = db.prepare('SELECT * FROM views ORDER BY name ASC').all() as ViewRow[];
+// GET /api/views — return all views for current project
+router.get('/views', (req: Request, res: Response) => {
+  const projectId = getCurrentProjectId(req);
+  const rows = db.prepare('SELECT * FROM views WHERE project_id = ? ORDER BY name ASC').all(projectId) as ViewRow[];
   res.json(rows.map(parseView));
 });
 
 // POST /api/views — create a new view
 router.post('/views', (req: Request, res: Response) => {
+  const projectId = getCurrentProjectId(req);
   const parsed = CreateViewSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.issues.map(i => i.message).join('; '), code: 'VALIDATION_ERROR' });
@@ -90,8 +99,8 @@ router.post('/views', (req: Request, res: Response) => {
 
   const stmt = db.prepare(`
     INSERT INTO views (id, name, viewpoint_type, description, render_mode,
-      filter_domain, filter_layers, filter_specialisations, rotation_default, is_preset)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      filter_domain, filter_layers, filter_specialisations, rotation_default, is_preset, project_id, area)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   stmt.run(
@@ -105,6 +114,8 @@ router.post('/views', (req: Request, res: Response) => {
     body.filter_specialisations ? JSON.stringify(body.filter_specialisations) : null,
     body.rotation_default ? JSON.stringify(body.rotation_default) : null,
     body.is_preset ? 1 : 0,
+    body.project_id ?? projectId,
+    body.area ?? 'working',
   );
 
   const created = db.prepare('SELECT * FROM views WHERE id = ?').get(body.id) as ViewRow;

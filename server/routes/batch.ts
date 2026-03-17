@@ -9,6 +9,13 @@ import type {
 import { BatchImportBodySchema } from '../../src/model/types.js';
 import type { BatchElementInputParsed } from '../../src/model/types.js';
 
+function getCurrentProjectId(req: Request): string {
+  const qp = req.query.project_id;
+  if (typeof qp === 'string' && qp) return qp;
+  const pref = db.prepare("SELECT value FROM preferences WHERE key = 'current_project_id'").get() as { value: string } | undefined;
+  return pref?.value ?? 'proj-default';
+}
+
 const router = Router();
 
 // ─── Layer ordering for grid layout ──────────────────────────────────────────
@@ -74,6 +81,7 @@ const LAYER_GAP = 60;
 // ─── POST /api/import/model-batch ────────────────────────────────────────────
 
 router.post('/import/model-batch', (req: Request, res: Response) => {
+  const projectId = getCurrentProjectId(req);
   const parsed = BatchImportBodySchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.issues.map(i => i.message).join('; '), code: 'VALIDATION_ERROR' });
@@ -99,8 +107,8 @@ router.post('/import/model-batch', (req: Request, res: Response) => {
 
       const insertElement = db.prepare(`
         INSERT INTO elements
-          (id, name, archimate_type, specialisation, layer, sublayer, description, parent_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          (id, name, archimate_type, specialisation, layer, sublayer, description, parent_id, project_id, area)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
           name = excluded.name,
           archimate_type = excluded.archimate_type,
@@ -133,6 +141,8 @@ router.post('/import/model-batch', (req: Request, res: Response) => {
           el.sublayer ?? null,
           el.description ?? null,
           parentId,
+          projectId,
+          'working',
         );
         nameToId.set(el.name, id);
         insertedElementIds.push(id);
@@ -152,8 +162,8 @@ router.post('/import/model-batch', (req: Request, res: Response) => {
 
       const insertRelationship = db.prepare(`
         INSERT INTO relationships
-          (id, archimate_type, specialisation, source_id, target_id, label)
-        VALUES (?, ?, ?, ?, ?, ?)
+          (id, archimate_type, specialisation, source_id, target_id, label, project_id, area)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
           archimate_type = excluded.archimate_type,
           specialisation = excluded.specialisation,
@@ -213,6 +223,8 @@ router.post('/import/model-batch', (req: Request, res: Response) => {
           sourceId,
           targetId,
           rel.label ?? null,
+          projectId,
+          'working',
         );
         relationshipsCreated++;
       }
@@ -226,14 +238,14 @@ router.post('/import/model-batch', (req: Request, res: Response) => {
         const renderMode = v.render_mode ?? 'flat';
 
         db.prepare(`
-          INSERT INTO views (id, name, viewpoint_type, render_mode)
-          VALUES (?, ?, ?, ?)
+          INSERT INTO views (id, name, viewpoint_type, render_mode, project_id, area)
+          VALUES (?, ?, ?, ?, ?, ?)
           ON CONFLICT(id) DO UPDATE SET
             name = excluded.name,
             viewpoint_type = excluded.viewpoint_type,
             render_mode = excluded.render_mode,
             updated_at = datetime('now')
-        `).run(viewId, v.name, viewpointType, renderMode);
+        `).run(viewId, v.name, viewpointType, renderMode, projectId, 'working');
 
         // Group elements by layer in LAYER_ORDER order
         const layerGroups = new Map<string, string[]>();

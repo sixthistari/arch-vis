@@ -198,6 +198,57 @@ const versionedMigrations: MigrationEntry[] = [
       ALTER TABLE views_new RENAME TO views;
     `);
   }],
+
+  // Version 7: Projects + Working/Governed areas
+  [7, () => {
+    // Create projects table
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS projects (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now'))
+      );
+    `);
+
+    // Default project for existing data
+    db.exec(`
+      INSERT OR IGNORE INTO projects (id, name, description)
+      VALUES ('proj-default', 'Default Project', 'Auto-created default project');
+    `);
+
+    // Add columns to elements, relationships, views
+    const alters = [
+      "ALTER TABLE elements ADD COLUMN project_id TEXT REFERENCES projects(id) DEFAULT 'proj-default'",
+      "ALTER TABLE elements ADD COLUMN area TEXT DEFAULT 'working' CHECK(area IN ('working','governed'))",
+      "ALTER TABLE relationships ADD COLUMN project_id TEXT REFERENCES projects(id) DEFAULT 'proj-default'",
+      "ALTER TABLE relationships ADD COLUMN area TEXT DEFAULT 'working' CHECK(area IN ('working','governed'))",
+      "ALTER TABLE views ADD COLUMN project_id TEXT REFERENCES projects(id) DEFAULT 'proj-default'",
+      "ALTER TABLE views ADD COLUMN area TEXT DEFAULT 'working' CHECK(area IN ('working','governed'))",
+    ];
+    for (const sql of alters) {
+      try {
+        db.exec(sql);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (!msg.includes('duplicate column')) throw err;
+      }
+    }
+
+    // Migrate existing data to default project + governed area
+    db.exec("UPDATE elements SET project_id = 'proj-default', area = 'governed'");
+    db.exec("UPDATE relationships SET project_id = 'proj-default', area = 'governed'");
+    db.exec("UPDATE views SET project_id = 'proj-default', area = 'governed'");
+
+    // Track current project in preferences
+    db.exec("INSERT OR IGNORE INTO preferences (key, value) VALUES ('current_project_id', 'proj-default')");
+
+    // Indexes
+    db.exec("CREATE INDEX IF NOT EXISTS idx_elements_project ON elements(project_id)");
+    db.exec("CREATE INDEX IF NOT EXISTS idx_relationships_project ON relationships(project_id)");
+    db.exec("CREATE INDEX IF NOT EXISTS idx_views_project ON views(project_id)");
+  }],
 ];
 
 for (const [version, migrate] of versionedMigrations) {

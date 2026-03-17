@@ -419,6 +419,20 @@ function TreeNode({ element, isOrphan, isSelected, theme, indent = 16, onSelect,
         borderRadius: 2,
       }}
     >
+      {element.area === 'working' && (
+        <span style={{
+          display: 'inline-block',
+          fontSize: 8,
+          fontWeight: 700,
+          background: isDark ? '#92400E' : '#FDE68A',
+          color: isDark ? '#FDE68A' : '#92400E',
+          borderRadius: 2,
+          padding: '0 3px',
+          marginRight: 4,
+          verticalAlign: 'middle',
+          lineHeight: '14px',
+        }}>W</span>
+      )}
       {element.name}
     </div>
   );
@@ -700,6 +714,7 @@ export function ModelTree({ onClose }: ModelTreeProps) {
   const theme = useThemeStore(s => s.theme);
 
   const [search, setSearch] = useState('');
+  const [areaFilter, setAreaFilter] = useState<'all' | 'working' | 'governed'>('all');
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
 
   const isDark = theme === 'dark';
@@ -723,11 +738,15 @@ export function ModelTree({ onClose }: ModelTreeProps) {
     [viewElements],
   );
 
-  // Filter by search
+  // Filter by search and area
   const filtered = useMemo(() => {
+    let list = elements;
+    if (areaFilter !== 'all') {
+      list = list.filter(el => el.area === areaFilter);
+    }
     const q = search.toLowerCase().trim();
-    return q ? elements.filter(el => el.name.toLowerCase().includes(q)) : elements;
-  }, [elements, search]);
+    return q ? list.filter(el => el.name.toLowerCase().includes(q)) : list;
+  }, [elements, search, areaFilter]);
 
   // Partition into three notation buckets
   const { archimateEls, umlEls, wfEls } = useMemo(() => {
@@ -912,6 +931,34 @@ export function ModelTree({ onClose }: ModelTreeProps) {
             outline: 'none',
           }}
         />
+      </div>
+
+      {/* Area filter tabs */}
+      <div style={{
+        display: 'flex',
+        gap: 0,
+        padding: '0 8px 4px',
+        flexShrink: 0,
+      }}>
+        {(['all', 'working', 'governed'] as const).map(tab => (
+          <button
+            key={tab}
+            onClick={() => setAreaFilter(tab)}
+            style={{
+              flex: 1,
+              background: areaFilter === tab ? 'var(--bg-tertiary)' : 'transparent',
+              color: areaFilter === tab ? textColour : mutedColour,
+              border: `1px solid ${borderColour}`,
+              borderRadius: tab === 'all' ? '4px 0 0 4px' : tab === 'governed' ? '0 4px 4px 0' : 0,
+              padding: '3px 0',
+              cursor: 'pointer',
+              fontSize: 10,
+              fontWeight: areaFilter === tab ? 600 : 400,
+            }}
+          >
+            {tab === 'all' ? 'All' : tab === 'working' ? 'Working' : 'Governed'}
+          </button>
+        ))}
       </div>
 
       {/* Legend */}

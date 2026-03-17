@@ -24,6 +24,8 @@ export interface ElementRow {
   created_by: string | null;
   source: string | null;
   folder: string | null;
+  project_id: string | null;
+  area: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -40,6 +42,8 @@ export interface RelationshipRow {
   confidence: number | null;
   created_by: string | null;
   source: string | null;
+  project_id: string | null;
+  area: string | null;
   created_at: string;
   updated_at: string | null;
 }

@@ -166,6 +166,30 @@ Process detail is NOT full BPMN. The PFC backend already captures process_steps 
 | R-EXP-04 | Export to ArchiMate Model Exchange Format XML 3.2 |
 | R-EXP-05 | Export to JSON (full model backup) |
 
+### 3.12 Project Management
+
+| ID | Requirement |
+|----|-------------|
+| R-PROJ-01 | The tool supports multiple projects. Each project is an independent container for elements, relationships, and views. |
+| R-PROJ-02 | Create, rename, and delete projects. Deleting a project cascades to all its elements, relationships, and views. |
+| R-PROJ-03 | A project selector in the toolbar allows switching between projects. Switching reloads all model and view data. |
+| R-PROJ-04 | On first run (or migration), a "Default Project" is created and all existing data is assigned to it. |
+| R-PROJ-05 | Model file save/load (.archvis) operates per-project — exports only the current project's data, imports into the current project. |
+| R-PROJ-06 | Batch import/export operates within the current project scope. |
+
+### 3.13 Working and Governed Areas
+
+| ID | Requirement |
+|----|-------------|
+| R-AREA-01 | Within a project, every element, relationship, and view belongs to an **area**: either `working` (draft/scratchpad) or `governed` (human-reviewed, approved). |
+| R-AREA-02 | New elements, relationships, and views default to the `working` area. |
+| R-AREA-03 | A **promote** action moves an entity from working to governed. Promotion requires the entity to have a non-empty name and description (validation gate). |
+| R-AREA-04 | A **demote** action moves an entity from governed back to working (for rework). |
+| R-AREA-05 | The model tree displays area tabs (All / Working / Governed) to filter elements by area. |
+| R-AREA-06 | Working-area elements render on canvas with a visual indicator (dashed border, "W" badge) to distinguish from governed elements. |
+| R-AREA-07 | The view switcher shows an area badge ("W" or "G") on each view. |
+| R-AREA-08 | Bulk promote/demote is supported via multi-select. |
+
 ---
 
 ## 4. Sublayer Model
@@ -600,6 +624,16 @@ These are table-stakes features every modelling tool needs, derived from draw.io
 5. [x] Heatmap overlays (colour intensity mapped to numeric properties)
 6. [ ] PDF export
 
+### Phase 5 — Projects + Governance (UAT Prep)
+
+1. [ ] Projects table, CRUD API, project-scoped data routes
+2. [ ] Project selector UI in toolbar
+3. [ ] Working/governed area column on elements, relationships, views
+4. [ ] Promote/demote API with basic validation (name + description required)
+5. [ ] ModelTree area tabs (All / Working / Governed)
+6. [ ] Canvas visual indicator for working-area elements
+7. [ ] Per-project model file save/load
+
 ---
 
 ## 18. Acceptance Criteria
@@ -679,6 +713,17 @@ These are table-stakes features every modelling tool needs, derived from draw.io
 - [x] All dependencies open-source (MIT/Apache/BSD/MPL-2.0)
 - [x] Error boundaries prevent single component failure from crashing the application
 - [x] Position save retries once on failure with user notification in status bar
+
+### Projects & Governance
+
+- [ ] Multiple projects with create/rename/delete
+- [ ] Project selector in toolbar with instant switching
+- [ ] Elements, relationships, views scoped to current project
+- [ ] Working/governed areas with promote/demote
+- [ ] Promotion validation: name and description required
+- [ ] Visual indicator for working-area elements on canvas
+- [ ] Model tree area filtering (All / Working / Governed)
+- [ ] Per-project .archvis save/load
 
 ---
 

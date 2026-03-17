@@ -95,6 +95,8 @@ describe('ElementSchema', () => {
     created_by: null,
     source: null,
     folder: null,
+    project_id: 'proj-default',
+    area: 'working',
     created_at: null,
     updated_at: null,
   };
@@ -176,6 +178,8 @@ describe('RelationshipSchema', () => {
     created_by: null,
     source: null,
     folder: null,
+    project_id: 'proj-default',
+    area: 'working',
     created_at: null,
     updated_at: null,
   };

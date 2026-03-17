@@ -4,6 +4,13 @@ import db from '../db.js';
 import type { ElementRow } from '../../shared/types.js';
 import { CreateElementSchema, UpdateElementSchema } from '../../src/model/types.js';
 
+function getCurrentProjectId(req: Request): string {
+  const qp = req.query.project_id;
+  if (typeof qp === 'string' && qp) return qp;
+  const pref = db.prepare("SELECT value FROM preferences WHERE key = 'current_project_id'").get() as { value: string } | undefined;
+  return pref?.value ?? 'proj-default';
+}
+
 function parseProperties(row: ElementRow): Omit<ElementRow, 'properties'> & { properties: Record<string, unknown> | null } {
   return {
     ...row,
@@ -15,9 +22,10 @@ const router = Router();
 
 // GET /api/elements — return all elements, with optional filters
 router.get('/elements', (req: Request, res: Response) => {
+  const projectId = getCurrentProjectId(req);
   const { layer, domain, specialisation } = req.query;
-  const conditions: string[] = [];
-  const params: unknown[] = [];
+  const conditions: string[] = ['project_id = ?'];
+  const params: unknown[] = [projectId];
 
   if (typeof layer === 'string') {
     conditions.push('layer = ?');
@@ -32,7 +40,7 @@ router.get('/elements', (req: Request, res: Response) => {
     params.push(specialisation);
   }
 
-  const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+  const where = `WHERE ${conditions.join(' AND ')}`;
   const rows = db.prepare(`SELECT * FROM elements ${where} ORDER BY name ASC`).all(...params) as ElementRow[];
 
   res.json(rows.map(parseProperties));
@@ -40,6 +48,7 @@ router.get('/elements', (req: Request, res: Response) => {
 
 // POST /api/elements — create a new element
 router.post('/elements', (req: Request, res: Response) => {
+  const projectId = getCurrentProjectId(req);
   const parsed = CreateElementSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.issues.map(i => i.message).join('; '), code: 'VALIDATION_ERROR' });
@@ -52,8 +61,8 @@ router.post('/elements', (req: Request, res: Response) => {
   const stmt = db.prepare(`
     INSERT INTO elements (id, name, archimate_type, specialisation, layer, sublayer,
       domain_id, status, description, properties, confidence, source_session_id, parent_id,
-      created_by, source, folder)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      created_by, source, folder, project_id, area)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   stmt.run(
@@ -73,6 +82,8 @@ router.post('/elements', (req: Request, res: Response) => {
     body.created_by ?? 'manual',
     body.source ?? 'manual',
     body.folder ?? null,
+    body.project_id ?? projectId,
+    body.area ?? 'working',
   );
 
   const created = db.prepare('SELECT * FROM elements WHERE id = ?').get(id) as ElementRow;

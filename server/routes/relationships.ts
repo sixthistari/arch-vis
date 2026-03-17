@@ -3,6 +3,13 @@ import db from '../db.js';
 import type { RelationshipRow } from '../../shared/types.js';
 import { CreateRelationshipSchema, UpdateRelationshipSchema } from '../../src/model/types.js';
 
+function getCurrentProjectId(req: Request): string {
+  const qp = req.query.project_id;
+  if (typeof qp === 'string' && qp) return qp;
+  const pref = db.prepare("SELECT value FROM preferences WHERE key = 'current_project_id'").get() as { value: string } | undefined;
+  return pref?.value ?? 'proj-default';
+}
+
 function parseProperties(row: RelationshipRow): Omit<RelationshipRow, 'properties'> & { properties: Record<string, unknown> | null } {
   return {
     ...row,
@@ -14,9 +21,10 @@ const router = Router();
 
 // GET /api/relationships — return all, with optional filters
 router.get('/relationships', (req: Request, res: Response) => {
+  const projectId = getCurrentProjectId(req);
   const { source_id, target_id, archimate_type } = req.query;
-  const conditions: string[] = [];
-  const params: unknown[] = [];
+  const conditions: string[] = ['project_id = ?'];
+  const params: unknown[] = [projectId];
 
   if (typeof source_id === 'string') {
     conditions.push('source_id = ?');
@@ -31,7 +39,7 @@ router.get('/relationships', (req: Request, res: Response) => {
     params.push(archimate_type);
   }
 
-  const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+  const where = `WHERE ${conditions.join(' AND ')}`;
   const rows = db.prepare(`SELECT * FROM relationships ${where}`).all(...params) as RelationshipRow[];
 
   res.json(rows.map(parseProperties));
@@ -39,6 +47,7 @@ router.get('/relationships', (req: Request, res: Response) => {
 
 // POST /api/relationships — create a new relationship
 router.post('/relationships', (req: Request, res: Response) => {
+  const projectId = getCurrentProjectId(req);
   const parsed = CreateRelationshipSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.issues.map(i => i.message).join('; '), code: 'VALIDATION_ERROR' });
@@ -75,8 +84,8 @@ router.post('/relationships', (req: Request, res: Response) => {
 
   const stmt = db.prepare(`
     INSERT INTO relationships (id, archimate_type, specialisation, source_id, target_id,
-      label, description, properties, confidence, created_by, source)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      label, description, properties, confidence, created_by, source, project_id, area)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   stmt.run(
@@ -91,6 +100,8 @@ router.post('/relationships', (req: Request, res: Response) => {
     body.confidence ?? null,
     body.created_by ?? 'manual',
     body.source ?? 'manual',
+    body.project_id ?? projectId,
+    body.area ?? 'working',
   );
 
   const created = db.prepare('SELECT * FROM relationships WHERE id = ?').get(body.id) as RelationshipRow;

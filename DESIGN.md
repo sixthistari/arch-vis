@@ -69,6 +69,12 @@ domains
 ├── owner_role (TEXT)
 ├── created_at, updated_at (TIMESTAMP)
 
+projects
+├── id (TEXT PK)
+├── name (TEXT NOT NULL)
+├── description (TEXT)
+├── created_at, updated_at (TIMESTAMP)
+
 elements
 ├── id (TEXT PK)
 ├── name (TEXT NOT NULL)
@@ -85,6 +91,8 @@ elements
 ├── parent_id (TEXT FK → elements)        — hierarchy (nesting, containment)
 ├── created_by (TEXT)                     — creator identity
 ├── source (TEXT)                          — creation pathway: manual | archimate-xml | csv | api | pfc
+├── project_id (TEXT FK → projects)     — project scope
+├── area (TEXT: working | governed)     — governance area
 ├── created_at, updated_at (TIMESTAMP)
 
     Indexes: layer, domain_id, archimate_type, specialisation
@@ -101,6 +109,8 @@ relationships
 ├── confidence (REAL)
 ├── created_by (TEXT)
 ├── source (TEXT)
+├── project_id (TEXT FK → projects)     — project scope
+├── area (TEXT: working | governed)     — governance area
 ├── created_at, updated_at (TIMESTAMP)
 
     Indexes: source_id, target_id
@@ -120,6 +130,8 @@ views
 ├── filter_specialisations (JSON ARRAY)
 ├── rotation_default (JSON: {y, x})       — for spatial renderer
 ├── is_preset (BOOLEAN)
+├── project_id (TEXT FK → projects)     — project scope
+├── area (TEXT: working | governed)     — governance area
 ├── created_at, updated_at (TIMESTAMP)
 
 view_elements
@@ -195,6 +207,22 @@ sequence_fragments
 ├── vertical_extent (JSON: {start_order, end_order})
 ├── created_at (TIMESTAMP)
 ```
+
+### 2.5 Project Scoping and Governance Areas
+
+**Projects** are the top-level container. Every element, relationship, and view belongs to exactly one project. The model operates on one project at a time — API queries are scoped to the current project via middleware.
+
+**Areas** provide a two-tier governance structure within a project:
+- **Working**: draft/scratchpad space. New elements default here. Agent-created elements land here.
+- **Governed**: human-reviewed, approved content. Promotion from working to governed requires non-empty name and description.
+
+The `area` column is orthogonal to the `status` column:
+- `status` = lifecycle (active, draft, superseded, deprecated, retired)
+- `area` = governance provenance (working vs governed)
+
+An element can be `status: 'active'` in the working area (actively being developed but not yet reviewed) or `status: 'draft'` in the governed area (approved as a placeholder).
+
+Relationships inherit area independently — a relationship between two governed elements may itself still be in the working area if it hasn't been reviewed.
 
 ---
 
@@ -730,6 +758,17 @@ Position saves retry once after a 1-second delay. If both attempts fail, the err
 ## 13. API Design
 
 HTTP server serving JSON. All routes accept and return JSON unless otherwise noted.
+
+### 13.0 Projects
+
+```
+GET    /api/projects                              — list all projects
+POST   /api/projects                              — create project
+PUT    /api/projects/:id                          — rename/update project
+DELETE /api/projects/:id                          — delete project (cascade)
+GET    /api/projects/current                      — get current project
+PUT    /api/projects/current                      — switch current project
+```
 
 ### 13.1 Model CRUD
 

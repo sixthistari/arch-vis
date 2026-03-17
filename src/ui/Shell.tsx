@@ -20,9 +20,12 @@ import { useInteractionStore } from '../store/interaction';
 import { useModelStore } from '../store/model';
 import { useViewStore } from '../store/view';
 import { useThemeStore } from '../store/theme';
+import { useProjectStore } from '../store/project';
 import { ValidationPanel } from './ValidationPanel';
 import { SpecialisationsManager } from './SpecialisationsManager';
 import { HelpPanel } from './HelpPanel';
+import { ToastContainer } from './components/Toast';
+import { notifySuccess, notifyError, notifyWarning } from '../store/notification';
 
 function UndoRedoKeyHandler() {
   const undo = useUndoRedoStore(s => s.undo);
@@ -102,12 +105,10 @@ function ImportMenu(): React.ReactElement {
       if (!input.files?.[0]) return;
       try {
         const text = await input.files[0].text();
-        const result = await importArchimateXml(text);
-        window.alert(`Imported ${result.elementsCreated} elements and ${result.relationshipsCreated} relationships.`);
+        await importArchimateXml(text);
         window.location.reload();
       } catch (err) {
         console.error('ArchiMate XML import failed:', err);
-        window.alert(`Import failed: ${err instanceof Error ? err.message : String(err)}`);
       }
     };
     input.click();
@@ -142,20 +143,18 @@ function ImportMenu(): React.ReactElement {
         }
 
         if (!elementsCsv) {
-          window.alert('No elements CSV file found. Name files with "elements", "relations", or "properties".');
+          notifyWarning('No elements CSV file found', 'Name files with "elements", "relations", or "properties".');
           return;
         }
 
-        const result = await importCsv({
+        await importCsv({
           elements: elementsCsv,
           relations: relationsCsv,
           properties: propertiesCsv || undefined,
         });
-        window.alert(`Imported ${result.elementsCreated} elements and ${result.relationshipsCreated} relationships.`);
         window.location.reload();
       } catch (err) {
         console.error('CSV import failed:', err);
-        window.alert(`Import failed: ${err instanceof Error ? err.message : String(err)}`);
       }
     };
     input.click();
@@ -219,7 +218,10 @@ function FileMenu(): React.ReactElement {
       window.location.reload();
     } catch (err) {
       console.error('New model failed:', err);
-      window.alert(`Failed to create new model: ${err instanceof Error ? err.message : String(err)}`);
+      notifyError('Failed to create new model', {
+        operation: 'New model',
+        errorMessage: err instanceof Error ? err.message : String(err),
+      });
     }
   }, []);
 
@@ -227,15 +229,13 @@ function FileMenu(): React.ReactElement {
     setOpen(false);
     if (!window.confirm('Opening a model will replace the current model. Continue?')) return;
     try {
-      const result = await openModelFile();
-      window.alert(
-        `Imported ${result.elementsImported} elements, ${result.relationshipsImported} relationships, ${result.viewsImported} views.`,
-      );
+      await openModelFile();
+      // Toast fires from importModelFull in client.ts
       window.location.reload();
     } catch (err) {
       if (err instanceof Error && err.message === 'No file selected') return;
       console.error('Open model failed:', err);
-      window.alert(`Import failed: ${err instanceof Error ? err.message : String(err)}`);
+      // Error toast fires from importModelFull in client.ts
     }
   }, []);
 
@@ -243,9 +243,13 @@ function FileMenu(): React.ReactElement {
     setOpen(false);
     try {
       await saveModelFile();
+      notifySuccess('Model saved');
     } catch (err) {
       console.error('Save model failed:', err);
-      window.alert(`Save failed: ${err instanceof Error ? err.message : String(err)}`);
+      notifyError('Save failed', {
+        operation: 'Save model',
+        errorMessage: err instanceof Error ? err.message : String(err),
+      });
     }
   }, []);
 
@@ -257,7 +261,10 @@ function FileMenu(): React.ReactElement {
       window.location.reload();
     } catch (err) {
       console.error('Close model failed:', err);
-      window.alert(`Failed to close model: ${err instanceof Error ? err.message : String(err)}`);
+      notifyError('Failed to close model', {
+        operation: 'Close model',
+        errorMessage: err instanceof Error ? err.message : String(err),
+      });
     }
   }, []);
 
@@ -420,6 +427,217 @@ function ViewMenu(): React.ReactElement {
   );
 }
 
+function ProjectSelector(): React.ReactElement {
+  const projects = useProjectStore(s => s.projects);
+  const currentProjectId = useProjectStore(s => s.currentProjectId);
+  const switchProject = useProjectStore(s => s.switchProject);
+  const createProject = useProjectStore(s => s.createProject);
+  const deleteProject = useProjectStore(s => s.deleteProject);
+  const updateProject = useProjectStore(s => s.updateProject);
+  const [open, setOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [renaming, setRenaming] = useState<string | null>(null);
+  const [renameName, setRenameName] = useState('');
+  const menuRef = React.useRef<HTMLDivElement>(null);
+
+  // Load projects on mount
+  useEffect(() => {
+    useProjectStore.getState().loadProjects();
+  }, []);
+
+  // Close on click outside
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setCreating(false);
+        setRenaming(null);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const currentProject = projects.find(p => p.id === currentProjectId);
+
+  const handleCreate = async () => {
+    const name = newName.trim();
+    if (!name) { setCreating(false); return; }
+    await createProject({ name });
+    setNewName('');
+    setCreating(false);
+  };
+
+  const handleSwitch = async (id: string) => {
+    if (id === currentProjectId) return;
+    setOpen(false);
+    await switchProject(id);
+  };
+
+  const handleDelete = async (id: string) => {
+    const proj = projects.find(p => p.id === id);
+    if (!window.confirm(`Delete project "${proj?.name}"? All its elements, relationships, and views will be permanently deleted.`)) return;
+    await deleteProject(id);
+    setOpen(false);
+  };
+
+  const handleRename = async () => {
+    if (!renaming || !renameName.trim()) { setRenaming(null); return; }
+    await updateProject(renaming, { name: renameName.trim() });
+    setRenaming(null);
+  };
+
+  const itemStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    background: 'transparent',
+    color: 'var(--text-primary)',
+    border: 'none',
+    padding: '6px 12px',
+    cursor: 'pointer',
+    fontSize: 11,
+    textAlign: 'left',
+  };
+
+  return React.createElement('div', { ref: menuRef, style: { position: 'relative' } },
+    React.createElement('button', {
+      onClick: () => setOpen(!open),
+      title: 'Switch project',
+      style: {
+        background: 'var(--button-bg)',
+        color: 'var(--button-text)',
+        border: '1px solid var(--border-primary)',
+        borderRadius: 4,
+        padding: '3px 10px',
+        cursor: 'pointer',
+        fontSize: 11,
+        maxWidth: 140,
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+      },
+    }, currentProject?.name ?? 'Project'),
+    open && React.createElement('div', {
+      style: {
+        position: 'absolute',
+        top: '100%',
+        left: 0,
+        marginTop: 4,
+        background: 'var(--panel-bg)',
+        border: '1px solid var(--panel-border)',
+        borderRadius: 4,
+        overflow: 'hidden',
+        zIndex: 100,
+        minWidth: 220,
+        maxHeight: 300,
+        overflowY: 'auto',
+      },
+    },
+      // Project list
+      ...projects.map(proj =>
+        renaming === proj.id
+          ? React.createElement('div', { key: proj.id, style: { padding: '4px 12px' } },
+              React.createElement('input', {
+                autoFocus: true,
+                value: renameName,
+                onChange: (e: React.ChangeEvent<HTMLInputElement>) => setRenameName(e.target.value),
+                onKeyDown: (e: React.KeyboardEvent) => {
+                  if (e.key === 'Enter') handleRename();
+                  if (e.key === 'Escape') setRenaming(null);
+                },
+                onBlur: handleRename,
+                style: {
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  background: 'var(--bg-tertiary)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--highlight)',
+                  borderRadius: 3,
+                  padding: '3px 6px',
+                  fontSize: 11,
+                  outline: 'none',
+                },
+              }),
+            )
+          : React.createElement('div', {
+              key: proj.id,
+              style: {
+                ...itemStyle,
+                background: proj.id === currentProjectId ? 'var(--bg-tertiary)' : 'transparent',
+                fontWeight: proj.id === currentProjectId ? 600 : 400,
+              },
+            },
+              React.createElement('span', {
+                onClick: () => handleSwitch(proj.id),
+                style: { flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+              },
+                proj.id === currentProjectId ? '\u2713 ' : '  ',
+                proj.name,
+              ),
+              React.createElement('span', { style: { display: 'flex', gap: 4, flexShrink: 0 } },
+                React.createElement('button', {
+                  onClick: (e: React.MouseEvent) => {
+                    e.stopPropagation();
+                    setRenaming(proj.id);
+                    setRenameName(proj.name);
+                  },
+                  title: 'Rename',
+                  style: { background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 10, padding: '0 2px' },
+                }, '\u270E'),
+                projects.length > 1 && React.createElement('button', {
+                  onClick: (e: React.MouseEvent) => { e.stopPropagation(); handleDelete(proj.id); },
+                  title: 'Delete project',
+                  style: { background: 'none', border: 'none', color: '#e05252', cursor: 'pointer', fontSize: 10, padding: '0 2px' },
+                }, '\u2716'),
+              ),
+            ),
+      ),
+      // Separator
+      React.createElement('div', {
+        style: { height: 1, background: 'var(--border-primary)', margin: '2px 0' },
+      }),
+      // Create new project
+      creating
+        ? React.createElement('div', { style: { padding: '6px 12px' } },
+            React.createElement('input', {
+              autoFocus: true,
+              value: newName,
+              onChange: (e: React.ChangeEvent<HTMLInputElement>) => setNewName(e.target.value),
+              onKeyDown: (e: React.KeyboardEvent) => {
+                if (e.key === 'Enter') handleCreate();
+                if (e.key === 'Escape') { setCreating(false); setNewName(''); }
+              },
+              onBlur: handleCreate,
+              placeholder: 'Project name\u2026',
+              style: {
+                width: '100%',
+                boxSizing: 'border-box',
+                background: 'var(--bg-tertiary)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--highlight)',
+                borderRadius: 3,
+                padding: '3px 6px',
+                fontSize: 11,
+                outline: 'none',
+              },
+            }),
+          )
+        : React.createElement('button', {
+            onClick: () => setCreating(true),
+            style: {
+              ...itemStyle,
+              color: 'var(--text-muted)',
+              fontStyle: 'italic',
+            },
+          }, '+ New Project'),
+    ),
+  );
+}
+
 function notationLabel(viewpointType: string | undefined): string {
   if (!viewpointType) return '';
   if (viewpointType.startsWith('uml')) return 'UML';
@@ -468,23 +686,25 @@ export function Shell(): React.ReactElement {
     const handleSave = async () => {
       try {
         await saveModelFile();
+        notifySuccess('Model saved');
       } catch (err) {
         console.error('Save model failed:', err);
-        window.alert(`Save failed: ${err instanceof Error ? err.message : String(err)}`);
+        notifyError('Save failed', {
+          operation: 'Save model',
+          errorMessage: err instanceof Error ? err.message : String(err),
+        });
       }
     };
     const handleOpen = async () => {
       if (!window.confirm('Opening a model will replace the current model. Continue?')) return;
       try {
-        const result = await openModelFile();
-        window.alert(
-          `Imported ${result.elementsImported} elements, ${result.relationshipsImported} relationships, ${result.viewsImported} views.`,
-        );
+        await openModelFile();
+        // Toast fires from importModelFull in client.ts
         window.location.reload();
       } catch (err) {
         if (err instanceof Error && err.message === 'No file selected') return;
         console.error('Open model failed:', err);
-        window.alert(`Import failed: ${err instanceof Error ? err.message : String(err)}`);
+        // Error toast fires from importModelFull in client.ts
       }
     };
     const handleNew = async () => {
@@ -494,7 +714,10 @@ export function Shell(): React.ReactElement {
         window.location.reload();
       } catch (err) {
         console.error('New model failed:', err);
-        window.alert(`Failed to create new model: ${err instanceof Error ? err.message : String(err)}`);
+        notifyError('Failed to create new model', {
+          operation: 'New model',
+          errorMessage: err instanceof Error ? err.message : String(err),
+        });
       }
     };
     document.addEventListener('arch-vis:save-model', handleSave);
@@ -643,6 +866,8 @@ export function Shell(): React.ReactElement {
             userSelect: 'none',
           },
         }, notation) : null,
+        // Project selector
+        React.createElement(ProjectSelector, null),
         // File menu
         React.createElement(FileMenu, null),
         // View menu (show/hide panels, full screen)
@@ -1040,5 +1265,8 @@ export function Shell(): React.ReactElement {
         },
       }, '\u26A0 Position save failed') : null,
     ),
+
+    // ── Toast notifications ──
+    React.createElement(ToastContainer, null),
   );
 }

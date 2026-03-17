@@ -16,6 +16,7 @@ import { fetchElementViews } from '../api/client';
 import * as api from '../api/client';
 import type { View } from '../model/types';
 import { useUndoRedoStore, removeFromViewCommand, deleteElementCommand } from '../interaction/undo-redo';
+import { notifyError, notifySuccess } from '../store/notification';
 
 // ═══════════════════════════════════════
 // Legacy ContextMenu (prop-driven, used by spatial Canvas)
@@ -472,8 +473,38 @@ export function NodeContextMenu(): React.ReactElement | null {
     hideContextMenu();
   }, [selectedNodeIds, elements, createView, openTab, switchView, hideContextMenu, loadAll]);
 
+  const handlePromote = useCallback(async () => {
+    if (!contextMenu) return;
+    try {
+      await api.promoteElement(contextMenu.elementId);
+      notifySuccess('Promoted to Governed');
+      await loadAll();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('422')) {
+        notifyError('Cannot promote', { detail: 'Element must have a name and description to be promoted.' });
+      } else {
+        notifyError('Promote failed', { errorMessage: msg });
+      }
+    }
+    hideContextMenu();
+  }, [contextMenu, loadAll, hideContextMenu]);
+
+  const handleDemote = useCallback(async () => {
+    if (!contextMenu) return;
+    try {
+      await api.demoteElement(contextMenu.elementId);
+      notifySuccess('Demoted to Working');
+      await loadAll();
+    } catch (err) {
+      notifyError('Demote failed', { errorMessage: err instanceof Error ? err.message : String(err) });
+    }
+    hideContextMenu();
+  }, [contextMenu, loadAll, hideContextMenu]);
+
   if (!contextMenu) return null;
 
+  const contextElement = elements.find(e => e.id === contextMenu.elementId);
   const isDark = theme === 'dark';
   const bg = isDark ? '#1E293B' : '#FFFFFF';
   const border = isDark ? '#334155' : '#E2E8F0';
@@ -620,6 +651,24 @@ export function NodeContextMenu(): React.ReactElement | null {
       style: itemStyle,
       ...hoverHandlers(),
     }, 'Duplicate'),
+
+    // Separator before governance actions
+    React.createElement('div', {
+      style: { height: 1, background: border, margin: '4px 0' },
+    }),
+
+    // Promote / Demote
+    contextElement?.area === 'working' && React.createElement('div', {
+      onClick: handlePromote,
+      style: { ...itemStyle, color: '#22C55E' },
+      ...hoverHandlers(),
+    }, 'Promote to Governed'),
+
+    contextElement?.area === 'governed' && React.createElement('div', {
+      onClick: handleDemote,
+      style: { ...itemStyle, color: '#F59E0B' },
+      ...hoverHandlers(),
+    }, 'Demote to Working'),
 
     // Separator before z-order actions
     React.createElement('div', {

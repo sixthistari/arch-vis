@@ -209,3 +209,22 @@ CREATE TABLE IF NOT EXISTS preferences (
 -- Default preferences
 INSERT OR IGNORE INTO preferences (key, value) VALUES ('theme', 'dark');
 INSERT OR IGNORE INTO preferences (key, value) VALUES ('default_view', 'view-spatial-full');
+
+-- ═══════════════════════════════════════
+-- Projects
+-- ═══════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS projects (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+);
+
+-- Default project for fresh installs
+INSERT OR IGNORE INTO projects (id, name, description)
+VALUES ('proj-default', 'Default Project', 'Auto-created default project');
+
+-- Default current project preference
+INSERT OR IGNORE INTO preferences (key, value) VALUES ('current_project_id', 'proj-default');

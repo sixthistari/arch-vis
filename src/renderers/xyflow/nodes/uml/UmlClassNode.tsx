@@ -185,22 +185,37 @@ function UmlClassNodeComponent({ data, selected }: NodeProps<UmlClassNodeType>) 
         {/* Divider: header → attributes */}
         <line x1={0} y1={headerH} x2={width} y2={headerH} stroke={stroke} strokeWidth={1} />
 
+        {/* Clip path for text overflow */}
+        <defs>
+          <clipPath id={`clip-attrs-${label}`}>
+            <rect x={0} y={headerH} width={width} height={attrCompartmentH} />
+          </clipPath>
+          <clipPath id={`clip-methods-${label}`}>
+            <rect x={0} y={headerH + attrCompartmentH} width={width} height={thirdCompartmentH} />
+          </clipPath>
+        </defs>
+
         {/* Attributes compartment */}
         {attributes.length > 0 ? (
-          attributes.map((attr, i) => (
-            <text
-              key={`attr-${i}`}
-              x={PADDING_X}
-              y={headerH + COMPARTMENT_PAD + i * ROW_HEIGHT + ROW_HEIGHT * 0.7}
-              fontSize={FONT_SIZE}
-              fill={textFill}
-              fontFamily="'JetBrains Mono', 'Fira Code', monospace"
-              textDecoration={attr.isStatic ? 'underline' : undefined}
-              style={{ pointerEvents: 'none' }}
-            >
-              {formatAttribute(attr)}
-            </text>
-          ))
+          attributes.map((attr, i) => {
+            const text = formatAttribute(attr);
+            return (
+              <text
+                key={`attr-${i}`}
+                x={PADDING_X}
+                y={headerH + COMPARTMENT_PAD + i * ROW_HEIGHT + ROW_HEIGHT * 0.7}
+                fontSize={FONT_SIZE}
+                fill={textFill}
+                fontFamily="'JetBrains Mono', 'Fira Code', monospace"
+                textDecoration={attr.isStatic ? 'underline' : undefined}
+                style={{ pointerEvents: 'none' }}
+                clipPath={`url(#clip-attrs-${label})`}
+              >
+                <title>{text}</title>
+                {text}
+              </text>
+            );
+          })
         ) : (
           <text
             x={PADDING_X} y={headerH + COMPARTMENT_PAD + ROW_HEIGHT * 0.6}
@@ -237,7 +252,9 @@ function UmlClassNodeComponent({ data, selected }: NodeProps<UmlClassNodeType>) 
                 fontStyle={isAbstractMethod ? 'italic' : 'normal'}
                 textDecoration={isStaticMethod ? 'underline' : undefined}
                 style={{ pointerEvents: 'none' }}
+                clipPath={`url(#clip-methods-${label})`}
               >
+                <title>{text}</title>
                 {text}
               </text>
             );

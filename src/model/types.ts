@@ -373,6 +373,9 @@ export const elementStatusValues = [
 
 export type ElementStatus = (typeof elementStatusValues)[number];
 
+export const areaValues = ['working', 'governed'] as const;
+export type Area = (typeof areaValues)[number];
+
 export const maturityValues = [
   'initial',
   'defined',
@@ -545,6 +548,8 @@ export type CreateDomainInput = z.infer<typeof CreateDomainSchema>;
 // Element
 // ═══════════════════════════════════════
 
+export const AreaSchema = z.enum(areaValues);
+
 export const ElementSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -562,6 +567,8 @@ export const ElementSchema = z.object({
   created_by: z.string().nullable(),
   source: z.string().nullable(),
   folder: z.string().nullable(),
+  project_id: z.string().nullable(),
+  area: AreaSchema.nullable(),
   created_at: z.string().nullable(),
   updated_at: z.string().nullable(),
 });
@@ -583,6 +590,8 @@ export const CreateElementSchema = ElementSchema.omit({
   created_by: true,
   source: true,
   folder: true,
+  project_id: true,
+  area: true,
 });
 
 export type CreateElementInput = z.infer<typeof CreateElementSchema>;
@@ -609,6 +618,8 @@ export const RelationshipSchema = z.object({
   confidence: z.number().min(0).max(1).nullable(),
   created_by: z.string().nullable(),
   source: z.string().nullable(),
+  project_id: z.string().nullable(),
+  area: AreaSchema.nullable(),
   created_at: z.string().nullable(),
   updated_at: z.string().nullable(),
 });
@@ -626,6 +637,8 @@ export const CreateRelationshipSchema = RelationshipSchema.omit({
   confidence: true,
   created_by: true,
   source: true,
+  project_id: true,
+  area: true,
 });
 
 export type CreateRelationshipInput = z.infer<typeof CreateRelationshipSchema>;
@@ -702,6 +715,8 @@ export const ViewSchema = z.object({
   filter_specialisations: z.array(z.string()).nullable(),
   rotation_default: z.object({ y: z.number(), x: z.number() }).nullable(),
   is_preset: z.union([z.boolean(), z.number()]),
+  project_id: z.string().nullable(),
+  area: AreaSchema.nullable(),
   created_at: z.string().nullable(),
   updated_at: z.string().nullable(),
 });
@@ -719,6 +734,8 @@ export const CreateViewSchema = ViewSchema.omit({
   filter_specialisations: true,
   rotation_default: true,
   is_preset: true,
+  project_id: true,
+  area: true,
 });
 
 export type CreateViewInput = z.infer<typeof CreateViewSchema>;
@@ -830,6 +847,34 @@ export const CreateProcessStepSchema = z.object({
 });
 
 export type CreateProcessStepInput = z.infer<typeof CreateProcessStepSchema>;
+
+// ═══════════════════════════════════════
+// Project
+// ═══════════════════════════════════════
+
+export const ProjectSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().nullable(),
+  created_at: z.string().nullable(),
+  updated_at: z.string().nullable(),
+});
+
+export type Project = z.infer<typeof ProjectSchema>;
+
+export const CreateProjectSchema = z.object({
+  name: z.string().min(1),
+  description: z.string().optional(),
+});
+
+export type CreateProjectInput = z.infer<typeof CreateProjectSchema>;
+
+export const UpdateProjectSchema = z.object({
+  name: z.string().min(1).optional(),
+  description: z.string().nullable().optional(),
+});
+
+export type UpdateProjectInput = z.infer<typeof UpdateProjectSchema>;
 
 // ═══════════════════════════════════════
 // API filter types

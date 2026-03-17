@@ -13,8 +13,12 @@ import csvIoRouter from './routes/csv-io.js';
 import reportsRouter from './routes/reports.js';
 import modelFileRouter from './routes/model-file.js';
 import processStepsRouter from './routes/process-steps.js';
+import projectsRouter from './routes/projects.js';
+import { uatVerifyMiddleware } from './middleware/uat-verify.js';
+import uatRouter from './routes/uat.js';
 
 const PORT = 3001;
+const UAT_VERIFY = process.env.UAT_VERIFY === 'true';
 
 // Importing db triggers schema creation; now seed if needed
 seed();
@@ -25,6 +29,12 @@ app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
 }));
 app.use(express.json({ limit: '50mb' }));
+
+// UAT verification middleware (opt-in via UAT_VERIFY=true env var)
+if (UAT_VERIFY) {
+  console.log('[arch-vis] UAT verification middleware ENABLED — logging to data/uat-log.jsonl');
+  app.use('/api', uatVerifyMiddleware);
+}
 
 // Health check
 app.get('/api/health', (_req, res) => {
@@ -43,6 +53,10 @@ app.use('/api', csvIoRouter);
 app.use('/api', reportsRouter);
 app.use('/api', modelFileRouter);
 app.use('/api', processStepsRouter);
+app.use('/api', projectsRouter);
+if (UAT_VERIFY) {
+  app.use('/api', uatRouter);
+}
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`[arch-vis] Server listening on 0.0.0.0:${PORT}`);

@@ -188,7 +188,7 @@ function SpecBadge({ spec, x, y }: { spec: string; x: number; y: number }) {
 // ═══════════════════════════════════════
 
 function ArchimateNodeComponent({ id, data, selected }: NodeProps<ArchimateNodeType>) {
-  const { label, archimateType, specialisation, layer, theme = 'dark', dimmed, onLabelChange, colourOverride, styleOverride, statusBadge, displayFields } = data;
+  const { label, archimateType, specialisation, layer, theme = 'dark', dimmed, onLabelChange, colourOverride, styleOverride, statusBadge, displayFields, area } = data;
   const shapeBoundary = getShapeBoundary(archimateType);
   const iconRenderer = getArchimateIcon(archimateType);
   const colours = getLayerColours(layer, theme);
@@ -243,6 +243,24 @@ function ArchimateNodeComponent({ id, data, selected }: NodeProps<ArchimateNodeT
     >
       <svg width={svgWidth} height={svgHeight} overflow="visible">
         {ShapeSvg}
+
+        {/* Working-area dashed border + "W" badge */}
+        {area === 'working' && (
+          <>
+            <rect
+              x={0.5} y={0.5}
+              width={width - 1} height={height - 1}
+              rx={shapeBoundary === 'rounded' ? 8 : shapeBoundary === 'pill' ? height / 2 : 2}
+              fill="none"
+              stroke="#F59E0B"
+              strokeWidth={1.5}
+              strokeDasharray="4 2"
+              opacity={0.7}
+            />
+            <rect x={-1} y={-1} width={14} height={10} rx={2} fill="#F59E0B" fillOpacity={0.85} />
+            <text x={6} y={6.5} textAnchor="middle" fontSize={6} fill="#000" fontWeight={700}>W</text>
+          </>
+        )}
 
         {/* Icon glyph — top-right corner; hidden at birds-eye and context tiers */}
         {tierConfig.showIcon && iconRenderer && iconRenderer({

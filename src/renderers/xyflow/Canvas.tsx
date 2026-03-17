@@ -923,6 +923,25 @@ export function XYFlowCanvas({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [layerLabels, theme]);
 
+  // Notation check — prevents mixing notations within a view
+  const getNotationFromType = useCallback((archimateType: string): string => {
+    if (archimateType.startsWith('uml-')) return 'uml';
+    if (archimateType.startsWith('wf-')) return 'wireframe';
+    if (archimateType.startsWith('dm-')) return 'data';
+    if (archimateType.startsWith('pf-')) return 'process-flow';
+    return 'archimate';
+  }, []);
+
+  const getViewNotation = useCallback((): string | null => {
+    if (!viewpointType) return null;
+    if (viewpointType.startsWith('uml')) return 'uml';
+    if (viewpointType === 'wireframe') return 'wireframe';
+    if (viewpointType.startsWith('data')) return 'data';
+    if (viewpointType === 'process_flow' || viewpointType === 'process_detail') return 'process-flow';
+    if (viewpointType === 'custom') return null; // custom allows any notation
+    return 'archimate';
+  }, [viewpointType]);
+
   // Palette drag-to-create
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -931,6 +950,14 @@ export function XYFlowCanvas({
       const treeRaw = e.dataTransfer.getData('application/archvis-tree');
       if (treeRaw) {
         const treeData = JSON.parse(treeRaw) as { elementId: string; archimateType: string; layer: string };
+        // Notation check
+        const viewNotation = getViewNotation();
+        if (viewNotation && getNotationFromType(treeData.archimateType) !== viewNotation) {
+          import('../../store/notification').then(({ notifyWarning }) => {
+            notifyWarning('Notation mismatch', `This ${getNotationFromType(treeData.archimateType)} element cannot be added to a ${viewNotation} view.`);
+          });
+          return;
+        }
         const pos = screenToFlowRef.current?.({ x: e.clientX, y: e.clientY });
         if (pos && onDropTreeElement) {
           onDropTreeElement(treeData.elementId, pos.x, pos.y);
@@ -941,6 +968,14 @@ export function XYFlowCanvas({
       const raw = e.dataTransfer.getData('application/json');
       if (!raw) return;
       const data = JSON.parse(raw) as { archimate_type: string; layer: string };
+      // Notation check
+      const viewNotation = getViewNotation();
+      if (viewNotation && getNotationFromType(data.archimate_type) !== viewNotation) {
+        import('../../store/notification').then(({ notifyWarning }) => {
+          notifyWarning('Notation mismatch', `This ${getNotationFromType(data.archimate_type)} element cannot be added to a ${viewNotation} view.`);
+        });
+        return;
+      }
       const pos = screenToFlowRef.current?.({ x: e.clientX, y: e.clientY });
       if (pos && onDropElement) {
         onDropElement(data.archimate_type, data.layer, pos.x, pos.y);
@@ -948,7 +983,7 @@ export function XYFlowCanvas({
     } catch {
       // ignore malformed drop data
     }
-  }, [onDropElement, onDropTreeElement]);
+  }, [onDropElement, onDropTreeElement, getViewNotation, getNotationFromType]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();

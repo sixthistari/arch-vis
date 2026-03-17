@@ -120,8 +120,33 @@ function ViewSection({ title, views, currentViewId, onSwitch, onCreate, onDuplic
           },
         },
           React.createElement('span', {
-            style: { flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const },
-          }, view.name),
+            style: { flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, display: 'flex', alignItems: 'center', gap: 4 },
+          },
+            view.area === 'working' ? React.createElement('span', {
+              style: {
+                fontSize: 7,
+                fontWeight: 700,
+                background: 'rgba(251, 191, 36, 0.2)',
+                color: '#F59E0B',
+                borderRadius: 2,
+                padding: '0 3px',
+                flexShrink: 0,
+                lineHeight: '12px',
+              },
+            }, 'W') : view.area === 'governed' ? React.createElement('span', {
+              style: {
+                fontSize: 7,
+                fontWeight: 700,
+                background: 'rgba(34, 197, 94, 0.2)',
+                color: '#22C55E',
+                borderRadius: 2,
+                padding: '0 3px',
+                flexShrink: 0,
+                lineHeight: '12px',
+              },
+            }, 'G') : null,
+            view.name,
+          ),
           React.createElement('span', {
             style: {
               fontSize: 8,

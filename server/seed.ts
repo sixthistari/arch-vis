@@ -102,6 +102,12 @@ export default function seed(): void {
   ) as { views: SeedView[] };
 
   const insertAll = db.transaction(() => {
+    // 0. Ensure default project exists
+    db.prepare(`
+      INSERT OR IGNORE INTO projects (id, name, description)
+      VALUES ('proj-default', 'Default Project', 'Auto-created default project')
+    `).run();
+
     // 1. Domains
     const insertDomain = db.prepare(`
       INSERT INTO domains (id, name, description, priority, maturity, autonomy_ceiling, track_default, owner_role)
@@ -122,8 +128,8 @@ export default function seed(): void {
 
     // 2. Elements
     const insertElement = db.prepare(`
-      INSERT INTO elements (id, name, archimate_type, specialisation, layer, sublayer, domain_id, status, description, properties, parent_id)
-      VALUES (@id, @name, @archimate_type, @specialisation, @layer, @sublayer, @domain_id, @status, @description, @properties, @parent_id)
+      INSERT INTO elements (id, name, archimate_type, specialisation, layer, sublayer, domain_id, status, description, properties, parent_id, project_id, area)
+      VALUES (@id, @name, @archimate_type, @specialisation, @layer, @sublayer, @domain_id, @status, @description, @properties, @parent_id, @project_id, @area)
     `);
     for (const e of elementsFile.elements) {
       insertElement.run({
@@ -138,13 +144,15 @@ export default function seed(): void {
         description: e.description ?? null,
         properties: jsonOrNull(e.properties),
         parent_id: e.parent_id ?? null,
+        project_id: 'proj-default',
+        area: 'governed',
       });
     }
 
     // 3. Relationships
     const insertRel = db.prepare(`
-      INSERT INTO relationships (id, archimate_type, specialisation, source_id, target_id, label, description, properties)
-      VALUES (@id, @archimate_type, @specialisation, @source_id, @target_id, @label, @description, @properties)
+      INSERT INTO relationships (id, archimate_type, specialisation, source_id, target_id, label, description, properties, project_id, area)
+      VALUES (@id, @archimate_type, @specialisation, @source_id, @target_id, @label, @description, @properties, @project_id, @area)
     `);
     for (const r of relationshipsFile.relationships) {
       insertRel.run({
@@ -156,13 +164,15 @@ export default function seed(): void {
         label: r.label ?? null,
         description: r.description ?? null,
         properties: jsonOrNull(r.properties),
+        project_id: 'proj-default',
+        area: 'governed',
       });
     }
 
     // 4. Views
     const insertView = db.prepare(`
-      INSERT INTO views (id, name, viewpoint_type, description, render_mode, filter_domain, filter_layers, filter_specialisations, rotation_default, is_preset)
-      VALUES (@id, @name, @viewpoint_type, @description, @render_mode, @filter_domain, @filter_layers, @filter_specialisations, @rotation_default, @is_preset)
+      INSERT INTO views (id, name, viewpoint_type, description, render_mode, filter_domain, filter_layers, filter_specialisations, rotation_default, is_preset, project_id, area)
+      VALUES (@id, @name, @viewpoint_type, @description, @render_mode, @filter_domain, @filter_layers, @filter_specialisations, @rotation_default, @is_preset, @project_id, @area)
     `);
     for (const v of viewsFile.views) {
       insertView.run({
@@ -176,6 +186,8 @@ export default function seed(): void {
         filter_specialisations: jsonOrNull(v.filter_specialisations),
         rotation_default: jsonOrNull(v.rotation_default),
         is_preset: v.is_preset ?? 0,
+        project_id: 'proj-default',
+        area: 'governed',
       });
     }
 

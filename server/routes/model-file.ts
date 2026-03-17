@@ -6,6 +6,13 @@ import type {
   RelationshipRow,
 } from '../../shared/types.js';
 
+function getCurrentProjectId(req: Request): string {
+  const qp = req.query.project_id;
+  if (typeof qp === 'string' && qp) return qp;
+  const pref = db.prepare("SELECT value FROM preferences WHERE key = 'current_project_id'").get() as { value: string } | undefined;
+  return pref?.value ?? 'proj-default';
+}
+
 const router = Router();
 
 // ═══════════════════════════════════════
@@ -15,6 +22,8 @@ const router = Router();
 interface ModelFileFormat {
   version: number;
   exportedAt: string;
+  projectId?: string;
+  projectName?: string;
   domains: DomainRow[];
   elements: ElementRow[];
   relationships: RelationshipRow[];
@@ -73,18 +82,27 @@ interface ViewRelationshipRow {
 // ─── GET /api/export/model-full ──────────────────────────────────────────────
 // Export the entire model as a single JSON document (.archvis format)
 
-router.get('/export/model-full', (_req: Request, res: Response) => {
+router.get('/export/model-full', (req: Request, res: Response) => {
   try {
+    const projectId = getCurrentProjectId(req);
+    const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(projectId) as { id: string; name: string } | undefined;
     const domains = db.prepare('SELECT * FROM domains').all() as DomainRow[];
-    const elements = db.prepare('SELECT * FROM elements ORDER BY name ASC').all() as ElementRow[];
-    const relationships = db.prepare('SELECT * FROM relationships').all() as RelationshipRow[];
-    const views = db.prepare('SELECT * FROM views').all() as ViewDbRow[];
-    const viewElements = db.prepare('SELECT * FROM view_elements').all() as ViewElementRow[];
-    const viewRelationships = db.prepare('SELECT * FROM view_relationships').all() as ViewRelationshipRow[];
+    const elements = db.prepare('SELECT * FROM elements WHERE project_id = ? ORDER BY name ASC').all(projectId) as ElementRow[];
+    const relationships = db.prepare('SELECT * FROM relationships WHERE project_id = ?').all(projectId) as RelationshipRow[];
+    const views = db.prepare('SELECT * FROM views WHERE project_id = ?').all(projectId) as ViewDbRow[];
+    const viewIds = views.map(v => v.id);
+    const viewElements = viewIds.length > 0
+      ? db.prepare(`SELECT * FROM view_elements WHERE view_id IN (${viewIds.map(() => '?').join(',')})`).all(...viewIds) as ViewElementRow[]
+      : [];
+    const viewRelationships = viewIds.length > 0
+      ? db.prepare(`SELECT * FROM view_relationships WHERE view_id IN (${viewIds.map(() => '?').join(',')})`).all(...viewIds) as ViewRelationshipRow[]
+      : [];
 
     const payload: ModelFileFormat = {
       version: 1,
       exportedAt: new Date().toISOString(),
+      projectId,
+      projectName: project?.name ?? 'Unknown',
       domains,
       elements,
       relationships,
@@ -104,6 +122,7 @@ router.get('/export/model-full', (_req: Request, res: Response) => {
 // Replace the entire model with the contents of an .archvis file
 
 router.post('/import/model-full', (req: Request, res: Response) => {
+  const projectId = getCurrentProjectId(req);
   const body = req.body as Partial<ModelFileFormat>;
 
   if (!body.version || body.version !== 1) {
@@ -118,20 +137,20 @@ router.post('/import/model-full', (req: Request, res: Response) => {
 
   try {
     db.transaction(() => {
-      // Clear all model data (order matters for foreign keys)
-      db.exec('DELETE FROM view_relationships');
-      db.exec('DELETE FROM view_elements');
-      db.exec('DELETE FROM views');
-      db.exec('DELETE FROM relationships');
-      db.exec('DELETE FROM elements');
-      db.exec('DELETE FROM domains');
+      // Clear only current project's data (order matters for foreign keys)
+      db.prepare(`DELETE FROM view_relationships WHERE view_id IN (SELECT id FROM views WHERE project_id = ?)`).run(projectId);
+      db.prepare(`DELETE FROM view_elements WHERE view_id IN (SELECT id FROM views WHERE project_id = ?)`).run(projectId);
+      db.prepare('DELETE FROM views WHERE project_id = ?').run(projectId);
+      db.prepare('DELETE FROM relationships WHERE project_id = ?').run(projectId);
+      db.prepare('DELETE FROM elements WHERE project_id = ?').run(projectId);
+      // Domains are shared across projects — use INSERT OR IGNORE for imported domains
       db.exec('DELETE FROM reasoning_summaries');
       db.exec('DELETE FROM process_steps');
 
-      // 1. Domains
+      // 1. Domains (merge — don't delete shared domains)
       if (body.domains && body.domains.length > 0) {
         const insertDomain = db.prepare(`
-          INSERT INTO domains (id, name, description, priority, maturity, autonomy_ceiling, track_default, owner_role, created_at, updated_at)
+          INSERT OR IGNORE INTO domains (id, name, description, priority, maturity, autonomy_ceiling, track_default, owner_role, created_at, updated_at)
           VALUES (@id, @name, @description, @priority, @maturity, @autonomy_ceiling, @track_default, @owner_role, @created_at, @updated_at)
         `);
         for (const d of body.domains) {
@@ -141,35 +160,43 @@ router.post('/import/model-full', (req: Request, res: Response) => {
 
       // 2. Elements
       const insertElement = db.prepare(`
-        INSERT INTO elements (id, name, archimate_type, specialisation, layer, sublayer, domain_id, status, description, properties, confidence, source_session_id, parent_id, created_by, source, folder, created_at, updated_at)
-        VALUES (@id, @name, @archimate_type, @specialisation, @layer, @sublayer, @domain_id, @status, @description, @properties, @confidence, @source_session_id, @parent_id, @created_by, @source, @folder, @created_at, @updated_at)
+        INSERT INTO elements (id, name, archimate_type, specialisation, layer, sublayer, domain_id, status, description, properties, confidence, source_session_id, parent_id, created_by, source, folder, project_id, area, created_at, updated_at)
+        VALUES (@id, @name, @archimate_type, @specialisation, @layer, @sublayer, @domain_id, @status, @description, @properties, @confidence, @source_session_id, @parent_id, @created_by, @source, @folder, @project_id, @area, @created_at, @updated_at)
       `);
       for (const e of body.elements!) {
-        // Backward compat: older .archvis files may lack the folder field
+        // Backward compat: older .archvis files may lack folder/project_id/area fields
         const row = e as unknown as Record<string, unknown>;
         if (!('folder' in row)) row.folder = null;
+        if (!('project_id' in row) || !row.project_id) row.project_id = projectId;
+        if (!('area' in row) || !row.area) row.area = 'working';
         insertElement.run(row);
       }
 
       // 3. Relationships
       if (body.relationships && body.relationships.length > 0) {
         const insertRel = db.prepare(`
-          INSERT INTO relationships (id, archimate_type, specialisation, source_id, target_id, label, description, properties, confidence, created_by, source, created_at, updated_at)
-          VALUES (@id, @archimate_type, @specialisation, @source_id, @target_id, @label, @description, @properties, @confidence, @created_by, @source, @created_at, @updated_at)
+          INSERT INTO relationships (id, archimate_type, specialisation, source_id, target_id, label, description, properties, confidence, created_by, source, project_id, area, created_at, updated_at)
+          VALUES (@id, @archimate_type, @specialisation, @source_id, @target_id, @label, @description, @properties, @confidence, @created_by, @source, @project_id, @area, @created_at, @updated_at)
         `);
         for (const r of body.relationships) {
-          insertRel.run(r);
+          const row = r as unknown as Record<string, unknown>;
+          if (!('project_id' in row) || !row.project_id) row.project_id = projectId;
+          if (!('area' in row) || !row.area) row.area = 'working';
+          insertRel.run(row);
         }
       }
 
       // 4. Views
       if (body.views && body.views.length > 0) {
         const insertView = db.prepare(`
-          INSERT INTO views (id, name, viewpoint_type, description, render_mode, filter_domain, filter_layers, filter_specialisations, rotation_default, is_preset, created_at, updated_at)
-          VALUES (@id, @name, @viewpoint_type, @description, @render_mode, @filter_domain, @filter_layers, @filter_specialisations, @rotation_default, @is_preset, @created_at, @updated_at)
+          INSERT INTO views (id, name, viewpoint_type, description, render_mode, filter_domain, filter_layers, filter_specialisations, rotation_default, is_preset, project_id, area, created_at, updated_at)
+          VALUES (@id, @name, @viewpoint_type, @description, @render_mode, @filter_domain, @filter_layers, @filter_specialisations, @rotation_default, @is_preset, @project_id, @area, @created_at, @updated_at)
         `);
         for (const v of body.views) {
-          insertView.run(v);
+          const row = v as unknown as Record<string, unknown>;
+          if (!('project_id' in row) || !row.project_id) row.project_id = projectId;
+          if (!('area' in row) || !row.area) row.area = 'working';
+          insertView.run(row);
         }
       }
 

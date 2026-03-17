@@ -462,6 +462,8 @@ export function elementsToNodes(
 
     // Ensure elementId is always in data (needed by context menu)
     data.elementId = el.id;
+    // Pass area through for working-area visual indicator
+    data.area = el.area;
 
     const zIndex = ve?.z_index ?? 0;
 
