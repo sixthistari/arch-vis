@@ -9,6 +9,14 @@
       html, body, #root { width: 100%; height: 100%; overflow: hidden; }
       body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
 
+      /* 4K / HiDPI display scaling — ~30% larger UI on 4K monitors.
+         Device pixel ratio ≥ 1.5 at viewport width ≥ 2560px = likely a 4K display
+         without OS-level scaling. Remove or adjust if OS handles DPI scaling. */
+      @media (min-resolution: 144dpi) and (min-width: 2560px) {
+        html { font-size: 130%; }
+        body { zoom: 1.3; }
+      }
+
       /* Print stylesheet — show only the canvas diagram */
       @media print {
         [data-panel="toolbar"],

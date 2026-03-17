@@ -9,6 +9,13 @@ import { useViewStore } from '../store/view';
 import type { ArchimateType } from '../model/types';
 import { archimateTypeValues } from '../model/types';
 import { getAllowedElementTypes, getArchiMateViewpoint } from '../notation/archimate-viewpoints';
+import { renderArchiIcon } from './ArchiPaletteIcons';
+
+/**
+ * Feature flag: set to false to revert to the old programmatic shape icons.
+ * The old renderMiniShape() function is preserved below — just flip this flag.
+ */
+const USE_ARCHI_PALETTE_ICONS = true;
 
 interface LayerGroup {
   key: string;
@@ -1332,7 +1339,7 @@ export function Palette(): React.ReactElement {
                 },
                 title: formatTypeName(type),
               },
-                renderMiniShape(type, colours.stroke),
+                (USE_ARCHI_PALETTE_ICONS ? renderArchiIcon(type, colours.stroke) : null) ?? renderMiniShape(type, colours.stroke),
                 React.createElement('span', {
                   style: {
                     fontSize: 7,
