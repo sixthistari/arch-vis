@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { getLayerColours } from '../shared/colors';
-import { getShapeDefinition } from '../notation/registry';
-import { getUnifiedEdgeStyle } from '../notation/edge-styles';
+import { getShapeDefinition } from '../shared/registry';
+import { getUnifiedEdgeStyle } from '../shared/edge-styles';
 import { NOTATION_RELATIONSHIP_TYPES } from '../shared/layer-config';
 import { useThemeStore } from '../store/theme';
 import { useModelStore } from '../store/model';

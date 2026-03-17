@@ -6,7 +6,7 @@
 import type { Node } from '@xyflow/react';
 import type { Element } from '../../model/types';
 import { getNotation } from '../../model/notation';
-import { getShapeDefinition } from '../../notation/registry';
+import { getShapeDefinition } from '../../shared/registry';
 
 /** Padding inside a layer band around the child elements. */
 export const BAND_PAD = { top: 30, bottom: 20, left: 15, right: 15 };

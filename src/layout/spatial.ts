@@ -1,4 +1,4 @@
-import { PLANE_WIDTH, PLANE_DEPTH } from '../renderers/spatial/projection';
+import { PLANE_WIDTH, PLANE_DEPTH } from '../shared/spatial-projection';
 import { layerWorldY } from '../renderers/spatial/layers';
 import type { LayoutInput, LayoutOutput, SublayerEntry } from './types';
 

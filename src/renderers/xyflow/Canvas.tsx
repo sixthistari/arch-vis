@@ -53,12 +53,12 @@ import { MagicConnectorDialog } from './MagicConnectorDialog';
 import { AlignmentToolbar, type AlignAction } from './AlignmentToolbar';
 import { SnaplineOverlay } from './SnaplineOverlay';
 import { EdgeContextMenu, type EdgeContextMenuState, type EdgeMenuAction } from './EdgeContextMenu';
-import { CanvasSearch } from '../../ui/CanvasSearch';
+import { CanvasSearch } from './CanvasSearch';
 import { useClipboardStore } from '../../interaction/clipboard';
 import type { ClipboardEntry } from '../../interaction/clipboard';
 import { useCanvasKeyboard } from './hooks/useCanvasKeyboard';
 import { useCanvasConnection } from './hooks/useCanvasConnection';
-import { Legend } from '../../ui/Legend';
+import { Legend } from './Legend';
 
 // ═══════════════════════════════════════
 // Canvas component — fully controlled mode

@@ -479,7 +479,7 @@ export const featureRegistry: readonly FeatureEntry[] = [
     category: 'ArchiMate',
     description: 'Full set of ArchiMate relationship types (composition, aggregation, serving, etc.).',
     helpText: '',
-    codeRef: 'src/notation/edges.ts: edges',
+    codeRef: 'src/shared/edge-styles.ts: edges',
   },
   {
     id: '6.3',
@@ -487,7 +487,7 @@ export const featureRegistry: readonly FeatureEntry[] = [
     category: 'ArchiMate',
     description: 'Visual shapes matching ArchiMate 3.2 notation specification.',
     helpText: '',
-    codeRef: 'src/notation/registry.ts: shapeRegistry',
+    codeRef: 'src/shared/registry.ts: shapeRegistry',
   },
   {
     id: '6.4',
@@ -495,7 +495,7 @@ export const featureRegistry: readonly FeatureEntry[] = [
     category: 'ArchiMate',
     description: 'Standard ArchiMate layer colour coding (Strategy, Business, Application, Technology, etc.).',
     helpText: '',
-    codeRef: 'src/notation/colors.ts: layerColors',
+    codeRef: 'src/shared/colors.ts: layerColors',
   },
   {
     id: '6.5',
@@ -545,7 +545,7 @@ export const featureRegistry: readonly FeatureEntry[] = [
     category: 'UML',
     description: 'UML generalisation/inheritance relationships between classes.',
     helpText: '',
-    codeRef: 'src/notation/edge-styles.ts: uml-inheritance',
+    codeRef: 'src/shared/edge-styles.ts: uml-inheritance',
   },
   {
     id: '7.3',
@@ -553,7 +553,7 @@ export const featureRegistry: readonly FeatureEntry[] = [
     category: 'UML',
     description: 'UML association relationships with multiplicity labels.',
     helpText: '',
-    codeRef: 'src/notation/edge-styles.ts: uml-association',
+    codeRef: 'src/shared/edge-styles.ts: uml-association',
   },
   {
     id: '7.4',
@@ -577,7 +577,7 @@ export const featureRegistry: readonly FeatureEntry[] = [
     category: 'UML',
     description: 'Include and extend relationships between use cases.',
     helpText: '',
-    codeRef: 'src/notation/edge-styles.ts: uml-include / uml-extend',
+    codeRef: 'src/shared/edge-styles.ts: uml-include / uml-extend',
   },
   {
     id: '7.7',

@@ -1,4 +1,8 @@
 import { create } from 'zustand';
+import { registerNotificationSink } from '../shared/notify';
+
+// Re-export convenience helpers so existing store/ consumers still work
+export { notifySuccess, notifyError, notifyWarning, notifyInfo } from '../shared/notify';
 
 export interface Notification {
   id: string;
@@ -72,57 +76,5 @@ export const useNotificationStore = create<NotificationState>((set) => ({
   },
 }));
 
-// ── Convenience helpers ──
-
-export function notifySuccess(message: string, detail?: string): void {
-  useNotificationStore.getState().addNotification({
-    type: 'success',
-    message,
-    detail,
-    autoHide: true,
-  });
-}
-
-export function notifyError(
-  message: string,
-  opts?: {
-    detail?: string;
-    operation?: string;
-    status?: number;
-    errorMessage?: string;
-    payload?: string;
-  },
-): void {
-  useNotificationStore.getState().addNotification({
-    type: 'error',
-    message,
-    detail: opts?.detail,
-    autoHide: false,
-    errorContext: opts
-      ? {
-          operation: opts.operation ?? message,
-          status: opts.status,
-          errorMessage: opts.errorMessage,
-          payload: opts.payload,
-        }
-      : undefined,
-  });
-}
-
-export function notifyWarning(message: string, detail?: string): void {
-  useNotificationStore.getState().addNotification({
-    type: 'warning',
-    message,
-    detail,
-    autoHide: true,
-  });
-}
-
-export function notifyInfo(message: string, detail?: string): void {
-  useNotificationStore.getState().addNotification({
-    type: 'info',
-    message,
-    detail,
-    autoHide: true,
-  });
-}
+// Register the store as the notification sink so shared/notify.ts can dispatch
+registerNotificationSink((n) => useNotificationStore.getState().addNotification(n));

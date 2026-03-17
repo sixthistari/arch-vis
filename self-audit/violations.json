@@ -1,0 +1,29 @@
+[
+  {
+    "type": "duplicated-cross-notation",
+    "severity": "medium",
+    "fileA": "renderers/xyflow/nodes/sequence/SequenceLifelineNode.tsx",
+    "fileB": "renderers/xyflow/nodes/wireframe/WfPageNode.tsx",
+    "tokens": 0,
+    "lines": 28,
+    "description": "Duplicated code between NOTATION-UML and NOTATION-WIREFRAME: renderers/xyflow/nodes/sequence/SequenceLifelineNode.tsx ↔ renderers/xyflow/nodes/wireframe/WfPageNode.tsx (28 lines). Should be extracted to shared infra."
+  },
+  {
+    "type": "duplicated-cross-notation",
+    "severity": "medium",
+    "fileA": "renderers/xyflow/nodes/process-flow/PfTaskNode.tsx",
+    "fileB": "renderers/xyflow/nodes/uml/UmlActivityNode.tsx",
+    "tokens": 0,
+    "lines": 16,
+    "description": "Duplicated code between NOTATION-PROCESS and NOTATION-UML: renderers/xyflow/nodes/process-flow/PfTaskNode.tsx ↔ renderers/xyflow/nodes/uml/UmlActivityNode.tsx (16 lines). Should be extracted to shared infra."
+  },
+  {
+    "type": "duplicated-cross-notation",
+    "severity": "medium",
+    "fileA": "renderers/xyflow/nodes/process-flow/PfGateNode.tsx",
+    "fileB": "renderers/xyflow/nodes/uml/UmlActivityNode.tsx",
+    "tokens": 0,
+    "lines": 19,
+    "description": "Duplicated code between NOTATION-PROCESS and NOTATION-UML: renderers/xyflow/nodes/process-flow/PfGateNode.tsx ↔ renderers/xyflow/nodes/uml/UmlActivityNode.tsx (19 lines). Should be extracted to shared infra."
+  }
+]

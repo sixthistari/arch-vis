@@ -29,7 +29,7 @@ import {
   ProjectSchema,
 } from '../model/types';
 import { z } from 'zod';
-import { notifySuccess, notifyError } from '../store/notification';
+import { notifySuccess, notifyError } from '../shared/notify';
 
 const API_BASE = '/api';
 

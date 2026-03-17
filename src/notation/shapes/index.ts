@@ -9,8 +9,7 @@ import { EventShape } from './event';
 import { DashedRectShape } from './dashed-rect';
 import { RectWithIconShape } from './rect-with-icon';
 import type { IconType } from './rect-with-icon';
-
-export type ShapeType = 'rect' | 'rounded-rect' | 'pill' | 'folded-corner' | 'box-3d' | 'event' | 'dashed-rect' | 'rect-with-icon';
+import type { ShapeType } from '../../shared/registry';
 
 export interface ShapeRenderOptions extends ShapeProps {
   shapeType: ShapeType;
@@ -40,5 +39,6 @@ export function renderShape(opts: ShapeRenderOptions): React.ReactElement {
   }
 }
 
+export type { ShapeType } from '../../shared/registry';
 export type { ShapeProps } from './rect';
 export type { IconType } from './rect-with-icon';

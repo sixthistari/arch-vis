@@ -3,9 +3,9 @@ import type { PositionedElement, PositionedEdge } from '../types';
 import { getZoomTierConfig } from '../spatial/zoom-tiers';
 import { renderShape } from '../../notation/shapes/index';
 import { renderBadge } from '../../notation/badges';
-import { getShapeDefinition } from '../../notation/registry';
+import { getShapeDefinition } from '../../shared/registry';
 import { getLayerStroke, getLayerFill, getLayerColours, HIGHLIGHT_COLOURS } from '../../shared/colors';
-import { getEdgeStyle, renderMarkerDefs } from '../../notation/edge-styles';
+import { getEdgeStyle, renderMarkerDefs } from '../../shared/edge-styles';
 import { computeOrthogonalRoutes } from '../../layout/edge-routing';
 import type { ThemeMode } from '../../theme/tokens';
 

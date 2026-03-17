@@ -21,7 +21,7 @@ import {
   type EdgeProps,
   type Edge,
 } from '@xyflow/react';
-import { getUnifiedEdgeStyle, type MarkerType } from '../../../notation/edge-styles';
+import { getUnifiedEdgeStyle, type MarkerType } from '../../../shared/edge-styles';
 import { WaypointUpdateContext, type Waypoint } from '../context';
 
 // ─── Types ─────────────────────────────────────────────────────────────────

@@ -1,0 +1,3108 @@
+{
+  "modules": {
+    "OTHER": {
+      "fileCount": 8,
+      "fanIn": 4,
+      "fanOut": 101,
+      "instability": 0.962,
+      "files": [
+        "App.tsx",
+        "main.tsx",
+        "renderers/xyflow/nodes/AnnotationNode.tsx",
+        "renderers/xyflow/nodes/ArchimateNode.tsx",
+        "renderers/xyflow/nodes/GroupNode.tsx",
+        "renderers/xyflow/nodes/LayerBandNode.tsx",
+        "renderers/xyflow/nodes/archimate-icons.tsx",
+        "renderers/xyflow/nodes/index.ts"
+      ]
+    },
+    "THEME": {
+      "fileCount": 4,
+      "fanIn": 5,
+      "fanOut": 0,
+      "instability": 0,
+      "files": [
+        "theme/dark.ts",
+        "theme/light.ts",
+        "theme/provider.tsx",
+        "theme/tokens.ts"
+      ]
+    },
+    "UI": {
+      "fileCount": 29,
+      "fanIn": 2,
+      "fanOut": 116,
+      "instability": 0.983,
+      "files": [
+        "help/function-registry.ts",
+        "ui/ArchiPaletteIcons.tsx",
+        "ui/Canvas.tsx",
+        "ui/ContextMenu.tsx",
+        "ui/DataOverlayControls.tsx",
+        "ui/DetailPanel.tsx",
+        "ui/ErrorBoundary.tsx",
+        "ui/ExportMenu.tsx",
+        "ui/FindReplace.tsx",
+        "ui/HelpPanel.tsx",
+        "ui/ImpactAnalysisPanel.tsx",
+        "ui/LayerControls.tsx",
+        "ui/MenuBar.tsx",
+        "ui/ModelTree.tsx",
+        "ui/Palette.tsx",
+        "ui/RelationshipMatrix.tsx",
+        "ui/RotationPanel.tsx",
+        "ui/SelectionBadge.tsx",
+        "ui/Shell.tsx",
+        "ui/SpecialisationsManager.tsx",
+        "ui/TabBar.tsx",
+        "ui/ThemeToggle.tsx",
+        "ui/ValidationPanel.tsx",
+        "ui/ViewSwitcher.tsx",
+        "ui/ZoomBar.tsx",
+        "ui/components/Toast.tsx",
+        "ui/spatial-shell/Canvas.tsx",
+        "ui/spatial-shell/RotationPanel.tsx",
+        "ui/spatial-shell/ZoomBar.tsx"
+      ]
+    },
+    "STORE": {
+      "fileCount": 9,
+      "fanIn": 63,
+      "fanOut": 10,
+      "instability": 0.137,
+      "files": [
+        "store/data-overlay.ts",
+        "store/interaction.ts",
+        "store/layer-visibility.ts",
+        "store/model.ts",
+        "store/notification.ts",
+        "store/panel.ts",
+        "store/project.ts",
+        "store/theme.ts",
+        "store/view.ts"
+      ]
+    },
+    "API": {
+      "fileCount": 1,
+      "fanIn": 16,
+      "fanOut": 3,
+      "instability": 0.158,
+      "files": [
+        "api/client.ts"
+      ]
+    },
+    "MODEL": {
+      "fileCount": 12,
+      "fanIn": 81,
+      "fanOut": 0,
+      "instability": 0,
+      "files": [
+        "model/archetypes.ts",
+        "model/graph.ts",
+        "model/notation.ts",
+        "model/specialisations.ts",
+        "model/types.ts",
+        "shared/colors.ts",
+        "shared/edge-styles.ts",
+        "shared/layer-config.ts",
+        "shared/notify.ts",
+        "shared/registry.ts",
+        "shared/spatial-projection.ts",
+        "shared/theme-colours.ts"
+      ]
+    },
+    "SHARED-INFRA": {
+      "fileCount": 37,
+      "fanIn": 69,
+      "fanOut": 36,
+      "instability": 0.343,
+      "files": [
+        "interaction/clipboard.ts",
+        "interaction/highlight.ts",
+        "interaction/pan-zoom-rotate.ts",
+        "interaction/selection.ts",
+        "interaction/undo-redo.ts",
+        "layout/connection-points.ts",
+        "layout/dagre.ts",
+        "layout/edge-routing.ts",
+        "layout/elk.ts",
+        "layout/flat.ts",
+        "layout/spatial.ts",
+        "layout/types.ts",
+        "layout/ucd-layout.ts",
+        "renderers/types.ts",
+        "renderers/xyflow/AlignmentToolbar.tsx",
+        "renderers/xyflow/Canvas.tsx",
+        "renderers/xyflow/CanvasSearch.tsx",
+        "renderers/xyflow/EdgeContextMenu.tsx",
+        "renderers/xyflow/Legend.tsx",
+        "renderers/xyflow/MagicConnectorDialog.tsx",
+        "renderers/xyflow/RelationshipTypePicker.tsx",
+        "renderers/xyflow/SnaplineOverlay.tsx",
+        "renderers/xyflow/context.ts",
+        "renderers/xyflow/edge-routing-integration.ts",
+        "renderers/xyflow/edges/AllMarkerDefs.tsx",
+        "renderers/xyflow/edges/UnifiedEdge.tsx",
+        "renderers/xyflow/edges/index.ts",
+        "renderers/xyflow/hooks/EditableInput.tsx",
+        "renderers/xyflow/hooks/useCanvasConnection.ts",
+        "renderers/xyflow/hooks/useCanvasKeyboard.ts",
+        "renderers/xyflow/hooks/useEditableNode.ts",
+        "renderers/xyflow/hooks/useNodeBehaviour.ts",
+        "renderers/xyflow/layer-bands.ts",
+        "renderers/xyflow/layout-computation.ts",
+        "renderers/xyflow/node-conversion.ts",
+        "renderers/xyflow/nodes/shared/EditableLabel.tsx",
+        "renderers/xyflow/nodes/shared/RoutingHandles.tsx"
+      ]
+    },
+    "IO": {
+      "fileCount": 2,
+      "fanIn": 0,
+      "fanOut": 0,
+      "instability": 0,
+      "files": [
+        "io/archimate-xml.ts",
+        "io/csv.ts"
+      ]
+    },
+    "RENDERER-SPATIAL": {
+      "fileCount": 6,
+      "fanIn": 10,
+      "fanOut": 14,
+      "instability": 0.583,
+      "files": [
+        "renderers/spatial/depth-sort.ts",
+        "renderers/spatial/layers.ts",
+        "renderers/spatial/projection.ts",
+        "renderers/spatial/renderer.tsx",
+        "renderers/spatial/rotation.ts",
+        "renderers/spatial/zoom-tiers.ts"
+      ]
+    },
+    "NOTATION-ARCHIMATE": {
+      "fileCount": 11,
+      "fanIn": 6,
+      "fanOut": 3,
+      "instability": 0.333,
+      "files": [
+        "notation/archimate-viewpoints.ts",
+        "notation/badges.ts",
+        "notation/shapes/box-3d.tsx",
+        "notation/shapes/dashed-rect.tsx",
+        "notation/shapes/event.tsx",
+        "notation/shapes/folded-corner.tsx",
+        "notation/shapes/index.ts",
+        "notation/shapes/pill.tsx",
+        "notation/shapes/rect-with-icon.tsx",
+        "notation/shapes/rect.tsx",
+        "notation/shapes/rounded-rect.tsx"
+      ]
+    },
+    "RENDERER-FLAT": {
+      "fileCount": 2,
+      "fanIn": 1,
+      "fanOut": 10,
+      "instability": 0.909,
+      "files": [
+        "renderers/flat/renderer.tsx",
+        "renderers/flat/zoom.ts"
+      ]
+    },
+    "NOTATION-DATA": {
+      "fileCount": 1,
+      "fanIn": 3,
+      "fanOut": 2,
+      "instability": 0.4,
+      "files": [
+        "renderers/xyflow/nodes/data/DmEntityNode.tsx"
+      ]
+    },
+    "NOTATION-UML": {
+      "fileCount": 12,
+      "fanIn": 36,
+      "fanOut": 17,
+      "instability": 0.321,
+      "files": [
+        "renderers/xyflow/nodes/sequence/SequenceActivationNode.tsx",
+        "renderers/xyflow/nodes/sequence/SequenceFragmentNode.tsx",
+        "renderers/xyflow/nodes/sequence/SequenceLifelineNode.tsx",
+        "renderers/xyflow/nodes/uml/UcdBoundaryNode.tsx",
+        "renderers/xyflow/nodes/uml/UmlActivityNode.tsx",
+        "renderers/xyflow/nodes/uml/UmlClassNode.tsx",
+        "renderers/xyflow/nodes/uml/UmlComponentNode.tsx",
+        "renderers/xyflow/nodes/uml/UmlPackageNode.tsx",
+        "renderers/xyflow/nodes/uml/UmlSequenceNodes.tsx",
+        "renderers/xyflow/nodes/uml/UmlStateNode.tsx",
+        "renderers/xyflow/nodes/uml/UmlSwimlaneNode.tsx",
+        "renderers/xyflow/nodes/uml/UmlUseCaseNode.tsx"
+      ]
+    },
+    "NOTATION-WIREFRAME": {
+      "fileCount": 8,
+      "fanIn": 24,
+      "fanOut": 20,
+      "instability": 0.455,
+      "files": [
+        "renderers/xyflow/nodes/wireframe/WfControlNode.tsx",
+        "renderers/xyflow/nodes/wireframe/WfFeedbackNode.tsx",
+        "renderers/xyflow/nodes/wireframe/WfFormNode.tsx",
+        "renderers/xyflow/nodes/wireframe/WfListNode.tsx",
+        "renderers/xyflow/nodes/wireframe/WfNavNode.tsx",
+        "renderers/xyflow/nodes/wireframe/WfPageNode.tsx",
+        "renderers/xyflow/nodes/wireframe/WfSectionNode.tsx",
+        "renderers/xyflow/nodes/wireframe/WfTableNode.tsx"
+      ]
+    },
+    "NOTATION-PROCESS": {
+      "fileCount": 6,
+      "fanIn": 18,
+      "fanOut": 5,
+      "instability": 0.217,
+      "files": [
+        "renderers/xyflow/nodes/process-flow/PfDecisionNode.tsx",
+        "renderers/xyflow/nodes/process-flow/PfGateNode.tsx",
+        "renderers/xyflow/nodes/process-flow/PfPseudoNode.tsx",
+        "renderers/xyflow/nodes/process-flow/PfSubprocessNode.tsx",
+        "renderers/xyflow/nodes/process-flow/PfSwimlaneNode.tsx",
+        "renderers/xyflow/nodes/process-flow/PfTaskNode.tsx"
+      ]
+    },
+    "SERVER": {
+      "fileCount": 17,
+      "fanIn": 0,
+      "fanOut": 1,
+      "instability": 1,
+      "files": [
+        "server/db.ts",
+        "server/index.ts",
+        "server/middleware/uat-verify.ts",
+        "server/routes/archimate-io.ts",
+        "server/routes/batch.ts",
+        "server/routes/csv-io.ts",
+        "server/routes/domains.ts",
+        "server/routes/elements.ts",
+        "server/routes/export.ts",
+        "server/routes/model-file.ts",
+        "server/routes/process-steps.ts",
+        "server/routes/projects.ts",
+        "server/routes/relationships.ts",
+        "server/routes/reports.ts",
+        "server/routes/uat.ts",
+        "server/routes/views.ts",
+        "server/seed.ts"
+      ]
+    }
+  },
+  "edges": {
+    "OTHER->THEME": 1,
+    "OTHER->UI": 2,
+    "OTHER->STORE": 4,
+    "API->MODEL": 3,
+    "SHARED-INFRA->MODEL": 26,
+    "SHARED-INFRA->API": 1,
+    "SHARED-INFRA->RENDERER-SPATIAL": 1,
+    "NOTATION-ARCHIMATE->MODEL": 3,
+    "RENDERER-FLAT->SHARED-INFRA": 2,
+    "RENDERER-FLAT->RENDERER-SPATIAL": 2,
+    "RENDERER-FLAT->NOTATION-ARCHIMATE": 2,
+    "RENDERER-FLAT->MODEL": 3,
+    "RENDERER-FLAT->THEME": 1,
+    "RENDERER-SPATIAL->MODEL": 5,
+    "RENDERER-SPATIAL->THEME": 2,
+    "RENDERER-SPATIAL->SHARED-INFRA": 5,
+    "RENDERER-SPATIAL->NOTATION-ARCHIMATE": 2,
+    "SHARED-INFRA->OTHER": 4,
+    "SHARED-INFRA->STORE": 4,
+    "OTHER->SHARED-INFRA": 8,
+    "OTHER->MODEL": 4,
+    "OTHER->RENDERER-SPATIAL": 1,
+    "NOTATION-DATA->SHARED-INFRA": 1,
+    "NOTATION-DATA->MODEL": 1,
+    "OTHER->NOTATION-UML": 36,
+    "OTHER->NOTATION-WIREFRAME": 24,
+    "OTHER->NOTATION-DATA": 3,
+    "OTHER->NOTATION-PROCESS": 18,
+    "NOTATION-PROCESS->SHARED-INFRA": 5,
+    "NOTATION-UML->SHARED-INFRA": 13,
+    "NOTATION-UML->MODEL": 4,
+    "NOTATION-WIREFRAME->SHARED-INFRA": 20,
+    "STORE->MODEL": 6,
+    "STORE->API": 3,
+    "STORE->THEME": 1,
+    "UI->STORE": 55,
+    "UI->SHARED-INFRA": 15,
+    "UI->API": 12,
+    "UI->MODEL": 25,
+    "UI->NOTATION-ARCHIMATE": 2,
+    "UI->RENDERER-SPATIAL": 6,
+    "UI->RENDERER-FLAT": 1,
+    "SERVER->MODEL": 1
+  },
+  "cycles": [
+    [
+      "SHARED-INFRA",
+      "RENDERER-SPATIAL",
+      "SHARED-INFRA"
+    ],
+    [
+      "OTHER",
+      "UI",
+      "SHARED-INFRA",
+      "OTHER"
+    ]
+  ],
+  "fileGraph": {
+    "App.tsx": {
+      "category": "OTHER",
+      "imports": [
+        {
+          "target": "theme/provider.tsx",
+          "targetCategory": "THEME"
+        },
+        {
+          "target": "ui/Shell.tsx",
+          "targetCategory": "UI"
+        },
+        {
+          "target": "ui/ErrorBoundary.tsx",
+          "targetCategory": "UI"
+        },
+        {
+          "target": "store/model.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/view.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/theme.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/panel.ts",
+          "targetCategory": "STORE"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/App.tsx"
+    },
+    "api/client.ts": {
+      "category": "API",
+      "imports": [
+        {
+          "target": "model/types.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "shared/notify.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "model/types.ts",
+          "targetCategory": "MODEL"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/api/client.ts"
+    },
+    "help/function-registry.ts": {
+      "category": "UI",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/help/function-registry.ts"
+    },
+    "interaction/clipboard.ts": {
+      "category": "SHARED-INFRA",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/interaction/clipboard.ts"
+    },
+    "interaction/highlight.ts": {
+      "category": "SHARED-INFRA",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/interaction/highlight.ts"
+    },
+    "interaction/pan-zoom-rotate.ts": {
+      "category": "SHARED-INFRA",
+      "imports": [
+        {
+          "target": "shared/spatial-projection.ts",
+          "targetCategory": "MODEL"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/interaction/pan-zoom-rotate.ts"
+    },
+    "interaction/selection.ts": {
+      "category": "SHARED-INFRA",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/interaction/selection.ts"
+    },
+    "interaction/undo-redo.ts": {
+      "category": "SHARED-INFRA",
+      "imports": [
+        {
+          "target": "api/client.ts",
+          "targetCategory": "API"
+        },
+        {
+          "target": "model/types.ts",
+          "targetCategory": "MODEL"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/interaction/undo-redo.ts"
+    },
+    "io/archimate-xml.ts": {
+      "category": "IO",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/io/archimate-xml.ts"
+    },
+    "io/csv.ts": {
+      "category": "IO",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/io/csv.ts"
+    },
+    "layout/connection-points.ts": {
+      "category": "SHARED-INFRA",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/layout/connection-points.ts"
+    },
+    "layout/dagre.ts": {
+      "category": "SHARED-INFRA",
+      "imports": [
+        {
+          "target": "layout/types.ts",
+          "targetCategory": "SHARED-INFRA"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/layout/dagre.ts"
+    },
+    "layout/edge-routing.ts": {
+      "category": "SHARED-INFRA",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/layout/edge-routing.ts"
+    },
+    "layout/elk.ts": {
+      "category": "SHARED-INFRA",
+      "imports": [
+        {
+          "target": "layout/types.ts",
+          "targetCategory": "SHARED-INFRA"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/layout/elk.ts"
+    },
+    "layout/flat.ts": {
+      "category": "SHARED-INFRA",
+      "imports": [
+        {
+          "target": "layout/types.ts",
+          "targetCategory": "SHARED-INFRA"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/layout/flat.ts"
+    },
+    "layout/spatial.ts": {
+      "category": "SHARED-INFRA",
+      "imports": [
+        {
+          "target": "shared/spatial-projection.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "renderers/spatial/layers.ts",
+          "targetCategory": "RENDERER-SPATIAL"
+        },
+        {
+          "target": "layout/types.ts",
+          "targetCategory": "SHARED-INFRA"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/layout/spatial.ts"
+    },
+    "layout/types.ts": {
+      "category": "SHARED-INFRA",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/layout/types.ts"
+    },
+    "layout/ucd-layout.ts": {
+      "category": "SHARED-INFRA",
+      "imports": [
+        {
+          "target": "model/types.ts",
+          "targetCategory": "MODEL"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/layout/ucd-layout.ts"
+    },
+    "main.tsx": {
+      "category": "OTHER",
+      "imports": [
+        {
+          "target": "App.tsx",
+          "targetCategory": "OTHER"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/main.tsx"
+    },
+    "model/archetypes.ts": {
+      "category": "MODEL",
+      "imports": [
+        {
+          "target": "model/types.ts",
+          "targetCategory": "MODEL"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/model/archetypes.ts"
+    },
+    "model/graph.ts": {
+      "category": "MODEL",
+      "imports": [
+        {
+          "target": "model/types.ts",
+          "targetCategory": "MODEL"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/model/graph.ts"
+    },
+    "model/notation.ts": {
+      "category": "MODEL",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/model/notation.ts"
+    },
+    "model/specialisations.ts": {
+      "category": "MODEL",
+      "imports": [
+        {
+          "target": "model/types.ts",
+          "targetCategory": "MODEL"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/model/specialisations.ts"
+    },
+    "model/types.ts": {
+      "category": "MODEL",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/model/types.ts"
+    },
+    "notation/archimate-viewpoints.ts": {
+      "category": "NOTATION-ARCHIMATE",
+      "imports": [
+        {
+          "target": "model/types.ts",
+          "targetCategory": "MODEL"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/notation/archimate-viewpoints.ts"
+    },
+    "notation/badges.ts": {
+      "category": "NOTATION-ARCHIMATE",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/notation/badges.ts"
+    },
+    "notation/shapes/box-3d.tsx": {
+      "category": "NOTATION-ARCHIMATE",
+      "imports": [
+        {
+          "target": "notation/shapes/rect.tsx",
+          "targetCategory": "NOTATION-ARCHIMATE"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/notation/shapes/box-3d.tsx"
+    },
+    "notation/shapes/dashed-rect.tsx": {
+      "category": "NOTATION-ARCHIMATE",
+      "imports": [
+        {
+          "target": "notation/shapes/rect.tsx",
+          "targetCategory": "NOTATION-ARCHIMATE"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/notation/shapes/dashed-rect.tsx"
+    },
+    "notation/shapes/event.tsx": {
+      "category": "NOTATION-ARCHIMATE",
+      "imports": [
+        {
+          "target": "notation/shapes/rect.tsx",
+          "targetCategory": "NOTATION-ARCHIMATE"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/notation/shapes/event.tsx"
+    },
+    "notation/shapes/folded-corner.tsx": {
+      "category": "NOTATION-ARCHIMATE",
+      "imports": [
+        {
+          "target": "notation/shapes/rect.tsx",
+          "targetCategory": "NOTATION-ARCHIMATE"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/notation/shapes/folded-corner.tsx"
+    },
+    "notation/shapes/index.ts": {
+      "category": "NOTATION-ARCHIMATE",
+      "imports": [
+        {
+          "target": "notation/shapes/rect.tsx",
+          "targetCategory": "NOTATION-ARCHIMATE"
+        },
+        {
+          "target": "notation/shapes/rect.tsx",
+          "targetCategory": "NOTATION-ARCHIMATE"
+        },
+        {
+          "target": "notation/shapes/rounded-rect.tsx",
+          "targetCategory": "NOTATION-ARCHIMATE"
+        },
+        {
+          "target": "notation/shapes/pill.tsx",
+          "targetCategory": "NOTATION-ARCHIMATE"
+        },
+        {
+          "target": "notation/shapes/folded-corner.tsx",
+          "targetCategory": "NOTATION-ARCHIMATE"
+        },
+        {
+          "target": "notation/shapes/box-3d.tsx",
+          "targetCategory": "NOTATION-ARCHIMATE"
+        },
+        {
+          "target": "notation/shapes/event.tsx",
+          "targetCategory": "NOTATION-ARCHIMATE"
+        },
+        {
+          "target": "notation/shapes/dashed-rect.tsx",
+          "targetCategory": "NOTATION-ARCHIMATE"
+        },
+        {
+          "target": "notation/shapes/rect-with-icon.tsx",
+          "targetCategory": "NOTATION-ARCHIMATE"
+        },
+        {
+          "target": "notation/shapes/rect-with-icon.tsx",
+          "targetCategory": "NOTATION-ARCHIMATE"
+        },
+        {
+          "target": "shared/registry.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "shared/registry.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "notation/shapes/rect.tsx",
+          "targetCategory": "NOTATION-ARCHIMATE"
+        },
+        {
+          "target": "notation/shapes/rect-with-icon.tsx",
+          "targetCategory": "NOTATION-ARCHIMATE"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/notation/shapes/index.ts"
+    },
+    "notation/shapes/pill.tsx": {
+      "category": "NOTATION-ARCHIMATE",
+      "imports": [
+        {
+          "target": "notation/shapes/rect.tsx",
+          "targetCategory": "NOTATION-ARCHIMATE"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/notation/shapes/pill.tsx"
+    },
+    "notation/shapes/rect-with-icon.tsx": {
+      "category": "NOTATION-ARCHIMATE",
+      "imports": [
+        {
+          "target": "notation/shapes/rect.tsx",
+          "targetCategory": "NOTATION-ARCHIMATE"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/notation/shapes/rect-with-icon.tsx"
+    },
+    "notation/shapes/rect.tsx": {
+      "category": "NOTATION-ARCHIMATE",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/notation/shapes/rect.tsx"
+    },
+    "notation/shapes/rounded-rect.tsx": {
+      "category": "NOTATION-ARCHIMATE",
+      "imports": [
+        {
+          "target": "notation/shapes/rect.tsx",
+          "targetCategory": "NOTATION-ARCHIMATE"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/notation/shapes/rounded-rect.tsx"
+    },
+    "renderers/flat/renderer.tsx": {
+      "category": "RENDERER-FLAT",
+      "imports": [
+        {
+          "target": "renderers/types.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/spatial/zoom-tiers.ts",
+          "targetCategory": "RENDERER-SPATIAL"
+        },
+        {
+          "target": "notation/shapes/index.ts",
+          "targetCategory": "NOTATION-ARCHIMATE"
+        },
+        {
+          "target": "notation/badges.ts",
+          "targetCategory": "NOTATION-ARCHIMATE"
+        },
+        {
+          "target": "shared/registry.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "shared/colors.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "shared/edge-styles.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "layout/edge-routing.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "theme/tokens.ts",
+          "targetCategory": "THEME"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/flat/renderer.tsx"
+    },
+    "renderers/flat/zoom.ts": {
+      "category": "RENDERER-FLAT",
+      "imports": [
+        {
+          "target": "renderers/spatial/zoom-tiers.ts",
+          "targetCategory": "RENDERER-SPATIAL"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/flat/zoom.ts"
+    },
+    "renderers/spatial/depth-sort.ts": {
+      "category": "RENDERER-SPATIAL",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/spatial/depth-sort.ts"
+    },
+    "renderers/spatial/layers.ts": {
+      "category": "RENDERER-SPATIAL",
+      "imports": [
+        {
+          "target": "renderers/spatial/projection.ts",
+          "targetCategory": "RENDERER-SPATIAL"
+        },
+        {
+          "target": "shared/colors.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "theme/tokens.ts",
+          "targetCategory": "THEME"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/spatial/layers.ts"
+    },
+    "renderers/spatial/projection.ts": {
+      "category": "RENDERER-SPATIAL",
+      "imports": [
+        {
+          "target": "shared/spatial-projection.ts",
+          "targetCategory": "MODEL"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/spatial/projection.ts"
+    },
+    "renderers/spatial/renderer.tsx": {
+      "category": "RENDERER-SPATIAL",
+      "imports": [
+        {
+          "target": "renderers/spatial/projection.ts",
+          "targetCategory": "RENDERER-SPATIAL"
+        },
+        {
+          "target": "renderers/spatial/depth-sort.ts",
+          "targetCategory": "RENDERER-SPATIAL"
+        },
+        {
+          "target": "renderers/spatial/zoom-tiers.ts",
+          "targetCategory": "RENDERER-SPATIAL"
+        },
+        {
+          "target": "renderers/spatial/layers.ts",
+          "targetCategory": "RENDERER-SPATIAL"
+        },
+        {
+          "target": "layout/edge-routing.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/spatial/layers.ts",
+          "targetCategory": "RENDERER-SPATIAL"
+        },
+        {
+          "target": "renderers/types.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "notation/shapes/index.ts",
+          "targetCategory": "NOTATION-ARCHIMATE"
+        },
+        {
+          "target": "notation/badges.ts",
+          "targetCategory": "NOTATION-ARCHIMATE"
+        },
+        {
+          "target": "shared/registry.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "shared/colors.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "shared/edge-styles.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "interaction/pan-zoom-rotate.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "interaction/pan-zoom-rotate.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "theme/tokens.ts",
+          "targetCategory": "THEME"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/spatial/renderer.tsx"
+    },
+    "renderers/spatial/rotation.ts": {
+      "category": "RENDERER-SPATIAL",
+      "imports": [
+        {
+          "target": "renderers/spatial/projection.ts",
+          "targetCategory": "RENDERER-SPATIAL"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/spatial/rotation.ts"
+    },
+    "renderers/spatial/zoom-tiers.ts": {
+      "category": "RENDERER-SPATIAL",
+      "imports": [
+        {
+          "target": "renderers/types.ts",
+          "targetCategory": "SHARED-INFRA"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/spatial/zoom-tiers.ts"
+    },
+    "renderers/types.ts": {
+      "category": "SHARED-INFRA",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/types.ts"
+    },
+    "renderers/xyflow/AlignmentToolbar.tsx": {
+      "category": "SHARED-INFRA",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/AlignmentToolbar.tsx"
+    },
+    "renderers/xyflow/Canvas.tsx": {
+      "category": "SHARED-INFRA",
+      "imports": [
+        {
+          "target": "renderers/xyflow/nodes/index.ts",
+          "targetCategory": "OTHER"
+        },
+        {
+          "target": "renderers/xyflow/edges/index.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/edges/AllMarkerDefs.tsx",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/nodes/index.ts",
+          "targetCategory": "OTHER"
+        },
+        {
+          "target": "renderers/xyflow/edges/index.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "model/types.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "shared/colors.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "layout/edge-routing.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "layout/connection-points.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/context.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "model/notation.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "store/layer-visibility.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/data-overlay.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/interaction.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "renderers/xyflow/layout-computation.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/layer-bands.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/node-conversion.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/edge-routing-integration.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "layout/elk.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "layout/types.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/RelationshipTypePicker.tsx",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/MagicConnectorDialog.tsx",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/AlignmentToolbar.tsx",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/SnaplineOverlay.tsx",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/EdgeContextMenu.tsx",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/CanvasSearch.tsx",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "interaction/clipboard.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "interaction/clipboard.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/hooks/useCanvasKeyboard.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/hooks/useCanvasConnection.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/Legend.tsx",
+          "targetCategory": "SHARED-INFRA"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/Canvas.tsx"
+    },
+    "renderers/xyflow/CanvasSearch.tsx": {
+      "category": "SHARED-INFRA",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/CanvasSearch.tsx"
+    },
+    "renderers/xyflow/EdgeContextMenu.tsx": {
+      "category": "SHARED-INFRA",
+      "imports": [
+        {
+          "target": "model/types.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "model/notation.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "shared/layer-config.ts",
+          "targetCategory": "MODEL"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/EdgeContextMenu.tsx"
+    },
+    "renderers/xyflow/Legend.tsx": {
+      "category": "SHARED-INFRA",
+      "imports": [
+        {
+          "target": "shared/colors.ts",
+          "targetCategory": "MODEL"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/Legend.tsx"
+    },
+    "renderers/xyflow/MagicConnectorDialog.tsx": {
+      "category": "SHARED-INFRA",
+      "imports": [
+        {
+          "target": "model/types.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "model/notation.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "renderers/xyflow/RelationshipTypePicker.tsx",
+          "targetCategory": "SHARED-INFRA"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/MagicConnectorDialog.tsx"
+    },
+    "renderers/xyflow/RelationshipTypePicker.tsx": {
+      "category": "SHARED-INFRA",
+      "imports": [
+        {
+          "target": "model/types.ts",
+          "targetCategory": "MODEL"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/RelationshipTypePicker.tsx"
+    },
+    "renderers/xyflow/SnaplineOverlay.tsx": {
+      "category": "SHARED-INFRA",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/SnaplineOverlay.tsx"
+    },
+    "renderers/xyflow/context.ts": {
+      "category": "SHARED-INFRA",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/context.ts"
+    },
+    "renderers/xyflow/edge-routing-integration.ts": {
+      "category": "SHARED-INFRA",
+      "imports": [
+        {
+          "target": "renderers/xyflow/edges/index.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "model/types.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "layout/edge-routing.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "model/notation.ts",
+          "targetCategory": "MODEL"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/edge-routing-integration.ts"
+    },
+    "renderers/xyflow/edges/AllMarkerDefs.tsx": {
+      "category": "SHARED-INFRA",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/edges/AllMarkerDefs.tsx"
+    },
+    "renderers/xyflow/edges/UnifiedEdge.tsx": {
+      "category": "SHARED-INFRA",
+      "imports": [
+        {
+          "target": "shared/edge-styles.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "renderers/xyflow/context.ts",
+          "targetCategory": "SHARED-INFRA"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/edges/UnifiedEdge.tsx"
+    },
+    "renderers/xyflow/edges/index.ts": {
+      "category": "SHARED-INFRA",
+      "imports": [
+        {
+          "target": "renderers/xyflow/edges/UnifiedEdge.tsx",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/edges/UnifiedEdge.tsx",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/edges/UnifiedEdge.tsx",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/edges/UnifiedEdge.tsx",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/edges/UnifiedEdge.tsx",
+          "targetCategory": "SHARED-INFRA"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/edges/index.ts"
+    },
+    "renderers/xyflow/hooks/EditableInput.tsx": {
+      "category": "SHARED-INFRA",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/hooks/EditableInput.tsx"
+    },
+    "renderers/xyflow/hooks/useCanvasConnection.ts": {
+      "category": "SHARED-INFRA",
+      "imports": [
+        {
+          "target": "renderers/xyflow/RelationshipTypePicker.tsx",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/MagicConnectorDialog.tsx",
+          "targetCategory": "SHARED-INFRA"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/hooks/useCanvasConnection.ts"
+    },
+    "renderers/xyflow/hooks/useCanvasKeyboard.ts": {
+      "category": "SHARED-INFRA",
+      "imports": [
+        {
+          "target": "renderers/xyflow/layer-bands.ts",
+          "targetCategory": "SHARED-INFRA"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/hooks/useCanvasKeyboard.ts"
+    },
+    "renderers/xyflow/hooks/useEditableNode.ts": {
+      "category": "SHARED-INFRA",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/hooks/useEditableNode.ts"
+    },
+    "renderers/xyflow/hooks/useNodeBehaviour.ts": {
+      "category": "SHARED-INFRA",
+      "imports": [
+        {
+          "target": "renderers/xyflow/hooks/useEditableNode.ts",
+          "targetCategory": "SHARED-INFRA"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/hooks/useNodeBehaviour.ts"
+    },
+    "renderers/xyflow/layer-bands.ts": {
+      "category": "SHARED-INFRA",
+      "imports": [
+        {
+          "target": "model/types.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "model/notation.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "shared/registry.ts",
+          "targetCategory": "MODEL"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/layer-bands.ts"
+    },
+    "renderers/xyflow/layout-computation.ts": {
+      "category": "SHARED-INFRA",
+      "imports": [
+        {
+          "target": "model/types.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "shared/layer-config.ts",
+          "targetCategory": "MODEL"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/layout-computation.ts"
+    },
+    "renderers/xyflow/node-conversion.ts": {
+      "category": "SHARED-INFRA",
+      "imports": [
+        {
+          "target": "renderers/xyflow/nodes/LayerBandNode.tsx",
+          "targetCategory": "OTHER"
+        },
+        {
+          "target": "model/types.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "shared/registry.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "model/notation.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "store/data-overlay.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "renderers/xyflow/layout-computation.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/layer-bands.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "layout/ucd-layout.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "model/types.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "renderers/xyflow/nodes/index.ts",
+          "targetCategory": "OTHER"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/node-conversion.ts"
+    },
+    "renderers/xyflow/nodes/AnnotationNode.tsx": {
+      "category": "OTHER",
+      "imports": [
+        {
+          "target": "renderers/xyflow/hooks/useNodeBehaviour.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/nodes/shared/RoutingHandles.tsx",
+          "targetCategory": "SHARED-INFRA"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/nodes/AnnotationNode.tsx"
+    },
+    "renderers/xyflow/nodes/ArchimateNode.tsx": {
+      "category": "OTHER",
+      "imports": [
+        {
+          "target": "renderers/xyflow/nodes/archimate-icons.tsx",
+          "targetCategory": "OTHER"
+        },
+        {
+          "target": "shared/colors.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "shared/registry.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "renderers/spatial/zoom-tiers.ts",
+          "targetCategory": "RENDERER-SPATIAL"
+        },
+        {
+          "target": "renderers/types.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/hooks/useNodeBehaviour.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/nodes/shared/RoutingHandles.tsx",
+          "targetCategory": "SHARED-INFRA"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/nodes/ArchimateNode.tsx"
+    },
+    "renderers/xyflow/nodes/GroupNode.tsx": {
+      "category": "OTHER",
+      "imports": [
+        {
+          "target": "renderers/xyflow/hooks/useNodeBehaviour.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/nodes/shared/RoutingHandles.tsx",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/nodes/shared/EditableLabel.tsx",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "shared/colors.ts",
+          "targetCategory": "MODEL"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/nodes/GroupNode.tsx"
+    },
+    "renderers/xyflow/nodes/LayerBandNode.tsx": {
+      "category": "OTHER",
+      "imports": [
+        {
+          "target": "shared/colors.ts",
+          "targetCategory": "MODEL"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/nodes/LayerBandNode.tsx"
+    },
+    "renderers/xyflow/nodes/archimate-icons.tsx": {
+      "category": "OTHER",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/nodes/archimate-icons.tsx"
+    },
+    "renderers/xyflow/nodes/data/DmEntityNode.tsx": {
+      "category": "NOTATION-DATA",
+      "imports": [
+        {
+          "target": "renderers/xyflow/nodes/shared/RoutingHandles.tsx",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "shared/theme-colours.ts",
+          "targetCategory": "MODEL"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/nodes/data/DmEntityNode.tsx"
+    },
+    "renderers/xyflow/nodes/index.ts": {
+      "category": "OTHER",
+      "imports": [
+        {
+          "target": "renderers/xyflow/nodes/AnnotationNode.tsx",
+          "targetCategory": "OTHER"
+        },
+        {
+          "target": "renderers/xyflow/nodes/ArchimateNode.tsx",
+          "targetCategory": "OTHER"
+        },
+        {
+          "target": "renderers/xyflow/nodes/uml/UmlClassNode.tsx",
+          "targetCategory": "NOTATION-UML"
+        },
+        {
+          "target": "renderers/xyflow/nodes/uml/UmlComponentNode.tsx",
+          "targetCategory": "NOTATION-UML"
+        },
+        {
+          "target": "renderers/xyflow/nodes/uml/UmlPackageNode.tsx",
+          "targetCategory": "NOTATION-UML"
+        },
+        {
+          "target": "renderers/xyflow/nodes/uml/UmlStateNode.tsx",
+          "targetCategory": "NOTATION-UML"
+        },
+        {
+          "target": "renderers/xyflow/nodes/uml/UmlUseCaseNode.tsx",
+          "targetCategory": "NOTATION-UML"
+        },
+        {
+          "target": "renderers/xyflow/nodes/uml/UcdBoundaryNode.tsx",
+          "targetCategory": "NOTATION-UML"
+        },
+        {
+          "target": "renderers/xyflow/nodes/uml/UmlActivityNode.tsx",
+          "targetCategory": "NOTATION-UML"
+        },
+        {
+          "target": "renderers/xyflow/nodes/uml/UmlSwimlaneNode.tsx",
+          "targetCategory": "NOTATION-UML"
+        },
+        {
+          "target": "renderers/xyflow/nodes/uml/UmlSequenceNodes.tsx",
+          "targetCategory": "NOTATION-UML"
+        },
+        {
+          "target": "renderers/xyflow/nodes/sequence/SequenceLifelineNode.tsx",
+          "targetCategory": "NOTATION-UML"
+        },
+        {
+          "target": "renderers/xyflow/nodes/sequence/SequenceActivationNode.tsx",
+          "targetCategory": "NOTATION-UML"
+        },
+        {
+          "target": "renderers/xyflow/nodes/sequence/SequenceFragmentNode.tsx",
+          "targetCategory": "NOTATION-UML"
+        },
+        {
+          "target": "renderers/xyflow/nodes/wireframe/WfPageNode.tsx",
+          "targetCategory": "NOTATION-WIREFRAME"
+        },
+        {
+          "target": "renderers/xyflow/nodes/wireframe/WfSectionNode.tsx",
+          "targetCategory": "NOTATION-WIREFRAME"
+        },
+        {
+          "target": "renderers/xyflow/nodes/wireframe/WfNavNode.tsx",
+          "targetCategory": "NOTATION-WIREFRAME"
+        },
+        {
+          "target": "renderers/xyflow/nodes/wireframe/WfTableNode.tsx",
+          "targetCategory": "NOTATION-WIREFRAME"
+        },
+        {
+          "target": "renderers/xyflow/nodes/wireframe/WfFormNode.tsx",
+          "targetCategory": "NOTATION-WIREFRAME"
+        },
+        {
+          "target": "renderers/xyflow/nodes/wireframe/WfControlNode.tsx",
+          "targetCategory": "NOTATION-WIREFRAME"
+        },
+        {
+          "target": "renderers/xyflow/nodes/wireframe/WfListNode.tsx",
+          "targetCategory": "NOTATION-WIREFRAME"
+        },
+        {
+          "target": "renderers/xyflow/nodes/wireframe/WfFeedbackNode.tsx",
+          "targetCategory": "NOTATION-WIREFRAME"
+        },
+        {
+          "target": "renderers/xyflow/nodes/data/DmEntityNode.tsx",
+          "targetCategory": "NOTATION-DATA"
+        },
+        {
+          "target": "renderers/xyflow/nodes/process-flow/PfTaskNode.tsx",
+          "targetCategory": "NOTATION-PROCESS"
+        },
+        {
+          "target": "renderers/xyflow/nodes/process-flow/PfPseudoNode.tsx",
+          "targetCategory": "NOTATION-PROCESS"
+        },
+        {
+          "target": "renderers/xyflow/nodes/process-flow/PfDecisionNode.tsx",
+          "targetCategory": "NOTATION-PROCESS"
+        },
+        {
+          "target": "renderers/xyflow/nodes/process-flow/PfGateNode.tsx",
+          "targetCategory": "NOTATION-PROCESS"
+        },
+        {
+          "target": "renderers/xyflow/nodes/process-flow/PfSwimlaneNode.tsx",
+          "targetCategory": "NOTATION-PROCESS"
+        },
+        {
+          "target": "renderers/xyflow/nodes/process-flow/PfSubprocessNode.tsx",
+          "targetCategory": "NOTATION-PROCESS"
+        },
+        {
+          "target": "renderers/xyflow/nodes/GroupNode.tsx",
+          "targetCategory": "OTHER"
+        },
+        {
+          "target": "renderers/xyflow/nodes/LayerBandNode.tsx",
+          "targetCategory": "OTHER"
+        },
+        {
+          "target": "renderers/xyflow/nodes/AnnotationNode.tsx",
+          "targetCategory": "OTHER"
+        },
+        {
+          "target": "renderers/xyflow/nodes/AnnotationNode.tsx",
+          "targetCategory": "OTHER"
+        },
+        {
+          "target": "renderers/xyflow/nodes/GroupNode.tsx",
+          "targetCategory": "OTHER"
+        },
+        {
+          "target": "renderers/xyflow/nodes/GroupNode.tsx",
+          "targetCategory": "OTHER"
+        },
+        {
+          "target": "renderers/xyflow/nodes/ArchimateNode.tsx",
+          "targetCategory": "OTHER"
+        },
+        {
+          "target": "renderers/xyflow/nodes/ArchimateNode.tsx",
+          "targetCategory": "OTHER"
+        },
+        {
+          "target": "renderers/xyflow/nodes/uml/UmlClassNode.tsx",
+          "targetCategory": "NOTATION-UML"
+        },
+        {
+          "target": "renderers/xyflow/nodes/uml/UmlClassNode.tsx",
+          "targetCategory": "NOTATION-UML"
+        },
+        {
+          "target": "renderers/xyflow/nodes/uml/UmlComponentNode.tsx",
+          "targetCategory": "NOTATION-UML"
+        },
+        {
+          "target": "renderers/xyflow/nodes/uml/UmlComponentNode.tsx",
+          "targetCategory": "NOTATION-UML"
+        },
+        {
+          "target": "renderers/xyflow/nodes/uml/UmlPackageNode.tsx",
+          "targetCategory": "NOTATION-UML"
+        },
+        {
+          "target": "renderers/xyflow/nodes/uml/UmlPackageNode.tsx",
+          "targetCategory": "NOTATION-UML"
+        },
+        {
+          "target": "renderers/xyflow/nodes/uml/UmlUseCaseNode.tsx",
+          "targetCategory": "NOTATION-UML"
+        },
+        {
+          "target": "renderers/xyflow/nodes/uml/UmlUseCaseNode.tsx",
+          "targetCategory": "NOTATION-UML"
+        },
+        {
+          "target": "renderers/xyflow/nodes/uml/UcdBoundaryNode.tsx",
+          "targetCategory": "NOTATION-UML"
+        },
+        {
+          "target": "renderers/xyflow/nodes/uml/UcdBoundaryNode.tsx",
+          "targetCategory": "NOTATION-UML"
+        },
+        {
+          "target": "renderers/xyflow/nodes/uml/UmlStateNode.tsx",
+          "targetCategory": "NOTATION-UML"
+        },
+        {
+          "target": "renderers/xyflow/nodes/uml/UmlStateNode.tsx",
+          "targetCategory": "NOTATION-UML"
+        },
+        {
+          "target": "renderers/xyflow/nodes/uml/UmlActivityNode.tsx",
+          "targetCategory": "NOTATION-UML"
+        },
+        {
+          "target": "renderers/xyflow/nodes/uml/UmlActivityNode.tsx",
+          "targetCategory": "NOTATION-UML"
+        },
+        {
+          "target": "renderers/xyflow/nodes/uml/UmlSwimlaneNode.tsx",
+          "targetCategory": "NOTATION-UML"
+        },
+        {
+          "target": "renderers/xyflow/nodes/uml/UmlSwimlaneNode.tsx",
+          "targetCategory": "NOTATION-UML"
+        },
+        {
+          "target": "renderers/xyflow/nodes/uml/UmlSequenceNodes.tsx",
+          "targetCategory": "NOTATION-UML"
+        },
+        {
+          "target": "renderers/xyflow/nodes/uml/UmlSequenceNodes.tsx",
+          "targetCategory": "NOTATION-UML"
+        },
+        {
+          "target": "renderers/xyflow/nodes/sequence/SequenceLifelineNode.tsx",
+          "targetCategory": "NOTATION-UML"
+        },
+        {
+          "target": "renderers/xyflow/nodes/sequence/SequenceLifelineNode.tsx",
+          "targetCategory": "NOTATION-UML"
+        },
+        {
+          "target": "renderers/xyflow/nodes/sequence/SequenceActivationNode.tsx",
+          "targetCategory": "NOTATION-UML"
+        },
+        {
+          "target": "renderers/xyflow/nodes/sequence/SequenceActivationNode.tsx",
+          "targetCategory": "NOTATION-UML"
+        },
+        {
+          "target": "renderers/xyflow/nodes/sequence/SequenceFragmentNode.tsx",
+          "targetCategory": "NOTATION-UML"
+        },
+        {
+          "target": "renderers/xyflow/nodes/sequence/SequenceFragmentNode.tsx",
+          "targetCategory": "NOTATION-UML"
+        },
+        {
+          "target": "renderers/xyflow/nodes/data/DmEntityNode.tsx",
+          "targetCategory": "NOTATION-DATA"
+        },
+        {
+          "target": "renderers/xyflow/nodes/data/DmEntityNode.tsx",
+          "targetCategory": "NOTATION-DATA"
+        },
+        {
+          "target": "renderers/xyflow/nodes/wireframe/WfPageNode.tsx",
+          "targetCategory": "NOTATION-WIREFRAME"
+        },
+        {
+          "target": "renderers/xyflow/nodes/wireframe/WfPageNode.tsx",
+          "targetCategory": "NOTATION-WIREFRAME"
+        },
+        {
+          "target": "renderers/xyflow/nodes/wireframe/WfSectionNode.tsx",
+          "targetCategory": "NOTATION-WIREFRAME"
+        },
+        {
+          "target": "renderers/xyflow/nodes/wireframe/WfSectionNode.tsx",
+          "targetCategory": "NOTATION-WIREFRAME"
+        },
+        {
+          "target": "renderers/xyflow/nodes/wireframe/WfNavNode.tsx",
+          "targetCategory": "NOTATION-WIREFRAME"
+        },
+        {
+          "target": "renderers/xyflow/nodes/wireframe/WfNavNode.tsx",
+          "targetCategory": "NOTATION-WIREFRAME"
+        },
+        {
+          "target": "renderers/xyflow/nodes/wireframe/WfTableNode.tsx",
+          "targetCategory": "NOTATION-WIREFRAME"
+        },
+        {
+          "target": "renderers/xyflow/nodes/wireframe/WfTableNode.tsx",
+          "targetCategory": "NOTATION-WIREFRAME"
+        },
+        {
+          "target": "renderers/xyflow/nodes/wireframe/WfFormNode.tsx",
+          "targetCategory": "NOTATION-WIREFRAME"
+        },
+        {
+          "target": "renderers/xyflow/nodes/wireframe/WfFormNode.tsx",
+          "targetCategory": "NOTATION-WIREFRAME"
+        },
+        {
+          "target": "renderers/xyflow/nodes/wireframe/WfControlNode.tsx",
+          "targetCategory": "NOTATION-WIREFRAME"
+        },
+        {
+          "target": "renderers/xyflow/nodes/wireframe/WfControlNode.tsx",
+          "targetCategory": "NOTATION-WIREFRAME"
+        },
+        {
+          "target": "renderers/xyflow/nodes/wireframe/WfListNode.tsx",
+          "targetCategory": "NOTATION-WIREFRAME"
+        },
+        {
+          "target": "renderers/xyflow/nodes/wireframe/WfListNode.tsx",
+          "targetCategory": "NOTATION-WIREFRAME"
+        },
+        {
+          "target": "renderers/xyflow/nodes/wireframe/WfFeedbackNode.tsx",
+          "targetCategory": "NOTATION-WIREFRAME"
+        },
+        {
+          "target": "renderers/xyflow/nodes/wireframe/WfFeedbackNode.tsx",
+          "targetCategory": "NOTATION-WIREFRAME"
+        },
+        {
+          "target": "renderers/xyflow/nodes/process-flow/PfTaskNode.tsx",
+          "targetCategory": "NOTATION-PROCESS"
+        },
+        {
+          "target": "renderers/xyflow/nodes/process-flow/PfTaskNode.tsx",
+          "targetCategory": "NOTATION-PROCESS"
+        },
+        {
+          "target": "renderers/xyflow/nodes/process-flow/PfPseudoNode.tsx",
+          "targetCategory": "NOTATION-PROCESS"
+        },
+        {
+          "target": "renderers/xyflow/nodes/process-flow/PfPseudoNode.tsx",
+          "targetCategory": "NOTATION-PROCESS"
+        },
+        {
+          "target": "renderers/xyflow/nodes/process-flow/PfDecisionNode.tsx",
+          "targetCategory": "NOTATION-PROCESS"
+        },
+        {
+          "target": "renderers/xyflow/nodes/process-flow/PfDecisionNode.tsx",
+          "targetCategory": "NOTATION-PROCESS"
+        },
+        {
+          "target": "renderers/xyflow/nodes/process-flow/PfGateNode.tsx",
+          "targetCategory": "NOTATION-PROCESS"
+        },
+        {
+          "target": "renderers/xyflow/nodes/process-flow/PfGateNode.tsx",
+          "targetCategory": "NOTATION-PROCESS"
+        },
+        {
+          "target": "renderers/xyflow/nodes/process-flow/PfSwimlaneNode.tsx",
+          "targetCategory": "NOTATION-PROCESS"
+        },
+        {
+          "target": "renderers/xyflow/nodes/process-flow/PfSwimlaneNode.tsx",
+          "targetCategory": "NOTATION-PROCESS"
+        },
+        {
+          "target": "renderers/xyflow/nodes/process-flow/PfSubprocessNode.tsx",
+          "targetCategory": "NOTATION-PROCESS"
+        },
+        {
+          "target": "renderers/xyflow/nodes/process-flow/PfSubprocessNode.tsx",
+          "targetCategory": "NOTATION-PROCESS"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/nodes/index.ts"
+    },
+    "renderers/xyflow/nodes/process-flow/PfDecisionNode.tsx": {
+      "category": "NOTATION-PROCESS",
+      "imports": [
+        {
+          "target": "renderers/xyflow/nodes/shared/RoutingHandles.tsx",
+          "targetCategory": "SHARED-INFRA"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/nodes/process-flow/PfDecisionNode.tsx"
+    },
+    "renderers/xyflow/nodes/process-flow/PfGateNode.tsx": {
+      "category": "NOTATION-PROCESS",
+      "imports": [
+        {
+          "target": "renderers/xyflow/nodes/shared/RoutingHandles.tsx",
+          "targetCategory": "SHARED-INFRA"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/nodes/process-flow/PfGateNode.tsx"
+    },
+    "renderers/xyflow/nodes/process-flow/PfPseudoNode.tsx": {
+      "category": "NOTATION-PROCESS",
+      "imports": [
+        {
+          "target": "renderers/xyflow/nodes/shared/RoutingHandles.tsx",
+          "targetCategory": "SHARED-INFRA"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/nodes/process-flow/PfPseudoNode.tsx"
+    },
+    "renderers/xyflow/nodes/process-flow/PfSubprocessNode.tsx": {
+      "category": "NOTATION-PROCESS",
+      "imports": [
+        {
+          "target": "renderers/xyflow/nodes/shared/RoutingHandles.tsx",
+          "targetCategory": "SHARED-INFRA"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/nodes/process-flow/PfSubprocessNode.tsx"
+    },
+    "renderers/xyflow/nodes/process-flow/PfSwimlaneNode.tsx": {
+      "category": "NOTATION-PROCESS",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/nodes/process-flow/PfSwimlaneNode.tsx"
+    },
+    "renderers/xyflow/nodes/process-flow/PfTaskNode.tsx": {
+      "category": "NOTATION-PROCESS",
+      "imports": [
+        {
+          "target": "renderers/xyflow/nodes/shared/RoutingHandles.tsx",
+          "targetCategory": "SHARED-INFRA"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/nodes/process-flow/PfTaskNode.tsx"
+    },
+    "renderers/xyflow/nodes/sequence/SequenceActivationNode.tsx": {
+      "category": "NOTATION-UML",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/nodes/sequence/SequenceActivationNode.tsx"
+    },
+    "renderers/xyflow/nodes/sequence/SequenceFragmentNode.tsx": {
+      "category": "NOTATION-UML",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/nodes/sequence/SequenceFragmentNode.tsx"
+    },
+    "renderers/xyflow/nodes/sequence/SequenceLifelineNode.tsx": {
+      "category": "NOTATION-UML",
+      "imports": [
+        {
+          "target": "renderers/xyflow/hooks/useEditableNode.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/hooks/EditableInput.tsx",
+          "targetCategory": "SHARED-INFRA"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/nodes/sequence/SequenceLifelineNode.tsx"
+    },
+    "renderers/xyflow/nodes/shared/EditableLabel.tsx": {
+      "category": "SHARED-INFRA",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/nodes/shared/EditableLabel.tsx"
+    },
+    "renderers/xyflow/nodes/shared/RoutingHandles.tsx": {
+      "category": "SHARED-INFRA",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/nodes/shared/RoutingHandles.tsx"
+    },
+    "renderers/xyflow/nodes/uml/UcdBoundaryNode.tsx": {
+      "category": "NOTATION-UML",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/nodes/uml/UcdBoundaryNode.tsx"
+    },
+    "renderers/xyflow/nodes/uml/UmlActivityNode.tsx": {
+      "category": "NOTATION-UML",
+      "imports": [
+        {
+          "target": "renderers/xyflow/nodes/shared/RoutingHandles.tsx",
+          "targetCategory": "SHARED-INFRA"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/nodes/uml/UmlActivityNode.tsx"
+    },
+    "renderers/xyflow/nodes/uml/UmlClassNode.tsx": {
+      "category": "NOTATION-UML",
+      "imports": [
+        {
+          "target": "renderers/xyflow/nodes/shared/RoutingHandles.tsx",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "shared/theme-colours.ts",
+          "targetCategory": "MODEL"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/nodes/uml/UmlClassNode.tsx"
+    },
+    "renderers/xyflow/nodes/uml/UmlComponentNode.tsx": {
+      "category": "NOTATION-UML",
+      "imports": [
+        {
+          "target": "renderers/xyflow/nodes/shared/RoutingHandles.tsx",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "shared/theme-colours.ts",
+          "targetCategory": "MODEL"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/nodes/uml/UmlComponentNode.tsx"
+    },
+    "renderers/xyflow/nodes/uml/UmlPackageNode.tsx": {
+      "category": "NOTATION-UML",
+      "imports": [
+        {
+          "target": "renderers/xyflow/hooks/useNodeBehaviour.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/nodes/shared/RoutingHandles.tsx",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/nodes/shared/EditableLabel.tsx",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "shared/theme-colours.ts",
+          "targetCategory": "MODEL"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/nodes/uml/UmlPackageNode.tsx"
+    },
+    "renderers/xyflow/nodes/uml/UmlSequenceNodes.tsx": {
+      "category": "NOTATION-UML",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/nodes/uml/UmlSequenceNodes.tsx"
+    },
+    "renderers/xyflow/nodes/uml/UmlStateNode.tsx": {
+      "category": "NOTATION-UML",
+      "imports": [
+        {
+          "target": "renderers/xyflow/nodes/shared/RoutingHandles.tsx",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "shared/theme-colours.ts",
+          "targetCategory": "MODEL"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/nodes/uml/UmlStateNode.tsx"
+    },
+    "renderers/xyflow/nodes/uml/UmlSwimlaneNode.tsx": {
+      "category": "NOTATION-UML",
+      "imports": [
+        {
+          "target": "renderers/xyflow/hooks/useNodeBehaviour.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/nodes/shared/RoutingHandles.tsx",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/nodes/shared/EditableLabel.tsx",
+          "targetCategory": "SHARED-INFRA"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/nodes/uml/UmlSwimlaneNode.tsx"
+    },
+    "renderers/xyflow/nodes/uml/UmlUseCaseNode.tsx": {
+      "category": "NOTATION-UML",
+      "imports": [
+        {
+          "target": "renderers/xyflow/nodes/shared/RoutingHandles.tsx",
+          "targetCategory": "SHARED-INFRA"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/nodes/uml/UmlUseCaseNode.tsx"
+    },
+    "renderers/xyflow/nodes/wireframe/WfControlNode.tsx": {
+      "category": "NOTATION-WIREFRAME",
+      "imports": [
+        {
+          "target": "renderers/xyflow/nodes/shared/RoutingHandles.tsx",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/hooks/useEditableNode.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/hooks/EditableInput.tsx",
+          "targetCategory": "SHARED-INFRA"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/nodes/wireframe/WfControlNode.tsx"
+    },
+    "renderers/xyflow/nodes/wireframe/WfFeedbackNode.tsx": {
+      "category": "NOTATION-WIREFRAME",
+      "imports": [
+        {
+          "target": "renderers/xyflow/nodes/shared/RoutingHandles.tsx",
+          "targetCategory": "SHARED-INFRA"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/nodes/wireframe/WfFeedbackNode.tsx"
+    },
+    "renderers/xyflow/nodes/wireframe/WfFormNode.tsx": {
+      "category": "NOTATION-WIREFRAME",
+      "imports": [
+        {
+          "target": "renderers/xyflow/nodes/shared/RoutingHandles.tsx",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/hooks/useEditableNode.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/hooks/EditableInput.tsx",
+          "targetCategory": "SHARED-INFRA"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/nodes/wireframe/WfFormNode.tsx"
+    },
+    "renderers/xyflow/nodes/wireframe/WfListNode.tsx": {
+      "category": "NOTATION-WIREFRAME",
+      "imports": [
+        {
+          "target": "renderers/xyflow/nodes/shared/RoutingHandles.tsx",
+          "targetCategory": "SHARED-INFRA"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/nodes/wireframe/WfListNode.tsx"
+    },
+    "renderers/xyflow/nodes/wireframe/WfNavNode.tsx": {
+      "category": "NOTATION-WIREFRAME",
+      "imports": [
+        {
+          "target": "renderers/xyflow/nodes/shared/RoutingHandles.tsx",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/hooks/useEditableNode.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/hooks/EditableInput.tsx",
+          "targetCategory": "SHARED-INFRA"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/nodes/wireframe/WfNavNode.tsx"
+    },
+    "renderers/xyflow/nodes/wireframe/WfPageNode.tsx": {
+      "category": "NOTATION-WIREFRAME",
+      "imports": [
+        {
+          "target": "renderers/xyflow/nodes/shared/RoutingHandles.tsx",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/hooks/useEditableNode.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/hooks/EditableInput.tsx",
+          "targetCategory": "SHARED-INFRA"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/nodes/wireframe/WfPageNode.tsx"
+    },
+    "renderers/xyflow/nodes/wireframe/WfSectionNode.tsx": {
+      "category": "NOTATION-WIREFRAME",
+      "imports": [
+        {
+          "target": "renderers/xyflow/nodes/shared/RoutingHandles.tsx",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/hooks/useEditableNode.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/hooks/EditableInput.tsx",
+          "targetCategory": "SHARED-INFRA"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/nodes/wireframe/WfSectionNode.tsx"
+    },
+    "renderers/xyflow/nodes/wireframe/WfTableNode.tsx": {
+      "category": "NOTATION-WIREFRAME",
+      "imports": [
+        {
+          "target": "renderers/xyflow/nodes/shared/RoutingHandles.tsx",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/hooks/useEditableNode.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/xyflow/hooks/EditableInput.tsx",
+          "targetCategory": "SHARED-INFRA"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/renderers/xyflow/nodes/wireframe/WfTableNode.tsx"
+    },
+    "shared/colors.ts": {
+      "category": "MODEL",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/shared/colors.ts"
+    },
+    "shared/edge-styles.ts": {
+      "category": "MODEL",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/shared/edge-styles.ts"
+    },
+    "shared/layer-config.ts": {
+      "category": "MODEL",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/shared/layer-config.ts"
+    },
+    "shared/notify.ts": {
+      "category": "MODEL",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/shared/notify.ts"
+    },
+    "shared/registry.ts": {
+      "category": "MODEL",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/shared/registry.ts"
+    },
+    "shared/spatial-projection.ts": {
+      "category": "MODEL",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/shared/spatial-projection.ts"
+    },
+    "shared/theme-colours.ts": {
+      "category": "MODEL",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/shared/theme-colours.ts"
+    },
+    "store/data-overlay.ts": {
+      "category": "STORE",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/store/data-overlay.ts"
+    },
+    "store/interaction.ts": {
+      "category": "STORE",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/store/interaction.ts"
+    },
+    "store/layer-visibility.ts": {
+      "category": "STORE",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/store/layer-visibility.ts"
+    },
+    "store/model.ts": {
+      "category": "STORE",
+      "imports": [
+        {
+          "target": "model/types.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "model/graph.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "api/client.ts",
+          "targetCategory": "API"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/store/model.ts"
+    },
+    "store/notification.ts": {
+      "category": "STORE",
+      "imports": [
+        {
+          "target": "shared/notify.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "shared/notify.ts",
+          "targetCategory": "MODEL"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/store/notification.ts"
+    },
+    "store/panel.ts": {
+      "category": "STORE",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/store/panel.ts"
+    },
+    "store/project.ts": {
+      "category": "STORE",
+      "imports": [
+        {
+          "target": "model/types.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "api/client.ts",
+          "targetCategory": "API"
+        },
+        {
+          "target": "store/model.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/view.ts",
+          "targetCategory": "STORE"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/store/project.ts"
+    },
+    "store/theme.ts": {
+      "category": "STORE",
+      "imports": [
+        {
+          "target": "theme/tokens.ts",
+          "targetCategory": "THEME"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/store/theme.ts"
+    },
+    "store/view.ts": {
+      "category": "STORE",
+      "imports": [
+        {
+          "target": "model/types.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "api/client.ts",
+          "targetCategory": "API"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/store/view.ts"
+    },
+    "theme/dark.ts": {
+      "category": "THEME",
+      "imports": [
+        {
+          "target": "theme/tokens.ts",
+          "targetCategory": "THEME"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/theme/dark.ts"
+    },
+    "theme/light.ts": {
+      "category": "THEME",
+      "imports": [
+        {
+          "target": "theme/tokens.ts",
+          "targetCategory": "THEME"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/theme/light.ts"
+    },
+    "theme/provider.tsx": {
+      "category": "THEME",
+      "imports": [
+        {
+          "target": "theme/tokens.ts",
+          "targetCategory": "THEME"
+        },
+        {
+          "target": "theme/dark.ts",
+          "targetCategory": "THEME"
+        },
+        {
+          "target": "theme/light.ts",
+          "targetCategory": "THEME"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/theme/provider.tsx"
+    },
+    "theme/tokens.ts": {
+      "category": "THEME",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/theme/tokens.ts"
+    },
+    "ui/ArchiPaletteIcons.tsx": {
+      "category": "UI",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/ui/ArchiPaletteIcons.tsx"
+    },
+    "ui/Canvas.tsx": {
+      "category": "UI",
+      "imports": [
+        {
+          "target": "store/model.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/view.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/interaction.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/theme.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "renderers/xyflow/Canvas.tsx",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "api/client.ts",
+          "targetCategory": "API"
+        },
+        {
+          "target": "model/types.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "model/types.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "interaction/undo-redo.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "interaction/undo-redo.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "model/types.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "model/notation.ts",
+          "targetCategory": "MODEL"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/ui/Canvas.tsx"
+    },
+    "ui/ContextMenu.tsx": {
+      "category": "UI",
+      "imports": [
+        {
+          "target": "store/interaction.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/view.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/model.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/theme.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/panel.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "api/client.ts",
+          "targetCategory": "API"
+        },
+        {
+          "target": "api/client.ts",
+          "targetCategory": "API"
+        },
+        {
+          "target": "model/types.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "interaction/undo-redo.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "store/notification.ts",
+          "targetCategory": "STORE"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/ui/ContextMenu.tsx"
+    },
+    "ui/DataOverlayControls.tsx": {
+      "category": "UI",
+      "imports": [
+        {
+          "target": "store/data-overlay.ts",
+          "targetCategory": "STORE"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/ui/DataOverlayControls.tsx"
+    },
+    "ui/DetailPanel.tsx": {
+      "category": "UI",
+      "imports": [
+        {
+          "target": "model/types.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "model/types.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "store/model.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "ui/ImpactAnalysisPanel.tsx",
+          "targetCategory": "UI"
+        },
+        {
+          "target": "api/client.ts",
+          "targetCategory": "API"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/ui/DetailPanel.tsx"
+    },
+    "ui/ErrorBoundary.tsx": {
+      "category": "UI",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/ui/ErrorBoundary.tsx"
+    },
+    "ui/ExportMenu.tsx": {
+      "category": "UI",
+      "imports": [
+        {
+          "target": "api/client.ts",
+          "targetCategory": "API"
+        },
+        {
+          "target": "store/view.ts",
+          "targetCategory": "STORE"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/ui/ExportMenu.tsx"
+    },
+    "ui/FindReplace.tsx": {
+      "category": "UI",
+      "imports": [
+        {
+          "target": "store/model.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "api/client.ts",
+          "targetCategory": "API"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/ui/FindReplace.tsx"
+    },
+    "ui/HelpPanel.tsx": {
+      "category": "UI",
+      "imports": [
+        {
+          "target": "help/function-registry.ts",
+          "targetCategory": "UI"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/ui/HelpPanel.tsx"
+    },
+    "ui/ImpactAnalysisPanel.tsx": {
+      "category": "UI",
+      "imports": [
+        {
+          "target": "model/types.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "store/model.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/interaction.ts",
+          "targetCategory": "STORE"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/ui/ImpactAnalysisPanel.tsx"
+    },
+    "ui/LayerControls.tsx": {
+      "category": "UI",
+      "imports": [
+        {
+          "target": "store/layer-visibility.ts",
+          "targetCategory": "STORE"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/ui/LayerControls.tsx"
+    },
+    "ui/MenuBar.tsx": {
+      "category": "UI",
+      "imports": [
+        {
+          "target": "interaction/undo-redo.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "store/panel.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/theme.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/view.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/interaction.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/notification.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "api/client.ts",
+          "targetCategory": "API"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/ui/MenuBar.tsx"
+    },
+    "ui/ModelTree.tsx": {
+      "category": "UI",
+      "imports": [
+        {
+          "target": "store/model.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/view.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/interaction.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/theme.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "model/types.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "shared/layer-config.ts",
+          "targetCategory": "MODEL"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/ui/ModelTree.tsx"
+    },
+    "ui/Palette.tsx": {
+      "category": "UI",
+      "imports": [
+        {
+          "target": "shared/colors.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "shared/registry.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "shared/edge-styles.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "shared/layer-config.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "store/theme.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/model.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/view.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "model/types.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "model/types.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "notation/archimate-viewpoints.ts",
+          "targetCategory": "NOTATION-ARCHIMATE"
+        },
+        {
+          "target": "ui/ArchiPaletteIcons.tsx",
+          "targetCategory": "UI"
+        },
+        {
+          "target": "api/client.ts",
+          "targetCategory": "API"
+        },
+        {
+          "target": "store/notification.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "model/notation.ts",
+          "targetCategory": "MODEL"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/ui/Palette.tsx"
+    },
+    "ui/RelationshipMatrix.tsx": {
+      "category": "UI",
+      "imports": [
+        {
+          "target": "model/types.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "store/model.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/view.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/interaction.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "shared/layer-config.ts",
+          "targetCategory": "MODEL"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/ui/RelationshipMatrix.tsx"
+    },
+    "ui/RotationPanel.tsx": {
+      "category": "UI",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/ui/RotationPanel.tsx"
+    },
+    "ui/SelectionBadge.tsx": {
+      "category": "UI",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/ui/SelectionBadge.tsx"
+    },
+    "ui/Shell.tsx": {
+      "category": "UI",
+      "imports": [
+        {
+          "target": "ui/ViewSwitcher.tsx",
+          "targetCategory": "UI"
+        },
+        {
+          "target": "ui/Palette.tsx",
+          "targetCategory": "UI"
+        },
+        {
+          "target": "ui/LayerControls.tsx",
+          "targetCategory": "UI"
+        },
+        {
+          "target": "ui/Canvas.tsx",
+          "targetCategory": "UI"
+        },
+        {
+          "target": "ui/ModelTree.tsx",
+          "targetCategory": "UI"
+        },
+        {
+          "target": "ui/DetailPanel.tsx",
+          "targetCategory": "UI"
+        },
+        {
+          "target": "interaction/undo-redo.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "api/client.ts",
+          "targetCategory": "API"
+        },
+        {
+          "target": "ui/DataOverlayControls.tsx",
+          "targetCategory": "UI"
+        },
+        {
+          "target": "ui/ContextMenu.tsx",
+          "targetCategory": "UI"
+        },
+        {
+          "target": "ui/ErrorBoundary.tsx",
+          "targetCategory": "UI"
+        },
+        {
+          "target": "ui/FindReplace.tsx",
+          "targetCategory": "UI"
+        },
+        {
+          "target": "ui/RelationshipMatrix.tsx",
+          "targetCategory": "UI"
+        },
+        {
+          "target": "ui/TabBar.tsx",
+          "targetCategory": "UI"
+        },
+        {
+          "target": "store/panel.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/interaction.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/model.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/view.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/theme.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/project.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "ui/ValidationPanel.tsx",
+          "targetCategory": "UI"
+        },
+        {
+          "target": "ui/SpecialisationsManager.tsx",
+          "targetCategory": "UI"
+        },
+        {
+          "target": "ui/HelpPanel.tsx",
+          "targetCategory": "UI"
+        },
+        {
+          "target": "ui/components/Toast.tsx",
+          "targetCategory": "UI"
+        },
+        {
+          "target": "store/notification.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "ui/MenuBar.tsx",
+          "targetCategory": "UI"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/ui/Shell.tsx"
+    },
+    "ui/SpecialisationsManager.tsx": {
+      "category": "UI",
+      "imports": [
+        {
+          "target": "api/client.ts",
+          "targetCategory": "API"
+        },
+        {
+          "target": "model/types.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "store/model.ts",
+          "targetCategory": "STORE"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/ui/SpecialisationsManager.tsx"
+    },
+    "ui/TabBar.tsx": {
+      "category": "UI",
+      "imports": [
+        {
+          "target": "store/panel.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/view.ts",
+          "targetCategory": "STORE"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/ui/TabBar.tsx"
+    },
+    "ui/ThemeToggle.tsx": {
+      "category": "UI",
+      "imports": [
+        {
+          "target": "store/theme.ts",
+          "targetCategory": "STORE"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/ui/ThemeToggle.tsx"
+    },
+    "ui/ValidationPanel.tsx": {
+      "category": "UI",
+      "imports": [
+        {
+          "target": "store/model.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/view.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/interaction.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "api/client.ts",
+          "targetCategory": "API"
+        },
+        {
+          "target": "model/types.ts",
+          "targetCategory": "MODEL"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/ui/ValidationPanel.tsx"
+    },
+    "ui/ViewSwitcher.tsx": {
+      "category": "UI",
+      "imports": [
+        {
+          "target": "store/view.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/panel.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "api/client.ts",
+          "targetCategory": "API"
+        },
+        {
+          "target": "model/types.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "notation/archimate-viewpoints.ts",
+          "targetCategory": "NOTATION-ARCHIMATE"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/ui/ViewSwitcher.tsx"
+    },
+    "ui/ZoomBar.tsx": {
+      "category": "UI",
+      "imports": [
+        {
+          "target": "renderers/spatial/zoom-tiers.ts",
+          "targetCategory": "RENDERER-SPATIAL"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/ui/ZoomBar.tsx"
+    },
+    "ui/components/Toast.tsx": {
+      "category": "UI",
+      "imports": [
+        {
+          "target": "store/notification.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/theme.ts",
+          "targetCategory": "STORE"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/ui/components/Toast.tsx"
+    },
+    "ui/spatial-shell/Canvas.tsx": {
+      "category": "UI",
+      "imports": [
+        {
+          "target": "renderers/spatial/renderer.tsx",
+          "targetCategory": "RENDERER-SPATIAL"
+        },
+        {
+          "target": "renderers/flat/renderer.tsx",
+          "targetCategory": "RENDERER-FLAT"
+        },
+        {
+          "target": "renderers/types.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/spatial/layers.ts",
+          "targetCategory": "RENDERER-SPATIAL"
+        },
+        {
+          "target": "interaction/pan-zoom-rotate.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "interaction/pan-zoom-rotate.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "interaction/highlight.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "interaction/highlight.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "ui/ContextMenu.tsx",
+          "targetCategory": "UI"
+        },
+        {
+          "target": "ui/ContextMenu.tsx",
+          "targetCategory": "UI"
+        },
+        {
+          "target": "layout/spatial.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "layout/flat.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "renderers/spatial/layers.ts",
+          "targetCategory": "RENDERER-SPATIAL"
+        },
+        {
+          "target": "renderers/spatial/projection.ts",
+          "targetCategory": "RENDERER-SPATIAL"
+        },
+        {
+          "target": "shared/registry.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "model/types.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "store/model.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/view.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/interaction.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "store/theme.ts",
+          "targetCategory": "STORE"
+        },
+        {
+          "target": "ui/spatial-shell/ZoomBar.tsx",
+          "targetCategory": "UI"
+        },
+        {
+          "target": "ui/spatial-shell/RotationPanel.tsx",
+          "targetCategory": "UI"
+        },
+        {
+          "target": "ui/SelectionBadge.tsx",
+          "targetCategory": "UI"
+        },
+        {
+          "target": "ui/ExportMenu.tsx",
+          "targetCategory": "UI"
+        },
+        {
+          "target": "ui/DetailPanel.tsx",
+          "targetCategory": "UI"
+        },
+        {
+          "target": "layout/types.ts",
+          "targetCategory": "SHARED-INFRA"
+        },
+        {
+          "target": "model/specialisations.ts",
+          "targetCategory": "MODEL"
+        },
+        {
+          "target": "layout/connection-points.ts",
+          "targetCategory": "SHARED-INFRA"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/ui/spatial-shell/Canvas.tsx"
+    },
+    "ui/spatial-shell/RotationPanel.tsx": {
+      "category": "UI",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/ui/spatial-shell/RotationPanel.tsx"
+    },
+    "ui/spatial-shell/ZoomBar.tsx": {
+      "category": "UI",
+      "imports": [
+        {
+          "target": "renderers/spatial/zoom-tiers.ts",
+          "targetCategory": "RENDERER-SPATIAL"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/src/ui/spatial-shell/ZoomBar.tsx"
+    },
+    "server/db.ts": {
+      "category": "SERVER",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/server/db.ts"
+    },
+    "server/index.ts": {
+      "category": "SERVER",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/server/index.ts"
+    },
+    "server/middleware/uat-verify.ts": {
+      "category": "SERVER",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/server/middleware/uat-verify.ts"
+    },
+    "server/routes/archimate-io.ts": {
+      "category": "SERVER",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/server/routes/archimate-io.ts"
+    },
+    "server/routes/batch.ts": {
+      "category": "SERVER",
+      "imports": [
+        {
+          "target": "shared/layer-config.ts",
+          "targetCategory": "MODEL"
+        }
+      ],
+      "file": "/home/jt/IdeaProjects/arch-vis/server/routes/batch.ts"
+    },
+    "server/routes/csv-io.ts": {
+      "category": "SERVER",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/server/routes/csv-io.ts"
+    },
+    "server/routes/domains.ts": {
+      "category": "SERVER",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/server/routes/domains.ts"
+    },
+    "server/routes/elements.ts": {
+      "category": "SERVER",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/server/routes/elements.ts"
+    },
+    "server/routes/export.ts": {
+      "category": "SERVER",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/server/routes/export.ts"
+    },
+    "server/routes/model-file.ts": {
+      "category": "SERVER",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/server/routes/model-file.ts"
+    },
+    "server/routes/process-steps.ts": {
+      "category": "SERVER",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/server/routes/process-steps.ts"
+    },
+    "server/routes/projects.ts": {
+      "category": "SERVER",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/server/routes/projects.ts"
+    },
+    "server/routes/relationships.ts": {
+      "category": "SERVER",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/server/routes/relationships.ts"
+    },
+    "server/routes/reports.ts": {
+      "category": "SERVER",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/server/routes/reports.ts"
+    },
+    "server/routes/uat.ts": {
+      "category": "SERVER",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/server/routes/uat.ts"
+    },
+    "server/routes/views.ts": {
+      "category": "SERVER",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/server/routes/views.ts"
+    },
+    "server/seed.ts": {
+      "category": "SERVER",
+      "imports": [],
+      "file": "/home/jt/IdeaProjects/arch-vis/server/seed.ts"
+    }
+  }
+}

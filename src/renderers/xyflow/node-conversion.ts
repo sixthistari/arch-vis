@@ -6,14 +6,14 @@
 import type { Node } from '@xyflow/react';
 import type { LayerBandNodeData } from './nodes/LayerBandNode';
 import type { Element, ViewElement } from '../../model/types';
-import { getShapeDefinition } from '../../notation/registry';
+import { getShapeDefinition } from '../../shared/registry';
 import { getNotation, getNodeType } from '../../model/notation';
 import { heatmapColour } from '../../store/data-overlay';
 import { computeGridLayout, FALLBACK_LAYER_ORDER, FALLBACK_SUBLAYER_ORDER } from './layout-computation';
 import { computeLayerBands, BAND_PAD, type LayerBandInfo } from './layer-bands';
 import { computeUcdLayout, type UcdBoundary } from '../../layout/ucd-layout';
 import type { Relationship } from '../../model/types';
-import type { UcdBoundaryNodeData } from './nodes/uml/UcdBoundaryNode';
+import type { UcdBoundaryNodeData } from './nodes';
 
 // ═══════════════════════════════════════
 // Data overlay colour maps

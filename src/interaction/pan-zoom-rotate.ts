@@ -1,4 +1,4 @@
-import { DEFAULT_ROT_X, DEFAULT_ROT_Y, clampRotX, LAYER_Y_SPACING } from '../renderers/spatial/projection';
+import { DEFAULT_ROT_X, DEFAULT_ROT_Y, clampRotX, LAYER_Y_SPACING } from '../shared/spatial-projection';
 
 export interface CameraState {
   panX: number;

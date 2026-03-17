@@ -1,0 +1,543 @@
+{
+  "totalClones": 53,
+  "totalDuplicatedLines": 984,
+  "percentage": 2.85,
+  "byType": {
+    "within-notation": 17,
+    "cross-notation": 3,
+    "shared-infra": 0,
+    "other": 33
+  },
+  "clones": [
+    {
+      "fileA": "renderers/xyflow/nodes/wireframe/WfPageNode.tsx",
+      "fileB": "renderers/xyflow/nodes/wireframe/WfTableNode.tsx",
+      "catA": "NOTATION-WIREFRAME",
+      "catB": "NOTATION-WIREFRAME",
+      "pairType": "within-notation",
+      "lines": 12,
+      "tokens": 0,
+      "fragment": ",\n    dimmed,\n    onLabelChange,\n  } = data;\n\n  const stroke = selected ? '#F59E0B' : WF_BORDER;\n  const opacity = dimmed ? 0.1 : 1;\n\n  // Inline label editing\n  const { editing, editValue, setEditValue, inputRef, handleDoubleClick, commitEdit, cancelEdit } = useEditableNode(id, label, onLabelChange);\n\n  return"
+    },
+    {
+      "fileA": "renderers/xyflow/nodes/wireframe/WfNavNode.tsx",
+      "fileB": "renderers/xyflow/nodes/wireframe/WfTableNode.tsx",
+      "catA": "NOTATION-WIREFRAME",
+      "catB": "NOTATION-WIREFRAME",
+      "pairType": "within-notation",
+      "lines": 12,
+      "tokens": 0,
+      "fragment": ",\n    dimmed,\n    onLabelChange,\n  } = data;\n\n  const stroke = selected ? '#F59E0B' : WF_BORDER;\n  const opacity = dimmed ? 0.1 : 1;\n\n  // Inline label editing\n  const { editing, editValue, setEditValue, inputRef, handleDoubleClick, commitEdit, cancelEdit } = useEditableNode(id, label, onLabelChange);\n\n  // Shared edit overlay rendered above the SVG content"
+    },
+    {
+      "fileA": "renderers/xyflow/nodes/wireframe/WfNavNode.tsx",
+      "fileB": "renderers/xyflow/nodes/wireframe/WfNavNode.tsx",
+      "catA": "NOTATION-WIREFRAME",
+      "catB": "NOTATION-WIREFRAME",
+      "pairType": "within-notation",
+      "lines": 22,
+      "tokens": 0,
+      "fragment": "}\n                <text\n                  x={x + tabW / 2} y={h / 2}\n                  textAnchor=\"middle\" dominantBaseline=\"central\"\n                  fontSize={10} fontWeight={isActive ? 600 : 400}\n                  fill={isActive ? WF_ACTIVE : WF_MUTED}\n                  fontFamily=\"Inter, system-ui, sans-serif\"\n                  style={{ pointerEvents: 'none' }}\n                >\n                  {item}\n                </text>\n                {isActive && <rect x={x + 1} y={h - 2} width={tabW - 2} height={2} fill={WF_ACTIVE} />}\n              </g>\n            );\n          })}\n        </svg>\n        <RoutingHandles />\n      </div>\n    );\n  }\n\n  // ── Breadcrumbs ──"
+    },
+    {
+      "fileA": "renderers/xyflow/nodes/wireframe/WfFormNode.tsx",
+      "fileB": "renderers/xyflow/nodes/wireframe/WfFormNode.tsx",
+      "catA": "NOTATION-WIREFRAME",
+      "catB": "NOTATION-WIREFRAME",
+      "pairType": "within-notation",
+      "lines": 19,
+      "tokens": 0,
+      "fragment": "} textAnchor=\"middle\" dominantBaseline=\"central\" fontSize={9} fill={WF_MUTED} fontFamily=\"Inter, system-ui, sans-serif\" style={{ pointerEvents: 'none' }}>\n            📎 Choose file or drag here\n          </text>\n        </g>\n      );\n\n    default: // text, email, password, number, date, search\n      return (\n        <g>\n          {label}\n          <rect x={inputX} y={fieldY} width={inputW} height={FIELD_H} rx={3} stroke={WF_BORDER} fill={WF_INPUT_BG} strokeWidth={0.8} />\n          <text x={inputX + 6} y={fieldY + FIELD_H / 2 + 1} dominantBaseline=\"central\" fontSize={9} fill={WF_MUTED} fontFamily=\"Inter, system-ui, sans-serif\" style={{ pointerEvents: 'none' }}>\n            {field.type === 'password' ? '••••••••' : field.placeholder ?? `Enter ${field.name.toLowerCase()}...`}\n          </text>\n          {field.type === 'date' && (\n            <text x={inputX + inputW - 14} y={fieldY + FIELD_H / 2 + 1} dominantBaseline=\"central\" fontSize={10} fill={WF_MUTED}>📅</text>\n          )}\n          {field.type === 'search' && (\n            <text x={inputX "
+    },
+    {
+      "fileA": "renderers/xyflow/nodes/wireframe/WfFormNode.tsx",
+      "fileB": "renderers/xyflow/nodes/wireframe/WfTableNode.tsx",
+      "catA": "NOTATION-WIREFRAME",
+      "catB": "NOTATION-WIREFRAME",
+      "pairType": "within-notation",
+      "lines": 12,
+      "tokens": 0,
+      "fragment": ",\n    dimmed,\n    onLabelChange,\n  } = data;\n\n  const stroke = selected ? '#F59E0B' : WF_BORDER;\n  const opacity = dimmed ? 0.1 : 1;\n\n  // Inline label editing\n  const { editing, editValue, setEditValue, inputRef, handleDoubleClick, commitEdit, cancelEdit } = useEditableNode(id, label, onLabelChange);\n\n  // Calculate total height"
+    },
+    {
+      "fileA": "renderers/xyflow/nodes/wireframe/WfFormNode.tsx",
+      "fileB": "renderers/xyflow/nodes/wireframe/WfTableNode.tsx",
+      "catA": "NOTATION-WIREFRAME",
+      "catB": "NOTATION-WIREFRAME",
+      "pairType": "within-notation",
+      "lines": 18,
+      "tokens": 0,
+      "fragment": ";\n\n  return (\n    <div style={{ opacity, position: 'relative' as const }} onDoubleClick={handleDoubleClick}>\n      {editing && (\n        <div style={{ position: 'absolute', top: -24, left: 0, width: formWidth, zIndex: 10 }}>\n          <EditableInput\n            inputRef={inputRef}\n            value={editValue}\n            onChange={setEditValue}\n            onCommit={commitEdit}\n            onCancel={cancelEdit}\n            fontSize={10}\n          />\n        </div>\n      )}\n      <svg width={formWidth} height={totalH} overflow=\"visible\">\n        {/* Form border */"
+    },
+    {
+      "fileA": "renderers/xyflow/nodes/wireframe/WfControlNode.tsx",
+      "fileB": "renderers/xyflow/nodes/wireframe/WfControlNode.tsx",
+      "catA": "NOTATION-WIREFRAME",
+      "catB": "NOTATION-WIREFRAME",
+      "pairType": "within-notation",
+      "lines": 19,
+      "tokens": 0,
+      "fragment": "} fill={WF_TEXT} fontFamily=\"Inter, system-ui, sans-serif\" style={{ pointerEvents: 'none' }}>\n              {label}\n            </text>\n          )}\n          {editing && renderEditInput(controlWidth, h, 10)}\n        </svg>\n        <RoutingHandles />\n      </div>\n    );\n  }\n\n  // ── Link ──\n  if (controlType === 'link') {\n    const h = 20;\n    return (\n      <div style={{ opacity }} onDoubleClick={handleDoubleClick}>\n        <svg width={controlWidth} height={h} overflow=\"visible\">\n          {!editing && (\n            <text x={0} y={h * 0.7} fontSize={10} fill=\"#2563EB\" textDecoration=\"underline\" fontFamily=\"Inter, system-ui, sans-serif\" style={{"
+    },
+    {
+      "fileA": "renderers/xyflow/nodes/wireframe/WfControlNode.tsx",
+      "fileB": "renderers/xyflow/nodes/wireframe/WfTableNode.tsx",
+      "catA": "NOTATION-WIREFRAME",
+      "catB": "NOTATION-WIREFRAME",
+      "pairType": "within-notation",
+      "lines": 12,
+      "tokens": 0,
+      "fragment": ",\n    dimmed,\n    onLabelChange,\n  } = data;\n\n  const stroke = selected ? '#F59E0B' : WF_BORDER;\n  const opacity = dimmed ? 0.1 : 1;\n\n  // Inline label editing\n  const { editing, editValue, setEditValue, inputRef, handleDoubleClick, commitEdit, cancelEdit } = useEditableNode(id, label, onLabelChange);\n\n  // Shared inline edit input rendered as an overlay"
+    },
+    {
+      "fileA": "renderers/xyflow/nodes/uml/UmlClassNode.tsx",
+      "fileB": "renderers/xyflow/nodes/uml/UmlClassNode.tsx",
+      "catA": "NOTATION-UML",
+      "catB": "NOTATION-UML",
+      "pairType": "within-notation",
+      "lines": 18,
+      "tokens": 0,
+      "fragment": "\n                textDecoration={isStaticMethod ? 'underline' : undefined}\n                style={{ pointerEvents: 'none' }}\n                clipPath={`url(#clip-methods-${label})`}\n              >\n                <title>{text}</title>\n                {text}\n              </text>\n            );\n          })\n        ) : (\n          <text\n            x={PADDING_X} y={headerH + attrCompartmentH + COMPARTMENT_PAD + ROW_HEIGHT * 0.6}\n            fontSize={FONT_SIZE - 1} fill={textFill} fillOpacity={0.4}\n            fontFamily=\"Inter, system-ui, sans-serif\"\n            style={{ pointerEvents: 'none' }}\n          >\n            {"
+    },
+    {
+      "fileA": "renderers/xyflow/nodes/uml/UmlActivityNode.tsx",
+      "fileB": "renderers/xyflow/nodes/uml/UmlStateNode.tsx",
+      "catA": "NOTATION-UML",
+      "catB": "NOTATION-UML",
+      "pairType": "within-notation",
+      "lines": 35,
+      "tokens": 0,
+      "fragment": "={{ opacity }}>\n        <svg width={PSEUDO_SIZE} height={PSEUDO_SIZE} overflow=\"visible\">\n          <circle\n            cx={PSEUDO_SIZE / 2} cy={PSEUDO_SIZE / 2} r={PSEUDO_SIZE / 2 - 1}\n            fill={stroke} stroke={stroke} strokeWidth={1}\n          />\n        </svg>\n        <Handle type=\"source\" position={Position.Bottom} style={{ visibility: 'hidden' }} />\n      </div>\n    );\n  }\n\n  // ── Final: bullseye ──\n  if (activityType === 'final') {\n    const r = PSEUDO_SIZE / 2;\n    return (\n      <div style={{ opacity }}>\n        <svg width={PSEUDO_SIZE + 4} height={PSEUDO_SIZE + 4} overflow=\"visible\">\n          <circle cx={r + 2} cy={r + 2} r={r} fill=\"none\" stroke={stroke} strokeWidth={1.5} />\n          <circle cx={r + 2} cy={r + 2} r={r * 0.55} fill={stroke} />\n        </svg>\n        <Handle type=\"target\" position={Position.Top} style={{ visibility: 'hidden' }} />\n      </div>\n    );\n  }\n\n  // ── Flow-final: circle with X ──\n  if (activityType === 'flow-final') {\n    const r = PSEUDO_SIZE / 2;\n    const cx = r + 2;\n    const cy = r + 2;\n    const offset = r * 0.6;\n    return (\n      <div style={{ opacity }}>\n        <svg width={PSEUDO_SIZE"
+    },
+    {
+      "fileA": "renderers/xyflow/nodes/uml/UmlActivityNode.tsx",
+      "fileB": "renderers/xyflow/nodes/uml/UmlStateNode.tsx",
+      "catA": "NOTATION-UML",
+      "catB": "NOTATION-UML",
+      "pairType": "within-notation",
+      "lines": 45,
+      "tokens": 0,
+      "fragment": "} />\n        </svg>\n        <Handle type=\"target\" position={Position.Top} style={{ visibility: 'hidden' }} />\n      </div>\n    );\n  }\n\n  // ── Decision / Merge: diamond ──\n  if (activityType === 'decision' || activityType === 'merge') {\n    const s = DIAMOND_SIZE;\n    const half = s / 2;\n    return (\n      <div style={{ opacity }}>\n        <svg width={s} height={s} overflow=\"visible\">\n          <polygon\n            points={`${half},0 ${s},${half} ${half},${s} 0,${half}`}\n            stroke={stroke} fill={fill} strokeWidth={1.5}\n          />\n        </svg>\n        <Handle type=\"target\" position={Position.Top} style={{ visibility: 'hidden' }} />\n        <Handle type=\"source\" position={Position.Bottom} style={{ visibility: 'hidden' }} />\n        <Handle type=\"target\" position={Position.Left} style={{ visibility: 'hidden' }} />\n        <Handle type=\"source\" position={Position.Right} style={{ visibility: 'hidden' }} />\n      </div>\n    );\n  }\n\n  // ── Fork / Join: thick bar ──\n  if (activityType === 'fork' || activityType === 'join') {\n    const barW = isVertical ? BAR_THICKNESS : BAR_LENGTH;\n    const barH = isVertical ? BAR_LENGTH : BAR_THICKNESS;\n    return (\n      <div style={{ opacity }}>\n        <svg width={barW} height={barH} overflow=\"visible\">\n          <rect x={0} y={0} width={barW} height={barH} fill={stroke} rx={2} />\n        </svg>\n        <Handle type=\"target\" position={isVertical ? Position.Left : Position.Top} style={{ visibility: 'hidden' }} />\n        <Handle type=\"source\" position={isVertical ? Position.Right : Position.Bottom} style={{ visibility: 'hidden' }} />\n      </div>\n    );\n  }\n\n  // ── Action: rounded rectangle with centred label ──\n  return (\n    <div style={{ opacity "
+    },
+    {
+      "fileA": "renderers/xyflow/nodes/uml/UmlActivityNode.tsx",
+      "fileB": "renderers/xyflow/nodes/uml/UmlStateNode.tsx",
+      "catA": "NOTATION-UML",
+      "catB": "NOTATION-UML",
+      "pairType": "within-notation",
+      "lines": 14,
+      "tokens": 0,
+      "fragment": "=== 'final') {\n    const r = PSEUDO_SIZE / 2;\n    return (\n      <div style={{ opacity }}>\n        <svg width={PSEUDO_SIZE + 4} height={PSEUDO_SIZE + 4} overflow=\"visible\">\n          <circle cx={r + 2} cy={r + 2} r={r} fill=\"none\" stroke={stroke} strokeWidth={1.5} />\n          <circle cx={r + 2} cy={r + 2} r={r * 0.55} fill={stroke} />\n        </svg>\n        <Handle type=\"target\" position={Position.Top} style={{ visibility: 'hidden' }} />\n      </div>\n    );\n  }\n\n  // ── Flow-final: circle with X ──"
+    },
+    {
+      "fileA": "renderers/xyflow/nodes/uml/UmlActivityNode.tsx",
+      "fileB": "renderers/xyflow/nodes/uml/UmlStateNode.tsx",
+      "catA": "NOTATION-UML",
+      "catB": "NOTATION-UML",
+      "pairType": "within-notation",
+      "lines": 19,
+      "tokens": 0,
+      "fragment": ";\n    const half = s / 2;\n    return (\n      <div style={{ opacity }}>\n        <svg width={s} height={s} overflow=\"visible\">\n          <polygon\n            points={`${half},0 ${s},${half} ${half},${s} 0,${half}`}\n            stroke={stroke} fill={fill} strokeWidth={1.5}\n          />\n        </svg>\n        <Handle type=\"target\" position={Position.Top} style={{ visibility: 'hidden' }} />\n        <Handle type=\"source\" position={Position.Bottom} style={{ visibility: 'hidden' }} />\n        <Handle type=\"target\" position={Position.Left} style={{ visibility: 'hidden' }} />\n        <Handle type=\"source\" position={Position.Right} style={{ visibility: 'hidden' }} />\n      </div>\n    );\n  }\n\n  // ── Fork / Join: thick bar ──"
+    },
+    {
+      "fileA": "renderers/xyflow/nodes/uml/UmlActivityNode.tsx",
+      "fileB": "renderers/xyflow/nodes/uml/UmlStateNode.tsx",
+      "catA": "NOTATION-UML",
+      "catB": "NOTATION-UML",
+      "pairType": "within-notation",
+      "lines": 13,
+      "tokens": 0,
+      "fragment": ";\n    return (\n      <div style={{ opacity }}>\n        <svg width={barW} height={barH} overflow=\"visible\">\n          <rect x={0} y={0} width={barW} height={barH} fill={stroke} rx={2} />\n        </svg>\n        <Handle type=\"target\" position={isVertical ? Position.Left : Position.Top} style={{ visibility: 'hidden' }} />\n        <Handle type=\"source\" position={isVertical ? Position.Right : Position.Bottom} style={{ visibility: 'hidden' }} />\n      </div>\n    );\n  }\n\n  // ── Action: rounded rectangle with centred label ──"
+    },
+    {
+      "fileA": "renderers/xyflow/nodes/sequence/SequenceLifelineNode.tsx",
+      "fileB": "renderers/xyflow/nodes/uml/UmlSequenceNodes.tsx",
+      "catA": "NOTATION-UML",
+      "catB": "NOTATION-UML",
+      "pairType": "within-notation",
+      "lines": 13,
+      "tokens": 0,
+      "fragment": "} strokeWidth={1} strokeDasharray=\"6 4\"\n        />\n\n        {/* Destroy marker (X) */}\n        {destroyed && (\n          <g>\n            <line x1={cx - 8} y1={totalHeight - 16} x2={cx + 8} y2={totalHeight} stroke={stroke} strokeWidth={2} />\n            <line x1={cx + 8} y1={totalHeight - 16} x2={cx - 8} y2={totalHeight} stroke={stroke} strokeWidth={2} />\n          </g>\n        )}\n      </svg>\n\n      <Handle type=\"target\" position={Position.Top"
+    },
+    {
+      "fileA": "renderers/xyflow/nodes/sequence/SequenceLifelineNode.tsx",
+      "fileB": "renderers/xyflow/nodes/wireframe/WfPageNode.tsx",
+      "catA": "NOTATION-UML",
+      "catB": "NOTATION-WIREFRAME",
+      "pairType": "cross-notation",
+      "lines": 28,
+      "tokens": 0,
+      "fragment": "}\n        {!editing && (\n          <text\n            x={cx} y={labelY}\n            textAnchor=\"middle\" dominantBaseline=\"central\"\n            fontSize={11} fill={TEXT_COLOUR}\n            fontFamily=\"Inter, system-ui, sans-serif\"\n            style={{ pointerEvents: 'all', cursor: 'default' }}\n            onDoubleClick={handleDoubleClick}\n          >\n            {label}\n          </text>\n        )}\n        {editing && (\n          <foreignObject x={4} y={labelY - 9} width={HEADER_WIDTH - 8} height={20}>\n            <EditableInput\n              inputRef={inputRef}\n              value={editValue}\n              onChange={setEditValue}\n              onCommit={commitEdit}\n              onCancel={cancelEdit}\n              fontSize={11}\n              textAlign=\"center\"\n            />\n          </foreignObject>\n        )}\n\n        {/* Dashed lifeline */"
+    },
+    {
+      "fileA": "renderers/xyflow/nodes/sequence/SequenceLifelineNode.tsx",
+      "fileB": "renderers/xyflow/nodes/uml/UmlSequenceNodes.tsx",
+      "catA": "NOTATION-UML",
+      "catB": "NOTATION-UML",
+      "pairType": "within-notation",
+      "lines": 17,
+      "tokens": 0,
+      "fragment": "{/* Dashed lifeline */}\n        <line\n          x1={cx} y1={HEADER_HEIGHT}\n          x2={cx} y2={totalHeight}\n          stroke={DASHED_COLOUR} strokeWidth={1} strokeDasharray=\"6 4\"\n        />\n\n        {/* Destroy marker (X) */}\n        {destroyed && (\n          <g>\n            <line x1={cx - 8} y1={totalHeight - 16} x2={cx + 8} y2={totalHeight} stroke={stroke} strokeWidth={2} />\n            <line x1={cx + 8} y1={totalHeight - 16} x2={cx - 8} y2={totalHeight} stroke={stroke} strokeWidth={2} />\n          </g>\n        )}\n      </svg>\n\n      <"
+    },
+    {
+      "fileA": "renderers/xyflow/nodes/process-flow/PfTaskNode.tsx",
+      "fileB": "renderers/xyflow/nodes/uml/UmlActivityNode.tsx",
+      "catA": "NOTATION-PROCESS",
+      "catB": "NOTATION-UML",
+      "pairType": "cross-notation",
+      "lines": 16,
+      "tokens": 0,
+      "fragment": "<text\n          x={ICON_AREA + (WIDTH - ICON_AREA) / 2} y={cy}\n          textAnchor=\"middle\" dominantBaseline=\"central\"\n          fontSize={11} fontWeight={600} fill={textFill}\n          fontFamily=\"Inter, system-ui, sans-serif\"\n          style={{ pointerEvents: 'none' }}\n        >\n          {label}\n        </text>\n      </svg>\n      <RoutingHandles />\n    </div>\n  );\n}\n\nexport const PfTaskNode"
+    },
+    {
+      "fileA": "renderers/xyflow/nodes/process-flow/PfSubprocessNode.tsx",
+      "fileB": "renderers/xyflow/nodes/process-flow/PfSwimlaneNode.tsx",
+      "catA": "NOTATION-PROCESS",
+      "catB": "NOTATION-PROCESS",
+      "pairType": "within-notation",
+      "lines": 16,
+      "tokens": 0,
+      "fragment": ";\n  const opacity = dimmed ? 0.1 : 1;\n\n  return (\n    <div style={{ width: '100%', height: '100%', opacity, position: 'relative' }}>\n      <NodeResizer\n        color={accent}\n        isVisible={selected ?? false}\n        minWidth={120}\n        minHeight={50}\n      />\n      <div style={{\n        width: '100%',\n        height: '100%',\n        border: `1.5px dashed ${stroke}`,\n        borderRadius: 10"
+    },
+    {
+      "fileA": "renderers/xyflow/nodes/process-flow/PfGateNode.tsx",
+      "fileB": "renderers/xyflow/nodes/uml/UmlActivityNode.tsx",
+      "catA": "NOTATION-PROCESS",
+      "catB": "NOTATION-UML",
+      "pairType": "cross-notation",
+      "lines": 19,
+      "tokens": 0,
+      "fragment": "\n          stroke={gateStroke} fill={fill} strokeWidth={2}\n        />\n        <text\n          x={WIDTH / 2} y={HEIGHT / 2}\n          textAnchor=\"middle\" dominantBaseline=\"central\"\n          fontSize={10} fontWeight={700} fill={textFill}\n          fontFamily=\"Inter, system-ui, sans-serif\"\n          style={{ pointerEvents: 'none' }}\n        >\n          {label}\n        </text>\n      </svg>\n      <RoutingHandles />\n    </div>\n  );\n}\n\nexport const PfGateNode"
+    },
+    {
+      "fileA": "renderers/xyflow/nodes/archimate-icons.tsx",
+      "fileB": "renderers/xyflow/nodes/archimate-icons.tsx",
+      "catA": "OTHER",
+      "catB": "OTHER",
+      "pairType": "other",
+      "lines": 19,
+      "tokens": 0,
+      "fragment": "}\n    />\n  );\n}\n\n/** Constraint — slashed requirement */\nfunction ConstraintIcon({ x, y, size, stroke }: IconProps) {\n  const pad = size * 0.12;\n  const w = size - pad * 2;\n  const h = size - pad * 2;\n  const sx = x + pad;\n  const sy = y + pad;\n  return (\n    <g>\n      <path\n        d={`M${sx},${sy} L${sx + w},${sy} L${sx + w},${sy + h} L${sx},${sy + h} Z M${sx + w * 0.6},${sy} L${sx + w},${sy + h * 0.5} L${sx + w * 0.6},${sy + h}`}\n        stroke={stroke} fill=\"none\" strokeWidth={0.8}\n      />\n      <line x1={sx "
+    },
+    {
+      "fileA": "renderers/xyflow/nodes/archimate-icons.tsx",
+      "fileB": "renderers/xyflow/nodes/uml/UmlComponentNode.tsx",
+      "catA": "OTHER",
+      "catB": "NOTATION-UML",
+      "pairType": "other",
+      "lines": 11,
+      "tokens": 0,
+      "fragment": ";\n  return (\n    <g>\n      <rect x={bx} y={by} width={bw} height={bh} stroke={stroke} fill=\"none\" strokeWidth={0.8} />\n      <rect x={bx - nw * 0.6} y={by + bh * 0.2} width={nw} height={nh} stroke={stroke} fill=\"none\" strokeWidth={0.6} />\n      <rect x={bx - nw * 0.6} y={by + bh * 0.6} width={nw} height={nh} stroke={stroke} fill=\"none\" strokeWidth={0.6} />\n    </g>\n  );\n}\n\n/** Node — 3D box outline */"
+    },
+    {
+      "fileA": "renderers/xyflow/nodes/archimate-icons.tsx",
+      "fileB": "renderers/xyflow/nodes/uml/UmlComponentNode.tsx",
+      "catA": "OTHER",
+      "catB": "NOTATION-UML",
+      "pairType": "other",
+      "lines": 11,
+      "tokens": 0,
+      "fragment": ";\n  return (\n    <g>\n      <rect x={x + size * 0.1} y={y + size * 0.55} width={size * 0.8} height={s} stroke={stroke} fill=\"none\" strokeWidth={0.6} />\n      <rect x={x + size * 0.1} y={y + size * 0.55 - s - gap} width={size * 0.6} height={s} stroke={stroke} fill=\"none\" strokeWidth={0.6} />\n      <rect x={x + size * 0.1} y={y + size * 0.55 - (s + gap) * 2} width={size * 0.4} height={s} stroke={stroke} fill=\"none\" strokeWidth={0.6} />\n    </g>\n  );\n}\n\n/** Meaning — speech bubble */"
+    },
+    {
+      "fileA": "renderers/xyflow/nodes/archimate-icons.tsx",
+      "fileB": "renderers/xyflow/nodes/archimate-icons.tsx",
+      "catA": "OTHER",
+      "catB": "OTHER",
+      "pairType": "other",
+      "lines": 11,
+      "tokens": 0,
+      "fragment": ";\n  const cy = y + size / 2;\n  return (\n    <g>\n      <circle cx={x + size * 0.38} cy={cy} r={r} stroke={stroke} fill=\"none\" strokeWidth={0.8} />\n      <circle cx={x + size * 0.62} cy={cy} r={r} stroke={stroke} fill=\"none\" strokeWidth={0.8} />\n    </g>\n  );\n}\n\n/** Interaction — double-headed arrow */"
+    },
+    {
+      "fileA": "renderers/xyflow/nodes/GroupNode.tsx",
+      "fileB": "renderers/xyflow/nodes/uml/UmlSwimlaneNode.tsx",
+      "catA": "OTHER",
+      "catB": "NOTATION-UML",
+      "pairType": "other",
+      "lines": 11,
+      "tokens": 0,
+      "fragment": "={{\n        width: '100%',\n        height: '100%',\n        position: 'relative',\n      }}\n      onMouseEnter={() => setIsHovered(true)}\n      onMouseLeave={() => setIsHovered(false)}\n    >\n      <NodeResizer\n        isVisible={selected}\n        minWidth={100"
+    },
+    {
+      "fileA": "renderers/xyflow/nodes/GroupNode.tsx",
+      "fileB": "renderers/xyflow/nodes/uml/UmlSwimlaneNode.tsx",
+      "catA": "OTHER",
+      "catB": "NOTATION-UML",
+      "pairType": "other",
+      "lines": 53,
+      "tokens": 0,
+      "fragment": "}\n        lineStyle={{ borderColor: borderColour, borderWidth: 1 }}\n        handleStyle={{\n          width: 6,\n          height: 6,\n          backgroundColor: borderColour,\n          borderRadius: 1,\n        }}\n      />\n\n      {/* Container body */}\n      <div\n        style={{\n          width: '100%',\n          height: '100%',\n          border: `1.5px dashed ${borderColour}`,\n          borderRadius: 4,\n          background: bgColour,\n          position: 'relative',\n        }}\n      >\n        {/* Label tab */}\n        <div\n          style={{\n            position: 'absolute',\n            top: 0,\n            left: 0,\n            background: tabBg,\n            borderRight: `1.5px dashed ${borderColour}`,\n            borderBottom: `1.5px dashed ${borderColour}`,\n            borderRadius: '4px 0 4px 0',\n            padding: '2px 10px 3px 8px',\n            fontSize: 11,\n            fontWeight: 600,\n            color: textColour,\n            fontFamily: 'Inter, system-ui, sans-serif',\n            userSelect: 'none',\n            maxWidth: '80%',\n            overflow: 'hidden',\n            textOverflow: 'ellipsis',\n            whiteSpace: 'nowrap',\n          }}\n          onDoubleClick={handleDoubleClick}\n        >\n          <EditableLabel\n            editing={editing}\n            label={label}\n            editValue={editValue}\n            setEditValue={setEditValue}\n            inputRef={inputRef}\n            commitEdit={commitEdit}\n            cancelEdit={cancelEdit}\n            colour={textColour}"
+    },
+    {
+      "fileA": "renderers/xyflow/nodes/AnnotationNode.tsx",
+      "fileB": "renderers/xyflow/nodes/ArchimateNode.tsx",
+      "catA": "OTHER",
+      "catB": "OTHER",
+      "pairType": "other",
+      "lines": 45,
+      "tokens": 0,
+      "fragment": "}>\n            <textarea\n              ref={inputRef as unknown as React.RefObject<HTMLTextAreaElement>}\n              value={editValue}\n              onChange={e => setEditValue(e.target.value)}\n              onBlur={commitEdit}\n              onKeyDown={e => {\n                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); commitEdit(); }\n                if (e.key === 'Escape') cancelEdit();\n                e.stopPropagation();\n              }}\n              style={{\n                width: '100%',\n                height: '100%',\n                fontSize: 9,\n                fontFamily: 'Inter, system-ui, sans-serif',\n                background: theme === 'dark' ? '#1E293B' : '#FFFBEB',\n                color: colours.text,\n                border: '1px solid #F59E0B',\n                borderRadius: 2,\n                padding: '2px 3px',\n                boxSizing: 'border-box',\n                outline: 'none',\n                resize: 'none',\n                lineHeight: '12px',\n              }}\n            />\n          </foreignObject>\n        )}\n      </svg>\n\n      {/* Routing handles for auto-routing system */}\n      <RoutingHandles />\n\n      {/* Cardinal connector handles — visible on hover */}\n      <Handle type=\"source\" position={Position.Top}    id=\"conn-n\" style={{ ...connectorHandleStyle(isHovered && !isConnecting), left: '50%', top: -6 }} />\n      <Handle type=\"source\" position={Position.Bottom} id=\"conn-s\" style={{ ...connectorHandleStyle(isHovered && !isConnecting), left: '50%', bottom: -6 }} />\n      <Handle type=\"source\" position={Position.Left}   id=\"conn-w\" style={{ ...connectorHandleStyle(isHovered && !isConnecting), top: '50%', left: -6 }} />\n      <Handle type=\"source\" position={Position.Right}  id=\"conn-e\" style={{ ...connectorHandleStyle(isHovered && !isConnecting), top: '50%', right: -6 }} />\n\n      {/* Cardinal target handles — shown during connection drag */}\n      <Handle type=\"target\" position={Position.Top}    id=\"conn-n-t\" style={{ ...targetHandleStyle(isConnecting), left: '50%', top: -8 }} />\n      <Handle type=\"target\" position={Position.Bottom} id=\"conn-s-t\" style={{ ...targetHandleStyle(isConnecting), left: '50%', bottom: -8 }} />\n      <Handle type=\"target\" position={Position.Left}   id=\"conn-w-t\" style={{ ...targetHandleStyle(isConnecting), top: '50%', left: -8 }} />\n      <Handle type=\"target\" position={Position.Right}  id=\"conn-e-t\" style={{ ...targetHandleStyle(isConnecting), top: '50%', right: -8 }}"
+    },
+    {
+      "fileA": "store/__tests__/model.test.ts",
+      "fileB": "store/__tests__/model.test.ts",
+      "catA": "STORE",
+      "catB": "STORE",
+      "pairType": "other",
+      "lines": 22,
+      "tokens": 0,
+      "fragment": ", async () => {\n    const el1 = makeElement({ id: 'el-1', name: 'Source' });\n    const el2 = makeElement({ id: 'el-2', name: 'Target' });\n    const rel = makeRelationship({ id: 'rel-1', source_id: 'el-1', target_id: 'el-2' });\n\n    const graph = freshGraph();\n    graph.addNode('el-1', {\n      id: 'el-1', name: 'Source', archimate_type: 'application-component',\n      specialisation: null, layer: 'application', sublayer: null, domain_id: null,\n    });\n    graph.addNode('el-2', {\n      id: 'el-2', name: 'Target', archimate_type: 'application-component',\n      specialisation: null, layer: 'application', sublayer: null, domain_id: null,\n    });\n    graph.addEdgeWithKey('rel-1', 'el-1', 'el-2', {\n      id: 'rel-1', archimate_type: 'serving', specialisation: null,\n      label: null, source_id: 'el-1', target_id: 'el-2',\n    });\n\n    resetStore({ elements: [el1, el2], relationships: [rel], graph });\n\n    vi.mocked(api.deleteElement).mockRejectedValue"
+    },
+    {
+      "fileA": "renderers/flat/renderer.tsx",
+      "fileB": "renderers/spatial/renderer.tsx",
+      "catA": "RENDERER-FLAT",
+      "catB": "RENDERER-SPATIAL",
+      "pairType": "other",
+      "lines": 17,
+      "tokens": 0,
+      "fragment": "} | null>(null);\n\n  useEffect(() => {\n    const updateSize = () => {\n      if (svgRef.current?.parentElement) {\n        setSize({\n          width: svgRef.current.parentElement.clientWidth,\n          height: svgRef.current.parentElement.clientHeight,\n        });\n      }\n    };\n    updateSize();\n    window.addEventListener('resize', updateSize);\n    return () => window.removeEventListener('resize', updateSize);\n  }, []);\n\n  const tierConfig"
+    },
+    {
+      "fileA": "renderers/flat/renderer.tsx",
+      "fileB": "renderers/spatial/renderer.tsx",
+      "catA": "RENDERER-FLAT",
+      "catB": "RENDERER-SPATIAL",
+      "pairType": "other",
+      "lines": 11,
+      "tokens": 0,
+      "fragment": "]);\n\n  // Register wheel handler natively with { passive: false } to allow preventDefault\n  useEffect(() => {\n    const el = svgRef.current;\n    if (!el) return;\n    el.addEventListener('wheel', handleWheel, { passive: false });\n    return () => el.removeEventListener('wheel', handleWheel);\n  }, [handleWheel]);\n\n  const viewBox"
+    },
+    {
+      "fileA": "renderers/flat/renderer.tsx",
+      "fileB": "renderers/spatial/renderer.tsx",
+      "catA": "RENDERER-FLAT",
+      "catB": "RENDERER-SPATIAL",
+      "pairType": "other",
+      "lines": 21,
+      "tokens": 0,
+      "fragment": ".map((edge) => {\n        const style = getEdgeStyle(edge.archimateType);\n        const isHighlighted = hasHighlight && highlightedEdges.has(edge.id);\n        const isDimmed = hasHighlight && !isHighlighted;\n        const opacity = isDimmed ? 0.03 : isHighlighted ? 0.85 : 0.4;\n        const colour = isHighlighted ? highlightColour : getLayerStroke(edge.sourceLayer, theme);\n        const pathD = edgeRoutes.get(edge.id) ?? `M${edge.sx1},${edge.sy1} L${edge.sx2},${edge.sy2}`;\n\n        return React.createElement('path', {\n        key: edge.id,\n        d: pathD,\n        stroke: colour,\n        strokeWidth: style.width,\n        strokeDasharray: style.dashArray,\n        fill: 'none',\n        opacity,\n        markerStart: style.sourceMarker ? `url(#marker-${style.sourceMarker})` : undefined,\n        markerEnd: style.targetMarker ? `url(#marker-${style.targetMarker})` : undefined,\n        style: { color: colour },\n      });\n      });"
+    },
+    {
+      "fileA": "ui/ZoomBar.tsx",
+      "fileB": "ui/spatial-shell/ZoomBar.tsx",
+      "catA": "UI",
+      "catB": "UI",
+      "pairType": "other",
+      "lines": 48,
+      "tokens": 0,
+      "fragment": ";\n\ninterface ZoomBarProps {\n  zoom: number;\n  onZoomIn: () => void;\n  onZoomOut: () => void;\n}\n\nexport function ZoomBar({ zoom, onZoomIn, onZoomOut }: ZoomBarProps): React.ReactElement {\n  const tier = getZoomTier(zoom);\n  const pct = Math.round(zoom * 100);\n\n  const btnStyle: React.CSSProperties = {\n    background: 'var(--button-bg)',\n    color: 'var(--button-text)',\n    border: '1px solid var(--border-primary)',\n    borderRadius: 3,\n    width: 24,\n    height: 24,\n    cursor: 'pointer',\n    fontSize: 14,\n    display: 'flex',\n    alignItems: 'center',\n    justifyContent: 'center',\n  };\n\n  return React.createElement('div', {\n    style: {\n      display: 'flex',\n      alignItems: 'center',\n      gap: 6,\n      padding: '4px 8px',\n      background: 'var(--panel-bg)',\n      borderRadius: 4,\n      border: '1px solid var(--panel-border)',\n      fontSize: 11,\n    },\n  },\n    React.createElement('button', { onClick: onZoomOut, style: btnStyle, title: 'Zoom out' }, '\\u2212'),\n    React.createElement('span', {\n      style: { color: 'var(--text-secondary)', minWidth: 36, textAlign: 'center' },\n    }, `${pct}%`),\n    React.createElement('button', { onClick: onZoomIn, style: btnStyle, title: 'Zoom in' }, '+'),\n    React.createElement('span', {\n      style: { color: 'var(--text-muted)', fontSize: 9, marginLeft: 4 },\n    }, getZoomTierLabel(tier)),\n  );\n}"
+    },
+    {
+      "fileA": "ui/Shell.tsx",
+      "fileB": "ui/Shell.tsx",
+      "catA": "UI",
+      "catB": "UI",
+      "pairType": "other",
+      "lines": 15,
+      "tokens": 0,
+      "fragment": ",\n              style: {\n                width: '100%',\n                boxSizing: 'border-box',\n                background: 'var(--bg-tertiary)',\n                color: 'var(--text-primary)',\n                border: '1px solid var(--highlight)',\n                borderRadius: 3,\n                padding: '3px 6px',\n                fontSize: 11,\n                outline: 'none',\n              },\n            }),\n          )\n        : React.createElement('button'"
+    },
+    {
+      "fileA": "ui/RotationPanel.tsx",
+      "fileB": "ui/spatial-shell/RotationPanel.tsx",
+      "catA": "UI",
+      "catB": "UI",
+      "pairType": "other",
+      "lines": 57,
+      "tokens": 0,
+      "fragment": "import React from 'react';\n\ninterface RotationPanelProps {\n  rotY: number;\n  rotX: number;\n  layerSpacing: number;\n  onReset: () => void;\n  onLayerSpacingChange: (spacing: number) => void;\n}\n\nexport function RotationPanel({ rotY, rotX, layerSpacing, onReset, onLayerSpacingChange }: RotationPanelProps): React.ReactElement {\n  const degY = Math.round((rotY * 180) / Math.PI);\n  const degX = Math.round((rotX * 180) / Math.PI);\n\n  return React.createElement('div', {\n    style: {\n      display: 'flex',\n      alignItems: 'center',\n      gap: 8,\n      padding: '4px 8px',\n      background: 'var(--panel-bg)',\n      borderRadius: 4,\n      border: '1px solid var(--panel-border)',\n      fontSize: 10,\n      color: 'var(--text-secondary)',\n    },\n  },\n    React.createElement('span', null, `Y: ${degY}\\u00B0`),\n    React.createElement('span', null, `X: ${degX}\\u00B0`),\n    React.createElement('span', {\n      style: { borderLeft: '1px solid var(--border-primary)', paddingLeft: 8, marginLeft: 2 },\n    }, 'Spread'),\n    React.createElement('input', {\n      type: 'range',\n      min: 40,\n      max: 400,\n      step: 10,\n      value: layerSpacing,\n      onChange: (e: React.ChangeEvent<HTMLInputElement>) => onLayerSpacingChange(Number(e.target.value)),\n      style: { width: 60, height: 12, cursor: 'pointer' },\n      title: `Layer spacing: ${layerSpacing}`,\n    }),\n    React.createElement('button', {\n      onClick: onReset,\n      style: {\n        background: 'var(--button-bg)',\n        color: 'var(--button-text)',\n        border: '1px solid var(--border-primary)',\n        borderRadius: 3,\n        padding: '2px 6px',\n        cursor: 'pointer',\n        fontSize: 9,\n      },\n      title: 'Reset camera and spacing',\n    }, 'Reset'),\n  );\n}"
+    },
+    {
+      "fileA": "ui/ExportMenu.tsx",
+      "fileB": "ui/MenuBar.tsx",
+      "catA": "UI",
+      "catB": "UI",
+      "pairType": "other",
+      "lines": 11,
+      "tokens": 0,
+      "fragment": "function exportFilter(node: HTMLElement): boolean {\n  if (!(node instanceof HTMLElement)) return true;\n  const cls = node.classList;\n  if (!cls) return true;\n  if (cls.contains('react-flow__minimap')) return false;\n  if (cls.contains('react-flow__controls')) return false;\n  if (cls.contains('react-flow__panel')) return false;\n  return true;\n}\n\n/** Sanitise a view name into a safe filename slug. */"
+    },
+    {
+      "fileA": "ui/ExportMenu.tsx",
+      "fileB": "ui/MenuBar.tsx",
+      "catA": "UI",
+      "catB": "UI",
+      "pairType": "other",
+      "lines": 16,
+      "tokens": 0,
+      "fragment": "]);\n\n  const exportXml = useCallback(async () => {\n    try {\n      const xml = await exportArchimateXml();\n      const blob = new Blob([xml], { type: 'application/xml' });\n      const url = URL.createObjectURL(blob);\n      const a = document.createElement('a');\n      a.href = url;\n      a.download = 'architecture-model.xml';\n      a.click();\n      URL.revokeObjectURL(url);\n    } catch (err) {\n      console.error('ArchiMate XML export failed:', err);\n    }\n    setOpen"
+    },
+    {
+      "fileA": "ui/ExportMenu.tsx",
+      "fileB": "ui/MenuBar.tsx",
+      "catA": "UI",
+      "catB": "UI",
+      "pairType": "other",
+      "lines": 13,
+      "tokens": 0,
+      "fragment": "for (const [name, content] of Object.entries(data)) {\n        const blob = new Blob([content], { type: 'text/csv' });\n        const url = URL.createObjectURL(blob);\n        const a = document.createElement('a');\n        a.href = url;\n        a.download = `${name}.csv`;\n        a.click();\n        URL.revokeObjectURL(url);\n      }\n    } catch (err) {\n      console.error('CSV export failed:', err);\n    }\n    setOpen"
+    },
+    {
+      "fileA": "ui/ExportMenu.tsx",
+      "fileB": "ui/MenuBar.tsx",
+      "catA": "UI",
+      "catB": "UI",
+      "pairType": "other",
+      "lines": 17,
+      "tokens": 0,
+      "fragment": "}, []);\n\n  const exportJson = useCallback(async () => {\n    try {\n      const data = await exportModelBatch(currentView?.id);\n      const json = JSON.stringify(data, null, 2);\n      const blob = new Blob([json], { type: 'application/json' });\n      const url = URL.createObjectURL(blob);\n      const a = document.createElement('a');\n      a.href = url;\n      a.download = `${viewSlug}-model.json`;\n      a.click();\n      URL.revokeObjectURL(url);\n    } catch (err) {\n      console.error('JSON export failed:', err);\n    }\n    setOpen"
+    },
+    {
+      "fileA": "ui/DetailPanel.tsx",
+      "fileB": "ui/ImpactAnalysisPanel.tsx",
+      "catA": "UI",
+      "catB": "UI",
+      "pairType": "other",
+      "lines": 15,
+      "tokens": 0,
+      "fragment": "),\n        React.createElement('button', {\n          onClick: onClose,\n          style: {\n            background: 'none',\n            border: 'none',\n            color: 'var(--text-muted)',\n            cursor: 'pointer',\n            fontSize: 16,\n            padding: '0 4px',\n            flexShrink: 0,\n          },\n        }, '\\u00D7'),\n      ),\n    )"
+    },
+    {
+      "fileA": "ui/ContextMenu.tsx",
+      "fileB": "ui/ContextMenu.tsx",
+      "catA": "UI",
+      "catB": "UI",
+      "pairType": "other",
+      "lines": 14,
+      "tokens": 0,
+      "fragment": "+ 50,\n      width: null,\n      height: null,\n      sublayer_override: null,\n      style_overrides: null,\n      z_index: 0,\n    }));\n\n    await api.updateViewElements(newCurrentView.id, viewEls);\n    await loadAll();\n    openTab(newCurrentView.id, newCurrentView.name);\n    await switchView(newCurrentView.id);\n    hideContextMenu();\n  }, [selectedNodeIds"
+    },
+    {
+      "fileA": "ui/Canvas.tsx",
+      "fileB": "ui/Canvas.tsx",
+      "catA": "UI",
+      "catB": "UI",
+      "pairType": "other",
+      "lines": 15,
+      "tokens": 0,
+      "fragment": "as import('../model/types').ArchimateLayer,\n      specialisation: null,\n    });\n    await api.updateViewElements(currentView.id, [{\n      view_id: currentView.id,\n      element_id: el.id,\n      x,\n      y,\n      width: null,\n      height: null,\n      sublayer_override: null,\n      style_overrides: null,\n      z_index: 0,\n    }]);\n    await loadAll"
+    },
+    {
+      "fileA": "ui/ArchiPaletteIcons.tsx",
+      "fileB": "ui/ArchiPaletteIcons.tsx",
+      "catA": "UI",
+      "catB": "UI",
+      "pairType": "other",
+      "lines": 13,
+      "tokens": 0,
+      "fragment": "const fold = 4;\n  return svg([\n    React.createElement('path', {\n      key: 'r',\n      d: `M1,1 L${W - fold + 1},1 L${W + 1},${fold + 1} L${W + 1},${H + 1} L1,${H + 1} Z`,\n      stroke: s, fill: 'none', strokeWidth: SW,\n    }),\n    React.createElement('path', {\n      key: 'f',\n      d: `M${W - fold + 1},1 L${W - fold + 1},${fold + 1} L${W + 1},${fold + 1}`,\n      stroke: s, fill: 'none', strokeWidth: SW * 0.7, opacity: 0.5,\n    }),\n    React"
+    },
+    {
+      "fileA": "ui/ArchiPaletteIcons.tsx",
+      "fileB": "ui/ArchiPaletteIcons.tsx",
+      "catA": "UI",
+      "catB": "UI",
+      "pairType": "other",
+      "lines": 14,
+      "tokens": 0,
+      "fragment": "const d = 4;\n  return svg([\n    React.createElement('rect', { key: 'front', x: 1, y: d + 1, width: W - d, height: H - d, stroke: s, fill: 'none', strokeWidth: SW }),\n    React.createElement('path', {\n      key: 'top',\n      d: `M1,${d + 1} L${d + 1},1 L${W + 1},1 L${W - d + 1},${d + 1} Z`,\n      stroke: s, fill: 'none', strokeWidth: SW,\n    }),\n    React.createElement('path', {\n      key: 'right',\n      d: `M${W - d + 1},${d + 1} L${W + 1},1 L${W + 1},${H - d + 1} L${W - d + 1},${H + 1} Z`,\n      stroke: s, fill: 'none', strokeWidth: SW,\n    }),\n    // Base line for device"
+    },
+    {
+      "fileA": "ui/ArchiPaletteIcons.tsx",
+      "fileB": "ui/ArchiPaletteIcons.tsx",
+      "catA": "UI",
+      "catB": "UI",
+      "pairType": "other",
+      "lines": 16,
+      "tokens": 0,
+      "fragment": "const fold = 4;\n  return svg([\n    React.createElement('path', {\n      key: 'r',\n      d: `M1,1 L${W - fold + 1},1 L${W + 1},${fold + 1} L${W + 1},${H + 1} L1,${H + 1} Z`,\n      stroke: s, fill: 'none', strokeWidth: SW,\n    }),\n    React.createElement('path', {\n      key: 'f',\n      d: `M${W - fold + 1},1 L${W - fold + 1},${fold + 1} L${W + 1},${fold + 1}`,\n      stroke: s, fill: 'none', strokeWidth: SW * 0.7, opacity: 0.5,\n    }),\n  ]);\n}\n\n// ═══════════════════════════════════════════════"
+    },
+    {
+      "fileA": "store/model.ts",
+      "fileB": "store/model.ts",
+      "catA": "STORE",
+      "catB": "STORE",
+      "pairType": "other",
+      "lines": 13,
+      "tokens": 0,
+      "fragment": "(el.id, {\n      id: el.id,\n      name: el.name,\n      archimate_type: el.archimate_type,\n      specialisation: el.specialisation,\n      layer: el.layer,\n      sublayer: el.sublayer,\n      domain_id: el.domain_id,\n    });\n  }\n}\n\nfunction removeElementFromGraph"
+    },
+    {
+      "fileA": "model/notation.ts",
+      "fileB": "model/notation.ts",
+      "catA": "MODEL",
+      "catB": "MODEL",
+      "pairType": "other",
+      "lines": 22,
+      "tokens": 0,
+      "fragment": ";\n\n    // Process flow types\n    case 'pf-human-task':\n    case 'pf-agent-task':\n    case 'pf-system-call':\n      return 'pf-task';\n    case 'pf-start':\n    case 'pf-end':\n    case 'pf-timer':\n      return 'pf-pseudo';\n    case 'pf-decision':\n    case 'pf-gateway':\n      return 'pf-decision';\n    case 'pf-approval-gate':\n      return 'pf-gate';\n    case 'pf-swimlane':\n      return 'pf-swimlane';\n    case 'pf-subprocess':\n      return 'pf-subprocess';\n\n    // ArchiMate core types"
+    },
+    {
+      "fileA": "model/graph.ts",
+      "fileB": "store/model.ts",
+      "catA": "MODEL",
+      "catB": "STORE",
+      "pairType": "other",
+      "lines": 15,
+      "tokens": 0,
+      "fragment": "{\n    if (!graph.hasNode(el.id)) {\n      graph.addNode(el.id, {\n        id: el.id,\n        name: el.name,\n        archimate_type: el.archimate_type,\n        specialisation: el.specialisation,\n        layer: el.layer,\n        sublayer: el.sublayer,\n        domain_id: el.domain_id,\n      });\n    }\n  }\n\n  for"
+    },
+    {
+      "fileA": "model/graph.ts",
+      "fileB": "store/model.ts",
+      "catA": "MODEL",
+      "catB": "STORE",
+      "pairType": "other",
+      "lines": 11,
+      "tokens": 0,
+      "fragment": "graph.addEdgeWithKey(rel.id, rel.source_id, rel.target_id, {\n          id: rel.id,\n          archimate_type: rel.archimate_type,\n          specialisation: rel.specialisation,\n          label: rel.label,\n          source_id: rel.source_id,\n          target_id: rel.target_id,\n        });\n      }\n    }\n  }"
+    },
+    {
+      "fileA": "io/archimate-xml.ts",
+      "fileB": "io/csv.ts",
+      "catA": "IO",
+      "catB": "IO",
+      "pairType": "other",
+      "lines": 14,
+      "tokens": 0,
+      "fragment": "'BusinessActor': 'business-actor',\n  'BusinessRole': 'business-role',\n  'BusinessCollaboration': 'business-collaboration',\n  'BusinessInterface': 'business-interface',\n  'BusinessProcess': 'business-process',\n  'BusinessFunction': 'business-function',\n  'BusinessInteraction': 'business-interaction',\n  'BusinessEvent': 'business-event',\n  'BusinessService': 'business-service',\n  'BusinessObject': 'business-object',\n  'Contract': 'contract',\n  'Representation': 'representation',\n  'Product': 'product',\n  // Application"
+    },
+    {
+      "fileA": "io/archimate-xml.ts",
+      "fileB": "io/csv.ts",
+      "catA": "IO",
+      "catB": "IO",
+      "pairType": "other",
+      "lines": 14,
+      "tokens": 0,
+      "fragment": "'Node': 'node',\n  'Device': 'device',\n  'SystemSoftware': 'system-software',\n  'TechnologyCollaboration': 'technology-collaboration',\n  'TechnologyInterface': 'technology-interface',\n  'TechnologyFunction': 'technology-function',\n  'TechnologyProcess': 'technology-process',\n  'TechnologyInteraction': 'technology-interaction',\n  'TechnologyEvent': 'technology-event',\n  'TechnologyService': 'technology-service',\n  'Artifact': 'artifact',\n  'CommunicationNetwork': 'communication-network',\n  'Path': 'path',\n  // Strategy"
+    },
+    {
+      "fileA": "io/archimate-xml.ts",
+      "fileB": "io/csv.ts",
+      "catA": "IO",
+      "catB": "IO",
+      "pairType": "other",
+      "lines": 15,
+      "tokens": 0,
+      "fragment": "const REL_TYPE_MAP: Record<string, string> = {\n  'CompositionRelationship': 'composition',\n  'AggregationRelationship': 'aggregation',\n  'AssignmentRelationship': 'assignment',\n  'RealizationRelationship': 'realisation',\n  'ServingRelationship': 'serving',\n  'AccessRelationship': 'access',\n  'InfluenceRelationship': 'influence',\n  'TriggeringRelationship': 'triggering',\n  'FlowRelationship': 'flow',\n  'SpecializationRelationship': 'specialisation',\n  'AssociationRelationship': 'association',\n};\n\nconst REVERSE_REL_MAP"
+    },
+    {
+      "fileA": "io/archimate-xml.ts",
+      "fileB": "io/csv.ts",
+      "catA": "IO",
+      "catB": "IO",
+      "pairType": "other",
+      "lines": 45,
+      "tokens": 0,
+      "fragment": ": Record<string, string> = Object.fromEntries(\n  Object.entries(REL_TYPE_MAP).map(([k, v]) => [v, k]),\n);\n\n// ═══════════════════════════════════════\n// Layer derivation\n// ═══════════════════════════════════════\n\nfunction typeToLayer(internalType: string): string {\n  if (\n    internalType.startsWith('business-') ||\n    ['contract', 'representation', 'product'].includes(internalType)\n  )\n    return 'business';\n  if (internalType.startsWith('application-') || internalType === 'data-object')\n    return 'application';\n  if (\n    internalType.startsWith('technology-') ||\n    ['node', 'device', 'system-software', 'artifact', 'communication-network', 'path'].includes(\n      internalType,\n    )\n  )\n    return 'technology';\n  if (['resource', 'capability', 'value-stream', 'course-of-action'].includes(internalType))\n    return 'strategy';\n  if (\n    ['stakeholder', 'driver', 'assessment', 'goal', 'outcome', 'principle', 'requirement', 'constraint', 'meaning', 'value'].includes(\n      internalType,\n    )\n  )\n    return 'motivation';\n  if (\n    ['work-package', 'deliverable', 'implementation-event', 'plateau', 'gap'].includes(\n      internalType,\n    )\n  )\n    return 'implementation';\n  return 'application';\n}\n\n// ═══════════════════════════════════════\n// Parsed types\n// ═══════════════════════════════════════\n\nexport interface ParsedElement"
+    },
+    {
+      "fileA": "api/client.ts",
+      "fileB": "api/client.ts",
+      "catA": "API",
+      "catB": "API",
+      "pairType": "other",
+      "lines": 13,
+      "tokens": 0,
+      "fragment": "> {\n  const response = await fetch(`${API_BASE}${path}`, {\n    headers: {\n      'Content-Type': 'application/json',\n    },\n    ...options,\n  });\n\n  if (!response.ok) {\n    const body = await response.text().catch(() => 'Unknown error');\n    throw new ApiError(response.status, `${response.status}: ${body}`);\n  }\n}"
+    }
+  ]
+}

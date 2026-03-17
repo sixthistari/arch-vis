@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getUnifiedEdgeStyle } from '../edge-styles';
+import { getUnifiedEdgeStyle } from '../../shared/edge-styles';
 
 describe('getUnifiedEdgeStyle', () => {
   // ── ArchiMate relationship types ──────────────────────────────────────

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getShapeDefinition, getAllRegisteredTypes } from '../registry';
+import { getShapeDefinition, getAllRegisteredTypes } from '../../shared/registry';
 
 describe('getShapeDefinition', () => {
   const allRegistered = getAllRegisteredTypes();
@@ -122,7 +122,7 @@ describe('getAllRegisteredTypes', () => {
   it('returns an array of strings', () => {
     const types = getAllRegisteredTypes();
     expect(Array.isArray(types)).toBe(true);
-    types.forEach((t) => expect(typeof t).toBe('string'));
+    types.forEach((t: string) => expect(typeof t).toBe('string'));
   });
 
   it('includes key ArchiMate types', () => {

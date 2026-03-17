@@ -19,9 +19,9 @@ import type { Command } from '../interaction/undo-redo';
 import type { Relationship } from '../model/types';
 import { getNotation, getViewNotation } from '../model/notation';
 
-// Lazy-load legacy spatial renderer only when needed
-const LegacySpatialCanvas = React.lazy(() =>
-  import('./legacy/Canvas').then(m => ({ default: m.Canvas }))
+// Lazy-load spatial renderer shell only when needed (3D/spatial views)
+const SpatialShellCanvas = React.lazy(() =>
+  import('./spatial-shell/Canvas').then(m => ({ default: m.Canvas }))
 );
 
 export function Canvas(): React.ReactElement {
@@ -427,7 +427,7 @@ export function Canvas(): React.ReactElement {
             style: { display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)', fontSize: 12 },
           }, 'Loading spatial renderer…'),
         },
-          React.createElement(LegacySpatialCanvas, null),
+          React.createElement(SpatialShellCanvas, null),
         )
       : React.createElement(XYFlowCanvas, {
           elements: visibleElements,

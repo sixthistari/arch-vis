@@ -1,4 +1,10 @@
-import type { ShapeType, IconType } from './shapes/index';
+/**
+ * Shape and icon type literals — inlined to avoid circular dependency
+ * between shared/ (MODEL) and notation/shapes/ (NOTATION-ARCHIMATE).
+ * These must stay in sync with notation/shapes/index.ts.
+ */
+export type ShapeType = 'rect' | 'rounded-rect' | 'pill' | 'folded-corner' | 'box-3d' | 'event' | 'dashed-rect' | 'rect-with-icon';
+export type IconType = 'person' | 'lollipop' | 'component' | 'header-bar' | 'artifact' | 'stepped';
 
 export interface ShapeDefinition {
   shapeType: ShapeType;

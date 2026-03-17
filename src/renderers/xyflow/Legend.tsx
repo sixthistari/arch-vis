@@ -5,7 +5,7 @@
  * showing each layer's colour swatch and label. Toggleable via a button.
  */
 import React, { useState, useMemo } from 'react';
-import { getLayerColours } from '../shared/colors';
+import { getLayerColours } from '../../shared/colors';
 
 interface LegendEntry {
   layer: string;
