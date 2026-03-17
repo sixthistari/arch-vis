@@ -211,6 +211,9 @@ export default function seed(): void {
       uml_activity: ['uml-activity', 'uml-state', 'uml-action', 'uml-decision', 'uml-merge', 'uml-fork', 'uml-join', 'uml-initial-node', 'uml-final-node', 'uml-flow-final'],
       process_flow: ['pf-start', 'pf-end', 'pf-human-task', 'pf-agent-task', 'pf-system-call', 'pf-decision', 'pf-gateway', 'pf-approval-gate', 'pf-timer', 'pf-swimlane', 'pf-subprocess'],
       process_detail: ['pf-start', 'pf-end', 'pf-human-task', 'pf-agent-task', 'pf-system-call', 'pf-decision', 'pf-gateway', 'pf-approval-gate', 'pf-timer', 'pf-swimlane', 'pf-subprocess'],
+      data_conceptual: ['dm-entity', 'dm-attribute'],
+      data_logical: ['dm-entity', 'dm-table', 'dm-attribute', 'dm-column', 'dm-primary-key', 'dm-foreign-key'],
+      data_physical: ['dm-table', 'dm-column', 'dm-primary-key', 'dm-foreign-key', 'dm-index'],
     };
 
     for (const v of viewsFile.views) {

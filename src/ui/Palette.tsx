@@ -1,15 +1,18 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { getLayerColours } from '../notation/colors';
+import { getLayerColours } from '../shared/colors';
 import { getShapeDefinition } from '../notation/registry';
 import { getUnifiedEdgeStyle } from '../notation/edge-styles';
 import { NOTATION_RELATIONSHIP_TYPES } from '../shared/layer-config';
 import { useThemeStore } from '../store/theme';
 import { useModelStore } from '../store/model';
 import { useViewStore } from '../store/view';
-import type { ArchimateType } from '../model/types';
+import type { ArchimateType, ArchimateLayer } from '../model/types';
 import { archimateTypeValues } from '../model/types';
 import { getAllowedElementTypes, getArchiMateViewpoint } from '../notation/archimate-viewpoints';
 import { renderArchiIcon } from './ArchiPaletteIcons';
+import * as api from '../api/client';
+import { notifySuccess, notifyWarning } from '../store/notification';
+import { getNotation, getViewNotation } from '../model/notation';
 
 /**
  * Feature flag: set to false to revert to the old programmatic shape icons.
@@ -1072,6 +1075,48 @@ export function Palette(): React.ReactElement {
     e.dataTransfer.effectAllowed = 'copy';
   }, []);
 
+  const loadAll = useModelStore(s => s.loadAll);
+
+  const handleClickCreate = useCallback(async (archimateType: string, layer: string) => {
+    if (!currentView) return;
+    // Notation boundary check
+    const elementNotation = getNotation(archimateType);
+    const viewNot = getViewNotation(currentView.viewpoint_type);
+    if (viewNot !== 'any' && elementNotation !== 'any' && elementNotation !== viewNot) {
+      notifyWarning('Notation mismatch', `Cannot add a ${elementNotation} element to a ${viewNot} view.`);
+      return;
+    }
+    const name = window.prompt(`Name for new ${formatTypeName(archimateType)}:`);
+    if (!name?.trim()) return;
+    try {
+      const el = await api.createElement({
+        id: `el-${crypto.randomUUID()}`,
+        name: name.trim(),
+        archimate_type: archimateType as ArchimateType,
+        layer: layer as ArchimateLayer,
+        specialisation: null,
+      });
+      // Place at a slightly randomised position so items don't stack
+      const x = 100 + Math.round(Math.random() * 200);
+      const y = 100 + Math.round(Math.random() * 200);
+      await api.updateViewElements(currentView.id, [{
+        view_id: currentView.id,
+        element_id: el.id,
+        x,
+        y,
+        width: null,
+        height: null,
+        sublayer_override: null,
+        style_overrides: null,
+        z_index: 0,
+      }]);
+      await loadAll();
+      notifySuccess('Element created', `${name.trim()} added to view`);
+    } catch (err) {
+      notifyWarning('Create failed', err instanceof Error ? err.message : 'Unknown error');
+    }
+  }, [currentView, loadAll]);
+
   // Determine palette mode from viewpoint
   const isUmlSequence = viewpointType === 'uml_sequence';
   const isUmlActivity = viewpointType === 'uml_activity';
@@ -1156,9 +1201,10 @@ export function Palette(): React.ReactElement {
             key: type,
             draggable: true,
             onDragStart: (e: React.DragEvent) => handleDragStart(e, type, dropLayer),
+            onClick: () => handleClickCreate(type, dropLayer),
             style: {
               padding: '3px 2px 1px',
-              cursor: 'grab',
+              cursor: 'pointer',
               borderRadius: 3,
               display: 'flex',
               flexDirection: 'column' as const,
@@ -1166,7 +1212,7 @@ export function Palette(): React.ReactElement {
               width: 52,
               userSelect: 'none' as const,
             },
-            title: formatTypeName(type),
+            title: `${formatTypeName(type)} — click to create, drag to place`,
           },
             miniShapeRenderer ? miniShapeRenderer(type, borderColour) : null,
             React.createElement('span', {
@@ -1327,9 +1373,10 @@ export function Palette(): React.ReactElement {
                 key: type,
                 draggable: true,
                 onDragStart: (e: React.DragEvent) => handleDragStart(e, type, group.colorKey),
+                onClick: () => handleClickCreate(type, group.colorKey),
                 style: {
                   padding: '3px 2px 1px',
-                  cursor: 'grab',
+                  cursor: 'pointer',
                   borderRadius: 3,
                   display: 'flex',
                   flexDirection: 'column' as const,
@@ -1337,7 +1384,7 @@ export function Palette(): React.ReactElement {
                   width: 52,
                   userSelect: 'none' as const,
                 },
-                title: formatTypeName(type),
+                title: `${formatTypeName(type)} — click to create, drag to place`,
               },
                 (USE_ARCHI_PALETTE_ICONS ? renderArchiIcon(type, colours.stroke) : null) ?? renderMiniShape(type, colours.stroke),
                 React.createElement('span', {

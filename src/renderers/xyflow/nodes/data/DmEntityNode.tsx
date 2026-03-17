@@ -10,7 +10,7 @@
 import { memo } from 'react';
 import { type NodeProps, type Node } from '@xyflow/react';
 import { RoutingHandles } from '../shared/RoutingHandles';
-import { compartmentHeight } from '../../../../notation/theme-colours';
+import { compartmentHeight } from '../../../../shared/theme-colours';
 
 // ═══════════════════════════════════════
 // Data types

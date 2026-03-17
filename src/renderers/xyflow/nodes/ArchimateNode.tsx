@@ -15,7 +15,7 @@
 import React, { memo } from 'react';
 import { Handle, Position, type NodeProps, type Node, useStore } from '@xyflow/react';
 import { getArchimateIcon } from './archimate-icons';
-import { getLayerColours } from '../../../notation/colors';
+import { getLayerColours } from '../../../shared/colors';
 import { getShapeDefinition } from '../../../notation/registry';
 import { getZoomTier } from '../../spatial/zoom-tiers';
 import type { ZoomTier } from '../../types';

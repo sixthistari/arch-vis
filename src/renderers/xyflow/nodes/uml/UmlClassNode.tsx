@@ -13,7 +13,7 @@
 import { memo } from 'react';
 import { type NodeProps, type Node } from '@xyflow/react';
 import { RoutingHandles } from '../shared/RoutingHandles';
-import { getUmlColours, compartmentHeight } from '../../../../notation/theme-colours';
+import { getUmlColours, compartmentHeight } from '../../../../shared/theme-colours';
 
 // ═══════════════════════════════════════
 // Data types

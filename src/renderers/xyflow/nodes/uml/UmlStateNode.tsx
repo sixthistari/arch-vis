@@ -12,7 +12,7 @@
 import { memo } from 'react';
 import { Handle, Position, type NodeProps, type Node, NodeResizer } from '@xyflow/react';
 import { RoutingHandles } from '../shared/RoutingHandles';
-import { getUmlColours } from '../../../../notation/theme-colours';
+import { getUmlColours } from '../../../../shared/theme-colours';
 
 export interface StateActivity {
   trigger: 'entry' | 'exit' | 'do';

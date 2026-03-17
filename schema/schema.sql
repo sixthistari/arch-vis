@@ -75,7 +75,9 @@ CREATE TABLE IF NOT EXISTS relationships (
         -- Wireframe relationship types (Phase 3)
         'wf-contains','wf-navigates-to','wf-binds-to',
         -- Process flow relationship types
-        'pf-sequence-flow','pf-conditional-flow','pf-error-flow'
+        'pf-sequence-flow','pf-conditional-flow','pf-error-flow',
+        -- Data model relationship types
+        'dm-has-attribute','dm-references','dm-one-to-one','dm-one-to-many','dm-many-to-many'
     )),
     specialisation TEXT,                    -- e.g. 'grounded_in', 'governed_by', NULL for standard
     source_id TEXT NOT NULL REFERENCES elements(id) ON DELETE CASCADE,
@@ -116,7 +118,8 @@ CREATE TABLE IF NOT EXISTS views (
         'process_detail','infrastructure','information','application_landscape','custom',
         'uml_class','uml_component','wireframe',
         'uml_sequence','uml_activity','uml_usecase',
-        'process_flow'
+        'process_flow',
+        'data_conceptual','data_logical','data_physical'
     )),
     description TEXT,
     render_mode TEXT DEFAULT 'spatial' CHECK(render_mode IN ('flat','spatial')),

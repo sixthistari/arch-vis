@@ -249,6 +249,114 @@ const versionedMigrations: MigrationEntry[] = [
     db.exec("CREATE INDEX IF NOT EXISTS idx_relationships_project ON relationships(project_id)");
     db.exec("CREATE INDEX IF NOT EXISTS idx_views_project ON views(project_id)");
   }],
+
+  // Version 8: Add dm-* relationship types and data viewpoint types
+  [8, () => {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS relationships_new (
+        id TEXT PRIMARY KEY,
+        archimate_type TEXT NOT NULL CHECK(archimate_type IN (
+          'composition','aggregation','assignment','realisation','serving',
+          'access','influence','triggering','flow','specialisation','association',
+          'uml-inheritance','uml-realisation','uml-composition','uml-aggregation',
+          'uml-association','uml-dependency','uml-assembly',
+          'uml-sync-message','uml-async-message','uml-return-message',
+          'uml-create-message','uml-destroy-message','uml-self-message',
+          'wf-contains','wf-navigates-to','wf-binds-to',
+          'pf-sequence-flow','pf-conditional-flow','pf-error-flow',
+          'dm-has-attribute','dm-references','dm-one-to-one','dm-one-to-many','dm-many-to-many'
+        )),
+        specialisation TEXT,
+        source_id TEXT NOT NULL REFERENCES elements(id) ON DELETE CASCADE,
+        target_id TEXT NOT NULL REFERENCES elements(id) ON DELETE CASCADE,
+        label TEXT,
+        description TEXT,
+        properties JSON,
+        confidence REAL,
+        created_at TEXT DEFAULT (datetime('now')),
+        created_by TEXT DEFAULT 'manual',
+        source TEXT DEFAULT 'manual',
+        updated_at TEXT DEFAULT (datetime('now')),
+        project_id TEXT REFERENCES projects(id) DEFAULT 'proj-default',
+        area TEXT DEFAULT 'working' CHECK(area IN ('working','governed'))
+      );
+      INSERT INTO relationships_new SELECT * FROM relationships;
+      DROP TABLE relationships;
+      ALTER TABLE relationships_new RENAME TO relationships;
+      CREATE INDEX IF NOT EXISTS idx_rel_source ON relationships(source_id);
+      CREATE INDEX IF NOT EXISTS idx_rel_target ON relationships(target_id);
+      CREATE INDEX IF NOT EXISTS idx_relationships_project ON relationships(project_id);
+    `);
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS views_new (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        viewpoint_type TEXT NOT NULL CHECK(viewpoint_type IN (
+          'layered','knowledge_cognition','domain_slice','governance_matrix',
+          'process_detail','infrastructure','information','application_landscape','custom',
+          'uml_class','uml_component','wireframe',
+          'uml_sequence','uml_activity','uml_usecase',
+          'process_flow',
+          'data_conceptual','data_logical','data_physical'
+        )),
+        description TEXT,
+        render_mode TEXT DEFAULT 'spatial' CHECK(render_mode IN ('flat','spatial')),
+        filter_domain TEXT,
+        filter_layers JSON,
+        filter_specialisations JSON,
+        rotation_default JSON,
+        is_preset INTEGER DEFAULT 0,
+        project_id TEXT REFERENCES projects(id) DEFAULT 'proj-default',
+        area TEXT DEFAULT 'working' CHECK(area IN ('working','governed')),
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now'))
+      );
+      INSERT INTO views_new SELECT * FROM views;
+      DROP TABLE views;
+      ALTER TABLE views_new RENAME TO views;
+    `);
+  }],
+
+  // Version 9: widen viewpoint_type CHECK to include am_* ArchiMate 3.2 named viewpoints
+  [9, () => {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS views_new (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        viewpoint_type TEXT NOT NULL CHECK(viewpoint_type IN (
+          'layered','knowledge_cognition','domain_slice','governance_matrix',
+          'process_detail','infrastructure','information','application_landscape','custom',
+          'uml_class','uml_component','wireframe',
+          'uml_sequence','uml_activity','uml_usecase',
+          'process_flow',
+          'data_conceptual','data_logical','data_physical',
+          'am_organisation','am_application_cooperation','am_application_usage',
+          'am_business_process_cooperation','am_implementation_deployment',
+          'am_information_structure','am_layered','am_migration',
+          'am_motivation','am_physical','am_product',
+          'am_requirements_realisation','am_service_realisation',
+          'am_stakeholder','am_strategy','am_technology','am_technology_usage',
+          'am_goal_realisation','am_application_structure',
+          'am_application_interaction','am_business_cooperation',
+          'am_business_function','am_business_product'
+        )),
+        description TEXT,
+        render_mode TEXT DEFAULT 'spatial' CHECK(render_mode IN ('flat','spatial')),
+        filter_domain TEXT,
+        filter_layers JSON,
+        filter_specialisations JSON,
+        rotation_default JSON,
+        is_preset INTEGER DEFAULT 0,
+        project_id TEXT REFERENCES projects(id) DEFAULT 'proj-default',
+        area TEXT DEFAULT 'working' CHECK(area IN ('working','governed')),
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now'))
+      );
+      INSERT INTO views_new SELECT * FROM views;
+      DROP TABLE views;
+      ALTER TABLE views_new RENAME TO views;
+    `);
+  }],
 ];
 
 for (const [version, migrate] of versionedMigrations) {

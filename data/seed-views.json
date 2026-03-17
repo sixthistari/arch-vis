@@ -335,6 +335,23 @@
         {"id": "state-seed-cancelled", "x": 600, "y": 300},
         {"id": "state-seed-final", "x": 900, "y": 200}
       ]
+    },
+    {
+      "id": "view-data-conceptual",
+      "name": "Mining Data Model",
+      "viewpoint_type": "data_conceptual",
+      "description": "Conceptual data model: core mining domain entities and relationships",
+      "render_mode": "flat",
+      "is_preset": 1,
+      "element_positions": [
+        {"id": "dm-ent-site", "x": 400, "y": 50},
+        {"id": "dm-ent-equipment", "x": 100, "y": 250},
+        {"id": "dm-ent-inspection", "x": 100, "y": 450},
+        {"id": "dm-ent-incident", "x": 400, "y": 450},
+        {"id": "dm-ent-drill-hole", "x": 700, "y": 250},
+        {"id": "dm-ent-sample", "x": 700, "y": 450},
+        {"id": "dm-ent-shift", "x": 400, "y": 250}
+      ]
     }
   ]
 }

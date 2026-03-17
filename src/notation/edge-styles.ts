@@ -228,3 +228,35 @@ const DEFAULT_STYLE = STYLES['association']!;
 export function getUnifiedEdgeStyle(relationshipType: string): UnifiedEdgeStyle {
   return STYLES[relationshipType] ?? DEFAULT_STYLE;
 }
+
+/**
+ * Legacy alias — flat/spatial SVG renderers use the simpler name.
+ */
+export const getEdgeStyle = getUnifiedEdgeStyle;
+
+/**
+ * SVG marker definitions for flat/spatial SVG renderers.
+ * (xyflow uses AllMarkerDefs.tsx instead.)
+ */
+export function renderMarkerDefs(): string {
+  return `
+    <marker id="marker-filled-diamond" viewBox="0 0 12 8" refX="12" refY="4" markerWidth="12" markerHeight="8" orient="auto">
+      <polygon points="0,4 6,0 12,4 6,8" fill="currentColor" />
+    </marker>
+    <marker id="marker-open-diamond" viewBox="0 0 12 8" refX="12" refY="4" markerWidth="12" markerHeight="8" orient="auto">
+      <polygon points="0,4 6,0 12,4 6,8" fill="none" stroke="currentColor" stroke-width="1" />
+    </marker>
+    <marker id="marker-filled-circle" viewBox="0 0 8 8" refX="4" refY="4" markerWidth="8" markerHeight="8" orient="auto">
+      <circle cx="4" cy="4" r="3" fill="currentColor" />
+    </marker>
+    <marker id="marker-filled-arrow" viewBox="0 0 10 8" refX="10" refY="4" markerWidth="10" markerHeight="8" orient="auto">
+      <polygon points="0,0 10,4 0,8" fill="currentColor" />
+    </marker>
+    <marker id="marker-open-arrow" viewBox="0 0 10 8" refX="10" refY="4" markerWidth="10" markerHeight="8" orient="auto">
+      <polyline points="0,0 10,4 0,8" fill="none" stroke="currentColor" stroke-width="1.2" />
+    </marker>
+    <marker id="marker-open-triangle" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="10" markerHeight="10" orient="auto">
+      <polygon points="0,0 10,5 0,10" fill="none" stroke="currentColor" stroke-width="1" />
+    </marker>
+  `;
+}

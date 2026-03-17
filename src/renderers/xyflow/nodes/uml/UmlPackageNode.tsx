@@ -10,7 +10,7 @@ import { type NodeProps, type Node, NodeResizer } from '@xyflow/react';
 import { useNodeBehaviour } from '../../hooks/useNodeBehaviour';
 import { RoutingHandles } from '../shared/RoutingHandles';
 import { EditableLabel } from '../shared/EditableLabel';
-import { getContainerColours } from '../../../../notation/theme-colours';
+import { getContainerColours } from '../../../../shared/theme-colours';
 
 export interface UmlPackageNodeData {
   label: string;

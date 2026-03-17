@@ -225,6 +225,14 @@
     {"id": "seq-msg-1", "archimate_type": "uml-sync-message", "source_id": "seq-seed-user", "target_id": "seq-seed-auth", "label": "login(user, pass)", "properties": {"sequenceNumber": 1}},
     {"id": "seq-msg-2", "archimate_type": "uml-sync-message", "source_id": "seq-seed-auth", "target_id": "seq-seed-db", "label": "query(user)", "properties": {"sequenceNumber": 2}},
     {"id": "seq-msg-3", "archimate_type": "uml-return-message", "source_id": "seq-seed-db", "target_id": "seq-seed-auth", "label": "userRecord", "properties": {"sequenceNumber": 3}},
-    {"id": "seq-msg-4", "archimate_type": "uml-return-message", "source_id": "seq-seed-auth", "target_id": "seq-seed-user", "label": "authToken", "properties": {"sequenceNumber": 4}}
+    {"id": "seq-msg-4", "archimate_type": "uml-return-message", "source_id": "seq-seed-auth", "target_id": "seq-seed-user", "label": "authToken", "properties": {"sequenceNumber": 4}},
+
+    {"id": "dm-rel-equip-site", "archimate_type": "dm-one-to-many", "source_id": "dm-ent-site", "target_id": "dm-ent-equipment", "label": "located_at"},
+    {"id": "dm-rel-insp-equip", "archimate_type": "dm-one-to-many", "source_id": "dm-ent-equipment", "target_id": "dm-ent-inspection", "label": "inspected_by"},
+    {"id": "dm-rel-inc-site", "archimate_type": "dm-one-to-many", "source_id": "dm-ent-site", "target_id": "dm-ent-incident", "label": "incidents"},
+    {"id": "dm-rel-inc-equip", "archimate_type": "dm-one-to-many", "source_id": "dm-ent-equipment", "target_id": "dm-ent-incident", "label": "involved_equipment"},
+    {"id": "dm-rel-hole-site", "archimate_type": "dm-one-to-many", "source_id": "dm-ent-site", "target_id": "dm-ent-drill-hole", "label": "drill_holes"},
+    {"id": "dm-rel-sample-hole", "archimate_type": "dm-one-to-many", "source_id": "dm-ent-drill-hole", "target_id": "dm-ent-sample", "label": "samples"},
+    {"id": "dm-rel-shift-site", "archimate_type": "dm-one-to-many", "source_id": "dm-ent-site", "target_id": "dm-ent-shift", "label": "shifts"}
   ]
 }

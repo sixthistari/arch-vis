@@ -38,6 +38,39 @@ router.post('/projects', (req: Request, res: Response) => {
   res.status(201).json(created);
 });
 
+// GET /api/projects/current — get the current project
+router.get('/projects/current', (_req: Request, res: Response) => {
+  const pref = db.prepare("SELECT value FROM preferences WHERE key = 'current_project_id'").get() as { value: string } | undefined;
+  if (!pref) {
+    res.status(404).json({ error: 'No current project set' });
+    return;
+  }
+  const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(pref.value) as ProjectRow | undefined;
+  if (!project) {
+    res.status(404).json({ error: 'Current project not found' });
+    return;
+  }
+  res.json(project);
+});
+
+// PUT /api/projects/current — switch current project
+router.put('/projects/current', (req: Request, res: Response) => {
+  const { id } = req.body as { id?: string };
+  if (!id) {
+    res.status(400).json({ error: 'id is required', code: 'VALIDATION_ERROR' });
+    return;
+  }
+
+  const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(id) as ProjectRow | undefined;
+  if (!project) {
+    res.status(404).json({ error: 'Project not found' });
+    return;
+  }
+
+  db.prepare("INSERT OR REPLACE INTO preferences (key, value) VALUES ('current_project_id', ?)").run(id);
+  res.json(project);
+});
+
 // PUT /api/projects/:id — rename/update a project
 router.put('/projects/:id', (req: Request, res: Response) => {
   const { id } = req.params;
@@ -125,39 +158,6 @@ router.delete('/projects/:id', (req: Request, res: Response) => {
 
   deleteAll();
   res.status(204).send();
-});
-
-// GET /api/projects/current — get the current project
-router.get('/projects/current', (_req: Request, res: Response) => {
-  const pref = db.prepare("SELECT value FROM preferences WHERE key = 'current_project_id'").get() as { value: string } | undefined;
-  if (!pref) {
-    res.status(404).json({ error: 'No current project set' });
-    return;
-  }
-  const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(pref.value) as ProjectRow | undefined;
-  if (!project) {
-    res.status(404).json({ error: 'Current project not found' });
-    return;
-  }
-  res.json(project);
-});
-
-// PUT /api/projects/current — switch current project
-router.put('/projects/current', (req: Request, res: Response) => {
-  const { id } = req.body as { id?: string };
-  if (!id) {
-    res.status(400).json({ error: 'id is required', code: 'VALIDATION_ERROR' });
-    return;
-  }
-
-  const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(id) as ProjectRow | undefined;
-  if (!project) {
-    res.status(404).json({ error: 'Project not found' });
-    return;
-  }
-
-  db.prepare("INSERT OR REPLACE INTO preferences (key, value) VALUES ('current_project_id', ?)").run(id);
-  res.json(project);
 });
 
 // ═══════════════════════════════════════

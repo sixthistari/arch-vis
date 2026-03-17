@@ -1,6 +1,6 @@
 import React from 'react';
 import { project3D, PLANE_WIDTH, PLANE_DEPTH, LAYER_COMPRESSION } from './projection';
-import { getLayerColours } from '../../notation/colors';
+import { getLayerColours } from '../../shared/colors';
 import type { ThemeMode } from '../../theme/tokens';
 
 export interface LayerPlaneConfig {

@@ -10,7 +10,7 @@
 import { memo } from 'react';
 import { type NodeProps, type Node } from '@xyflow/react';
 import { RoutingHandles } from '../shared/RoutingHandles';
-import { getUmlColours } from '../../../../notation/theme-colours';
+import { getUmlColours } from '../../../../shared/theme-colours';
 
 export interface UmlPort {
   id: string;

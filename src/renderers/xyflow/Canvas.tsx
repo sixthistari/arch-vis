@@ -31,7 +31,7 @@ import { AllMarkerDefs } from './edges/AllMarkerDefs';
 import type { ArchimateNodeData } from './nodes';
 import type { LineType } from './edges';
 import type { Element, Relationship, ViewElement, SublayerConfig, ValidRelationship } from '../../model/types';
-import { getLayerColours } from '../../notation/colors';
+import { getLayerColours } from '../../shared/colors';
 import { computeOrthogonalRoutes, type RouteEdge, type RouteElement, type RoutedEdge } from '../../layout/edge-routing';
 import { assignPorts } from '../../layout/connection-points';
 import { WaypointUpdateContext } from './context';

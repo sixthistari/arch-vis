@@ -258,6 +258,61 @@ _Build the infrastructure that maximises the value of human testing._
 
 ---
 
+## Stage 9: Self-Audit — "Dogfooding"
+
+_Use the tool to visualise its own codebase. Reveals architecture quality and proves the batch import pipeline._
+
+### 9.1 Static Analysis Script
+
+- Single standalone script (`self-audit/run.mjs`) — no build step, no new dependencies (except `jscpd` via npx)
+- Three phases: **analyse** → **import** → **report** — each runnable independently
+- Analysis covers:
+  - **Module dependencies:** recursive import scanning, per-module fan-in/fan-out/instability (Robert C. Martin metrics)
+  - **Duplication:** jscpd scan classified by module category (within-notation, cross-notation, shared-infra)
+  - **Abstraction violations:** inverted dependencies (shared infra → notation), cross-notation coupling, duplicated-not-shared
+
+### 9.2 Module Classification
+
+- Classify every source file by directory path into architectural categories:
+  - SHARED-INFRA (canvas, edges, hooks, layout, interaction)
+  - NOTATION-* (archimate, uml, wireframe, data, process-flow)
+  - STORE, MODEL, UI, API, THEME, IO, SERVER
+- Classification drives all downstream analysis — violations, dependency graphs, duplication categorisation
+
+### 9.3 Self-Model via Batch Import
+
+- Create a dedicated project (avoids polluting the working model)
+- Import analysis results as ArchiMate Application Layer views via `POST /api/import/model-batch?project_id=<id>`
+- Four views, each revealing different quality dimensions:
+  1. **Module Architecture** — high-level dependency map between module categories
+  2. **Notation Abstraction Map** — shared infra vs notation renderers, with violation flows
+  3. **Duplication Heat Map** — files with most cloned code, clone pair relationships
+  4. **Dependency Risk** — instability index, fan-in/out, circular dependency flags
+
+### 9.4 Constraints Discovered
+
+- Batch import validates against `valid_relationships` table — only ArchiMate relationship types that exist in the matrix are accepted; others are skipped with warnings
+- Grid layout iterates `LAYER_SEQUENCE` — elements with layer `none` get no `view_elements` entries (invisible)
+- All self-audit views use `application-component` and `application-function` types with `aggregation`, `assignment`, and `flow` relationships — these all pass validation
+- Viewpoint types must match the database CHECK constraint (use `application_landscape`, `custom`, not the Zod `am_*` extended types)
+
+### 9.5 Report Generation
+
+- Markdown report with 6 sections: overview, duplication, violations, dependency health, ranked recommendations, view inventory
+- Recommendations tagged by effort (S/M/L) and impact (S/M/L)
+- Circular dependency detection via DFS on module adjacency graph
+- God module detection (fan-out > 15), instability outliers (>0.8 or <0.2 with high fan-in)
+
+**Key learning:** Self-audit is both a quality tool and an integration test. It exercises the batch import API, project creation, relationship validation, and grid layout in a single run. Failures during self-audit (viewpoint CHECK constraint, relationship validation) reveal API surface gaps that external consumers would hit.
+
+**arch-vis findings (March 2026):**
+- 164 source files, 16 modules, 2.98% duplication (54 clone pairs)
+- 7 high-severity inverted dependencies (shared infra → notation), primarily `theme-colours.ts` and `notation/registry.ts`
+- 8 circular dependency cycles at module level
+- `theme-colours.ts` is the single biggest coupling point — used by UML, Data, and shared infra when it lives in the ArchiMate notation module
+
+---
+
 ## Anti-Patterns Observed
 
 | Anti-Pattern | What Happened | Fix |
@@ -283,6 +338,7 @@ _Build the infrastructure that maximises the value of human testing._
 | **CLAUDE.md as living instructions** | Every correction became a permanent rule |
 | **Feature flags for reversibility** | `USE_ARCHI_PALETTE_ICONS = false` to revert instantly |
 | **UAT verification middleware** | Server-side proof that mutations worked, not just UI illusion |
+| **Self-audit dogfooding** | Used own batch import to visualise codebase — found 7 inverted deps and proved the API works end-to-end |
 
 ---
 
@@ -334,4 +390,11 @@ _Build the infrastructure that maximises the value of human testing._
   □ Test plan (function + polish phases)
   □ Shakedown test
   □ Reference material comparison
+
+□ Stage 9: Self-Audit
+  □ Static analysis script (deps, duplication, violations)
+  □ Module classification rules
+  □ Self-model via batch import (4 views)
+  □ Markdown report with ranked recommendations
+  □ Fix top-priority violations
 ```

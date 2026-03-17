@@ -4,7 +4,7 @@
  */
 import { memo } from 'react';
 import { NodeResizer, type NodeProps, type Node } from '@xyflow/react';
-import { getLayerColours } from '../../../notation/colors';
+import { getLayerColours } from '../../../shared/colors';
 
 export interface LayerBandNodeData {
   layer: string;

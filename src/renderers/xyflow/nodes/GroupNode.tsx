@@ -10,7 +10,7 @@ import { type NodeProps, type Node, NodeResizer } from '@xyflow/react';
 import { useNodeBehaviour } from '../hooks/useNodeBehaviour';
 import { RoutingHandles } from './shared/RoutingHandles';
 import { EditableLabel } from './shared/EditableLabel';
-import { getLayerColours } from '../../../notation/colors';
+import { getLayerColours } from '../../../shared/colors';
 
 export interface GroupNodeData {
   label: string;
