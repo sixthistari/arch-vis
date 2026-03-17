@@ -1,14 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { ThemeToggle } from './ThemeToggle';
 import { ViewSwitcher } from './ViewSwitcher';
 import { Palette } from './Palette';
 import { LayerControls } from './LayerControls';
 import { Canvas } from './Canvas';
-import { ExportMenu } from './ExportMenu';
 import { ModelTree } from './ModelTree';
 import { DetailPanel } from './DetailPanel';
 import { useUndoRedoStore } from '../interaction/undo-redo';
-import { importArchimateXml, importCsv, saveModelFile, openModelFile, resetModel } from '../api/client';
+import { saveModelFile, openModelFile, resetModel } from '../api/client';
 import { DataOverlayControls } from './DataOverlayControls';
 import { NodeContextMenu } from './ContextMenu';
 import { ErrorBoundary } from './ErrorBoundary';
@@ -25,7 +23,8 @@ import { ValidationPanel } from './ValidationPanel';
 import { SpecialisationsManager } from './SpecialisationsManager';
 import { HelpPanel } from './HelpPanel';
 import { ToastContainer } from './components/Toast';
-import { notifySuccess, notifyError, notifyWarning } from '../store/notification';
+import { notifySuccess, notifyError } from '../store/notification';
+import { MenuBar } from './MenuBar';
 
 function UndoRedoKeyHandler() {
   const undo = useUndoRedoStore(s => s.undo);
@@ -94,338 +93,7 @@ function UndoRedoKeyHandler() {
   return null;
 }
 
-function ImportMenu(): React.ReactElement {
-  const [open, setOpen] = useState(false);
-
-  const handleImportXml = useCallback(() => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.xml,.archimate';
-    input.onchange = async () => {
-      if (!input.files?.[0]) return;
-      try {
-        const text = await input.files[0].text();
-        await importArchimateXml(text);
-        window.location.reload();
-      } catch (err) {
-        console.error('ArchiMate XML import failed:', err);
-      }
-    };
-    input.click();
-    setOpen(false);
-  }, []);
-
-  const handleImportCsv = useCallback(() => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.csv';
-    input.multiple = true;
-    input.onchange = async () => {
-      if (!input.files || input.files.length === 0) return;
-      try {
-        const files = Array.from(input.files);
-        let elementsCsv = '';
-        let relationsCsv = '';
-        let propertiesCsv = '';
-
-        for (const file of files) {
-          const text = await file.text();
-          const name = file.name.toLowerCase();
-          if (name.includes('element')) {
-            elementsCsv = text;
-          } else if (name.includes('relation')) {
-            relationsCsv = text;
-          } else if (name.includes('propert')) {
-            propertiesCsv = text;
-          } else if (!elementsCsv) {
-            elementsCsv = text;
-          }
-        }
-
-        if (!elementsCsv) {
-          notifyWarning('No elements CSV file found', 'Name files with "elements", "relations", or "properties".');
-          return;
-        }
-
-        await importCsv({
-          elements: elementsCsv,
-          relations: relationsCsv,
-          properties: propertiesCsv || undefined,
-        });
-        window.location.reload();
-      } catch (err) {
-        console.error('CSV import failed:', err);
-      }
-    };
-    input.click();
-    setOpen(false);
-  }, []);
-
-  const itemStyle: React.CSSProperties = {
-    display: 'block',
-    width: '100%',
-    background: 'transparent',
-    color: 'var(--text-primary)',
-    border: 'none',
-    padding: '8px 14px',
-    cursor: 'pointer',
-    fontSize: 11,
-    textAlign: 'left',
-  };
-
-  return React.createElement('div', { style: { position: 'relative' } },
-    React.createElement('button', {
-      onClick: () => setOpen(!open),
-      style: {
-        background: 'var(--button-bg)',
-        color: 'var(--button-text)',
-        border: '1px solid var(--border-primary)',
-        borderRadius: 4,
-        padding: '3px 10px',
-        cursor: 'pointer',
-        fontSize: 11,
-      },
-    }, 'Import'),
-    open && React.createElement('div', {
-      style: {
-        position: 'absolute',
-        top: '100%',
-        right: 0,
-        marginTop: 4,
-        background: 'var(--panel-bg)',
-        border: '1px solid var(--panel-border)',
-        borderRadius: 4,
-        overflow: 'hidden',
-        zIndex: 100,
-        minWidth: 160,
-      },
-      onMouseLeave: () => setOpen(false),
-    },
-      React.createElement('button', { onClick: handleImportXml, style: itemStyle }, 'Import ArchiMate XML'),
-      React.createElement('button', { onClick: handleImportCsv, style: itemStyle }, 'Import CSV (Archi)'),
-    ),
-  );
-}
-
-function FileMenu(): React.ReactElement {
-  const [open, setOpen] = useState(false);
-
-  const handleNew = useCallback(async () => {
-    setOpen(false);
-    if (!window.confirm('Create a new model? Unsaved changes will be lost.')) return;
-    try {
-      await resetModel(false);
-      window.location.reload();
-    } catch (err) {
-      console.error('New model failed:', err);
-      notifyError('Failed to create new model', {
-        operation: 'New model',
-        errorMessage: err instanceof Error ? err.message : String(err),
-      });
-    }
-  }, []);
-
-  const handleOpen = useCallback(async () => {
-    setOpen(false);
-    if (!window.confirm('Opening a model will replace the current model. Continue?')) return;
-    try {
-      await openModelFile();
-      // Toast fires from importModelFull in client.ts
-      window.location.reload();
-    } catch (err) {
-      if (err instanceof Error && err.message === 'No file selected') return;
-      console.error('Open model failed:', err);
-      // Error toast fires from importModelFull in client.ts
-    }
-  }, []);
-
-  const handleSave = useCallback(async () => {
-    setOpen(false);
-    try {
-      await saveModelFile();
-      notifySuccess('Model saved');
-    } catch (err) {
-      console.error('Save model failed:', err);
-      notifyError('Save failed', {
-        operation: 'Save model',
-        errorMessage: err instanceof Error ? err.message : String(err),
-      });
-    }
-  }, []);
-
-  const handleClose = useCallback(async () => {
-    setOpen(false);
-    if (!window.confirm('Close the current model? Unsaved changes will be lost.')) return;
-    try {
-      await resetModel(true);
-      window.location.reload();
-    } catch (err) {
-      console.error('Close model failed:', err);
-      notifyError('Failed to close model', {
-        operation: 'Close model',
-        errorMessage: err instanceof Error ? err.message : String(err),
-      });
-    }
-  }, []);
-
-  const itemStyle: React.CSSProperties = {
-    display: 'block',
-    width: '100%',
-    background: 'transparent',
-    color: 'var(--text-primary)',
-    border: 'none',
-    padding: '8px 14px',
-    cursor: 'pointer',
-    fontSize: 11,
-    textAlign: 'left',
-  };
-
-  const shortcutStyle: React.CSSProperties = {
-    float: 'right',
-    color: 'var(--text-muted)',
-    fontSize: 10,
-    marginLeft: 16,
-  };
-
-  return React.createElement('div', { style: { position: 'relative' } },
-    React.createElement('button', {
-      onClick: () => setOpen(!open),
-      style: {
-        background: 'var(--button-bg)',
-        color: 'var(--button-text)',
-        border: '1px solid var(--border-primary)',
-        borderRadius: 4,
-        padding: '3px 10px',
-        cursor: 'pointer',
-        fontSize: 11,
-      },
-    }, 'File'),
-    open && React.createElement('div', {
-      style: {
-        position: 'absolute',
-        top: '100%',
-        left: 0,
-        marginTop: 4,
-        background: 'var(--panel-bg)',
-        border: '1px solid var(--panel-border)',
-        borderRadius: 4,
-        overflow: 'hidden',
-        zIndex: 100,
-        minWidth: 200,
-      },
-      onMouseLeave: () => setOpen(false),
-    },
-      React.createElement('button', { onClick: handleNew, style: itemStyle },
-        'New Model',
-        React.createElement('span', { style: shortcutStyle }, 'Ctrl+N'),
-      ),
-      React.createElement('button', { onClick: handleOpen, style: itemStyle },
-        'Open Model\u2026',
-        React.createElement('span', { style: shortcutStyle }, 'Ctrl+O'),
-      ),
-      React.createElement('button', { onClick: handleSave, style: itemStyle },
-        'Save Model',
-        React.createElement('span', { style: shortcutStyle }, 'Ctrl+S'),
-      ),
-      React.createElement('div', {
-        style: { height: 1, background: 'var(--border-primary)', margin: '2px 0' },
-      }),
-      React.createElement('button', { onClick: handleClose, style: itemStyle },
-        'Close Model (Reload Seed)',
-      ),
-    ),
-  );
-}
-
-function ViewMenu(): React.ReactElement {
-  const [open, setOpen] = useState(false);
-  const menuRef = React.useRef<HTMLDivElement>(null);
-  const leftPanelOpen = usePanelStore(s => s.leftPanelOpen);
-  const rightPanelOpen = usePanelStore(s => s.rightPanelOpen);
-  const bottomPanelOpen = usePanelStore(s => s.bottomPanelOpen);
-  const fullScreen = usePanelStore(s => s.fullScreen);
-  const toggleLeftPanel = usePanelStore(s => s.toggleLeftPanel);
-  const toggleRightPanel = usePanelStore(s => s.toggleRightPanel);
-  const toggleBottomPanel = usePanelStore(s => s.toggleBottomPanel);
-  const toggleFullScreen = usePanelStore(s => s.toggleFullScreen);
-
-  // Close menu on click outside
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [open]);
-
-  const itemStyle: React.CSSProperties = {
-    display: 'block',
-    width: '100%',
-    background: 'transparent',
-    color: 'var(--text-primary)',
-    border: 'none',
-    padding: '8px 14px',
-    cursor: 'pointer',
-    fontSize: 11,
-    textAlign: 'left',
-  };
-
-  const checkMark = (active: boolean) => active ? '\u2713 ' : '    ';
-
-  const toggle = (fn: () => void) => () => { fn(); };
-
-  const divider = React.createElement('div', {
-    style: { height: 1, background: 'var(--border-primary)', margin: '2px 0' },
-  });
-
-  return React.createElement('div', { ref: menuRef, style: { position: 'relative' } },
-    React.createElement('button', {
-      onClick: () => setOpen(!open),
-      style: {
-        background: 'var(--button-bg)',
-        color: 'var(--button-text)',
-        border: '1px solid var(--border-primary)',
-        borderRadius: 4,
-        padding: '3px 10px',
-        cursor: 'pointer',
-        fontSize: 11,
-      },
-    }, 'View'),
-    open && React.createElement('div', {
-      style: {
-        position: 'absolute',
-        top: '100%',
-        left: 0,
-        marginTop: 4,
-        background: 'var(--panel-bg)',
-        border: '1px solid var(--panel-border)',
-        borderRadius: 4,
-        overflow: 'hidden',
-        zIndex: 100,
-        minWidth: 220,
-        fontFamily: 'monospace',
-      },
-    },
-      React.createElement('button', { onClick: toggle(toggleLeftPanel), style: itemStyle },
-        checkMark(leftPanelOpen), 'Model Tree & Views',
-      ),
-      React.createElement('button', { onClick: toggle(toggleRightPanel), style: itemStyle },
-        checkMark(rightPanelOpen), 'Palette & Controls',
-      ),
-      React.createElement('button', { onClick: toggle(toggleBottomPanel), style: itemStyle },
-        checkMark(bottomPanelOpen), 'Properties Panel',
-      ),
-      divider,
-      React.createElement('button', { onClick: toggle(toggleFullScreen), style: itemStyle },
-        checkMark(fullScreen), 'Full Screen',
-        React.createElement('span', {
-          style: { float: 'right', color: 'var(--text-muted)', fontSize: 10, marginLeft: 16 },
-        }, 'F11'),
-      ),
-    ),
-  );
-}
+// ImportMenu, FileMenu, ViewMenu replaced by MenuBar component
 
 function ProjectSelector(): React.ReactElement {
   const projects = useProjectStore(s => s.projects);
@@ -646,11 +314,6 @@ function notationLabel(viewpointType: string | undefined): string {
 }
 
 export function Shell(): React.ReactElement {
-  const canUndo = useUndoRedoStore(s => s.canUndo);
-  const canRedo = useUndoRedoStore(s => s.canRedo);
-  const undo = useUndoRedoStore(s => s.undo);
-  const redo = useUndoRedoStore(s => s.redo);
-
   const leftPanelOpen = usePanelStore(s => s.leftPanelOpen);
   const rightPanelOpen = usePanelStore(s => s.rightPanelOpen);
   const bottomPanelOpen = usePanelStore(s => s.bottomPanelOpen);
@@ -658,7 +321,6 @@ export function Shell(): React.ReactElement {
   const toggleLeftPanel = usePanelStore(s => s.toggleLeftPanel);
   const toggleBottomPanel = usePanelStore(s => s.toggleBottomPanel);
   const fullScreen = usePanelStore(s => s.fullScreen);
-  const toggleFullScreen = usePanelStore(s => s.toggleFullScreen);
   const openTabs = usePanelStore(s => s.openTabs);
   const [findReplaceOpen, setFindReplaceOpen] = useState(false);
   const [validationOpen, setValidationOpen] = useState(false);
@@ -699,12 +361,10 @@ export function Shell(): React.ReactElement {
       if (!window.confirm('Opening a model will replace the current model. Continue?')) return;
       try {
         await openModelFile();
-        // Toast fires from importModelFull in client.ts
         window.location.reload();
       } catch (err) {
         if (err instanceof Error && err.message === 'No file selected') return;
         console.error('Open model failed:', err);
-        // Error toast fires from importModelFull in client.ts
       }
     };
     const handleNew = async () => {
@@ -734,7 +394,6 @@ export function Shell(): React.ReactElement {
   const clearSelection = useInteractionStore(s => s.clearSelection);
   const select = useInteractionStore(s => s.select);
   const formatPainter = useInteractionStore(s => s.formatPainter);
-  const activateFormatPainter = useInteractionStore(s => s.activateFormatPainter);
   const deactivateFormatPainter = useInteractionStore(s => s.deactivateFormatPainter);
   const elements = useModelStore(s => s.elements);
   const relationships = useModelStore(s => s.relationships);
@@ -763,21 +422,6 @@ export function Shell(): React.ReactElement {
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
   }, [formatPainter.active, deactivateFormatPainter]);
-
-  const handleFormatPainterClick = useCallback(() => {
-    if (formatPainter.active) {
-      deactivateFormatPainter();
-      return;
-    }
-    // Activate: copy style_overrides from selected element's view_element
-    if (!selectedId) {
-      window.alert('Select an element first to copy its appearance.');
-      return;
-    }
-    const ve = viewElements.find(v => v.element_id === selectedId);
-    const overrides = (ve?.style_overrides as Record<string, unknown>) ?? {};
-    activateFormatPainter(overrides);
-  }, [formatPainter.active, selectedId, viewElements, activateFormatPainter, deactivateFormatPainter]);
 
   const selectedElement = useMemo(
     () => selectedId ? elements.find(el => el.id === selectedId) : undefined,
@@ -833,27 +477,42 @@ export function Shell(): React.ReactElement {
       onClose: () => setHelpOpen(false),
     }),
 
-    // ── Toolbar ──
+    // ── Menu Bar ──
+    React.createElement(MenuBar, {
+      onToggleFindReplace: () => setFindReplaceOpen(o => !o),
+      onToggleValidation: () => {
+        const next = !validationOpen;
+        setValidationOpen(next);
+        if (next && !bottomPanelOpen) toggleBottomPanel();
+      },
+      onToggleMatrix: () => setMatrixOpen(o => !o),
+      onToggleSpecs: () => setSpecsManagerOpen(o => !o),
+      onToggleHelp: () => setHelpOpen(o => !o),
+      findReplaceOpen,
+      validationOpen,
+      matrixOpen,
+      specsManagerOpen,
+    }),
+
+    // ── Secondary bar: project selector + notation indicator ──
     React.createElement('div', {
       'data-panel': 'toolbar',
       style: {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '0 14px',
+        padding: '0 8px',
         borderBottom: '1px solid var(--border-primary)',
         background: 'var(--bg-secondary)',
-        height: 36,
+        height: 28,
         flexShrink: 0,
+        gap: 8,
       },
     },
       React.createElement('div', {
-        style: { display: 'flex', alignItems: 'center', gap: 10 },
+        style: { display: 'flex', alignItems: 'center', gap: 8 },
       },
-        React.createElement('span', {
-          style: { fontSize: 13, fontWeight: 600, letterSpacing: 0.5 },
-        }, 'arch-vis'),
-        // Notation mode indicator
+        React.createElement(ProjectSelector, null),
         notation ? React.createElement('span', {
           style: {
             fontSize: 9,
@@ -866,147 +525,10 @@ export function Shell(): React.ReactElement {
             userSelect: 'none',
           },
         }, notation) : null,
-        // Project selector
-        React.createElement(ProjectSelector, null),
-        // File menu
-        React.createElement(FileMenu, null),
-        // View menu (show/hide panels, full screen)
-        React.createElement(ViewMenu, null),
       ),
-      React.createElement('div', {
-        style: { display: 'flex', gap: 8, alignItems: 'center' },
-      },
-        // Undo / Redo
-        React.createElement('button', {
-          onClick: () => undo(),
-          disabled: !canUndo,
-          title: 'Undo (Ctrl+Z)',
-          style: {
-            background: 'var(--button-bg)',
-            color: canUndo ? 'var(--button-text)' : 'var(--text-muted)',
-            border: '1px solid var(--border-primary)',
-            borderRadius: 4,
-            padding: '3px 8px',
-            cursor: canUndo ? 'pointer' : 'default',
-            fontSize: 11,
-            opacity: canUndo ? 1 : 0.4,
-          },
-        }, '\u21A9 Undo'),
-        React.createElement('button', {
-          onClick: () => redo(),
-          disabled: !canRedo,
-          title: 'Redo (Ctrl+Y)',
-          style: {
-            background: 'var(--button-bg)',
-            color: canRedo ? 'var(--button-text)' : 'var(--text-muted)',
-            border: '1px solid var(--border-primary)',
-            borderRadius: 4,
-            padding: '3px 8px',
-            cursor: canRedo ? 'pointer' : 'default',
-            fontSize: 11,
-            opacity: canRedo ? 1 : 0.4,
-          },
-        }, '\u21AA Redo'),
-        React.createElement('button', {
-          onClick: handleFormatPainterClick,
-          title: formatPainter.active ? 'Exit format painter (Escape)' : 'Format Painter \u2014 copy appearance to other elements',
-          style: {
-            background: formatPainter.active ? 'var(--highlight)' : 'var(--button-bg)',
-            color: formatPainter.active ? '#000' : 'var(--button-text)',
-            border: '1px solid var(--border-primary)',
-            borderRadius: 4,
-            padding: '3px 8px',
-            cursor: 'pointer',
-            fontSize: 11,
-          },
-        }, formatPainter.active ? '\uD83D\uDD8C\uFE0F Painting\u2026' : '\uD83D\uDD8C\uFE0F Format Painter'),
-        React.createElement('button', {
-          onClick: () => setFindReplaceOpen(o => !o),
-          title: 'Find & Replace (Ctrl+H)',
-          style: {
-            background: findReplaceOpen ? 'var(--highlight)' : 'var(--button-bg)',
-            color: findReplaceOpen ? '#000' : 'var(--button-text)',
-            border: '1px solid var(--border-primary)',
-            borderRadius: 4,
-            padding: '3px 8px',
-            cursor: 'pointer',
-            fontSize: 11,
-          },
-        }, '\uD83D\uDD0D'),
-        React.createElement('button', {
-          onClick: () => {
-            const next = !validationOpen;
-            setValidationOpen(next);
-            if (next && !bottomPanelOpen) toggleBottomPanel();
-          },
-          title: 'Validate model',
-          style: {
-            background: validationOpen ? 'var(--highlight)' : 'var(--button-bg)',
-            color: validationOpen ? '#000' : 'var(--button-text)',
-            border: '1px solid var(--border-primary)',
-            borderRadius: 4,
-            padding: '3px 10px',
-            cursor: 'pointer',
-            fontSize: 11,
-          },
-        }, 'Validate'),
-        React.createElement('button', {
-          onClick: () => setMatrixOpen(o => !o),
-          title: 'Relationship Matrix',
-          style: {
-            background: matrixOpen ? 'var(--highlight)' : 'var(--button-bg)',
-            color: matrixOpen ? '#000' : 'var(--button-text)',
-            border: '1px solid var(--border-primary)',
-            borderRadius: 4,
-            padding: '3px 10px',
-            cursor: 'pointer',
-            fontSize: 11,
-          },
-        }, 'Matrix'),
-        React.createElement('button', {
-          onClick: () => setSpecsManagerOpen(o => !o),
-          title: 'Manage Specialisations',
-          style: {
-            background: specsManagerOpen ? 'var(--highlight)' : 'var(--button-bg)',
-            color: specsManagerOpen ? '#000' : 'var(--button-text)',
-            border: '1px solid var(--border-primary)',
-            borderRadius: 4,
-            padding: '3px 10px',
-            cursor: 'pointer',
-            fontSize: 11,
-          },
-        }, 'Specs'),
-        React.createElement(ImportMenu, null),
-        React.createElement(ExportMenu, null),
-        React.createElement('button', {
-          onClick: toggleFullScreen,
-          title: fullScreen ? 'Exit full screen (F11)' : 'Full screen (F11)',
-          style: {
-            background: fullScreen ? 'var(--highlight)' : 'var(--button-bg)',
-            color: fullScreen ? '#000' : 'var(--button-text)',
-            border: '1px solid var(--border-primary)',
-            borderRadius: 4,
-            padding: '3px 8px',
-            cursor: 'pointer',
-            fontSize: 11,
-          },
-        }, fullScreen ? '\u2716 Exit' : '\u26F6'),
-        React.createElement('button', {
-          onClick: () => setHelpOpen(o => !o),
-          title: 'Feature Reference (F1)',
-          style: {
-            background: helpOpen ? 'var(--highlight)' : 'var(--button-bg)',
-            color: helpOpen ? '#000' : 'var(--button-text)',
-            border: '1px solid var(--border-primary)',
-            borderRadius: 4,
-            padding: '3px 8px',
-            cursor: 'pointer',
-            fontSize: 11,
-            fontWeight: 700,
-          },
-        }, '?'),
-        React.createElement(ThemeToggle, null),
-      ),
+      formatPainter.active ? React.createElement('span', {
+        style: { fontSize: 10, color: '#F59E0B', fontWeight: 600 },
+      }, 'Format Painter active \u2014 click elements to apply, Escape to exit') : null,
     ),
 
     // ── Main 3-column area ──

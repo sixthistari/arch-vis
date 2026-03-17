@@ -451,11 +451,20 @@ interface FolderNodeProps {
   onSelect: (id: string) => void;
   onContextMenu: (e: React.MouseEvent, elementId: string) => void;
   onDropToFolder: (elementId: string, folderPath: string) => void;
+  onRenameFolder?: (oldPath: string, newName: string) => void;
+  onDeleteFolder?: (path: string) => void;
+  onAddSubfolder?: (parentPath: string, name: string) => void;
 }
 
-function FolderNode({ folder, depth, orphanIds, selectedId, theme, onSelect, onContextMenu, onDropToFolder }: FolderNodeProps) {
+function FolderNode({ folder, depth, orphanIds, selectedId, theme, onSelect, onContextMenu, onDropToFolder, onRenameFolder, onDeleteFolder, onAddSubfolder }: FolderNodeProps) {
   const [expanded, setExpanded] = useState(true);
   const [dragOver, setDragOver] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [renameName, setRenameName] = useState(folder.name);
+  const [addingSub, setAddingSub] = useState(false);
+  const [subName, setSubName] = useState('');
+  const [showFolderMenu, setShowFolderMenu] = useState<{ x: number; y: number } | null>(null);
+  const folderMenuRef = useRef<HTMLDivElement>(null);
   const isDark = theme === 'dark';
   const folderColour = isDark ? '#A78BFA' : '#7C3AED';
   const mutedColour = isDark ? '#94A3B8' : '#64748B';
@@ -463,10 +472,30 @@ function FolderNode({ folder, depth, orphanIds, selectedId, theme, onSelect, onC
   const indent = 8 + depth * 12;
   const totalCount = countFolderElements(folder);
 
+  // Close folder context menu on click outside
+  useEffect(() => {
+    if (!showFolderMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (folderMenuRef.current && !folderMenuRef.current.contains(e.target as Node)) setShowFolderMenu(null);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showFolderMenu]);
+
+  const hoverBg = isDark ? 'rgba(167,139,250,0.15)' : 'rgba(124,58,237,0.08)';
+  const menuBg = isDark ? '#1E293B' : '#FFFFFF';
+  const menuBorder = isDark ? '#334155' : '#E2E8F0';
+  const menuHover = isDark ? '#334155' : '#F1F5F9';
+
   return (
     <div>
       <div
         onClick={() => setExpanded(e => !e)}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setShowFolderMenu({ x: e.clientX, y: e.clientY });
+        }}
         onDragOver={(e) => {
           e.preventDefault();
           e.dataTransfer.dropEffect = 'move';
@@ -496,15 +525,93 @@ function FolderNode({ folder, depth, orphanIds, selectedId, theme, onSelect, onC
           color: folderColour,
           borderTop: depth === 0 ? `1px solid ${borderColour}` : undefined,
           userSelect: 'none',
-          background: dragOver ? (isDark ? 'rgba(167,139,250,0.15)' : 'rgba(124,58,237,0.08)') : 'transparent',
+          background: dragOver ? hoverBg : 'transparent',
           borderRadius: 2,
         }}
       >
         <span style={{ fontSize: 10 }}>{expanded ? '▾' : '▸'}</span>
         <span style={{ fontSize: 12 }}>📁</span>
-        <span>{folder.name}</span>
+        {renaming ? (
+          <input
+            autoFocus
+            value={renameName}
+            onChange={e => setRenameName(e.target.value)}
+            onClick={e => e.stopPropagation()}
+            onKeyDown={e => {
+              if (e.key === 'Enter') {
+                const trimmed = renameName.trim();
+                if (trimmed && trimmed !== folder.name) onRenameFolder?.(folder.path, trimmed);
+                setRenaming(false);
+              }
+              if (e.key === 'Escape') { setRenaming(false); setRenameName(folder.name); }
+            }}
+            onBlur={() => { setRenaming(false); setRenameName(folder.name); }}
+            style={{
+              flex: 1, background: isDark ? '#0F172A' : '#F8FAFC', color: folderColour,
+              border: `1px solid ${folderColour}`, borderRadius: 3, padding: '1px 4px',
+              fontSize: 11, fontWeight: 600, outline: 'none', minWidth: 0,
+            }}
+          />
+        ) : (
+          <span>{folder.name}</span>
+        )}
         <span style={{ marginLeft: 'auto', fontWeight: 400, fontSize: 10, color: mutedColour }}>{totalCount}</span>
       </div>
+
+      {/* Inline "add subfolder" input */}
+      {addingSub && (
+        <div style={{ padding: `2px 6px 2px ${indent + 22}px` }}>
+          <input
+            autoFocus
+            value={subName}
+            onChange={e => setSubName(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') {
+                const trimmed = subName.trim();
+                if (trimmed) onAddSubfolder?.(folder.path, trimmed);
+                setAddingSub(false); setSubName('');
+              }
+              if (e.key === 'Escape') { setAddingSub(false); setSubName(''); }
+            }}
+            onBlur={() => { setAddingSub(false); setSubName(''); }}
+            placeholder="Subfolder name…"
+            style={{
+              width: '100%', boxSizing: 'border-box',
+              background: isDark ? '#0F172A' : '#F8FAFC', color: folderColour,
+              border: `1px solid ${folderColour}`, borderRadius: 3, padding: '2px 4px',
+              fontSize: 10, outline: 'none',
+            }}
+          />
+        </div>
+      )}
+
+      {/* Folder context menu */}
+      {showFolderMenu && (
+        <div ref={folderMenuRef} style={{
+          position: 'fixed', left: showFolderMenu.x, top: showFolderMenu.y, zIndex: 10000,
+          background: menuBg, border: `1px solid ${menuBorder}`, borderRadius: 6,
+          boxShadow: isDark ? '0 4px 12px rgba(0,0,0,0.5)' : '0 4px 12px rgba(0,0,0,0.15)',
+          padding: '4px 0', minWidth: 160, fontSize: 11,
+        }}>
+          <div style={{ padding: '6px 12px', cursor: 'pointer' }}
+            onMouseEnter={e => (e.currentTarget.style.background = menuHover)}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            onClick={(e) => { e.stopPropagation(); setShowFolderMenu(null); setExpanded(true); setAddingSub(true); }}
+          >Add Subfolder…</div>
+          <div style={{ padding: '6px 12px', cursor: 'pointer' }}
+            onMouseEnter={e => (e.currentTarget.style.background = menuHover)}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            onClick={(e) => { e.stopPropagation(); setShowFolderMenu(null); setRenaming(true); setRenameName(folder.name); }}
+          >Rename Folder</div>
+          <div style={{ borderTop: `1px solid ${menuBorder}`, margin: '4px 0' }} />
+          <div style={{ padding: '6px 12px', cursor: 'pointer', color: '#EF4444' }}
+            onMouseEnter={e => (e.currentTarget.style.background = menuHover)}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            onClick={(e) => { e.stopPropagation(); setShowFolderMenu(null); onDeleteFolder?.(folder.path); }}
+          >Delete Folder</div>
+        </div>
+      )}
+
       {expanded && (
         <>
           {folder.children.map(child => (
@@ -518,6 +625,9 @@ function FolderNode({ folder, depth, orphanIds, selectedId, theme, onSelect, onC
               onSelect={onSelect}
               onContextMenu={onContextMenu}
               onDropToFolder={onDropToFolder}
+              onRenameFolder={onRenameFolder}
+              onDeleteFolder={onDeleteFolder}
+              onAddSubfolder={onAddSubfolder}
             />
           ))}
           {folder.elements.map(el => (
@@ -552,13 +662,23 @@ interface SubGroupProps {
   onSelect: (id: string) => void;
   onContextMenu: (e: React.MouseEvent, elementId: string) => void;
   onDropToFolder: (elementId: string, folderPath: string) => void;
+  onRenameFolder?: (oldPath: string, newName: string) => void;
+  onDeleteFolder?: (path: string) => void;
+  onAddSubfolder?: (parentPath: string, name: string) => void;
 }
 
-function SubGroup({ label, elements, orphanIds, selectedId, theme, onSelect, onContextMenu, onDropToFolder }: SubGroupProps) {
-  const [expanded, setExpanded] = useState(true);
+function SubGroup({ label, elements, orphanIds, selectedId, theme, onSelect, onContextMenu, onDropToFolder, onRenameFolder, onDeleteFolder, onAddSubfolder }: SubGroupProps) {
+  // Auto-expand when a selected element is in this group
+  const containsSelected = selectedId ? elements.some(el => el.id === selectedId) : false;
+  const [expanded, setExpanded] = useState(false);
   const isDark = theme === 'dark';
   const headerColour = isDark ? '#94A3B8' : '#64748B';
   const borderColour = isDark ? '#1E293B' : '#E2E8F0';
+
+  // Auto-expand when selection enters this group
+  useEffect(() => {
+    if (containsSelected && !expanded) setExpanded(true);
+  }, [containsSelected]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { rootElements, folders } = useMemo(() => buildFolderTree(elements), [elements]);
 
@@ -598,6 +718,9 @@ function SubGroup({ label, elements, orphanIds, selectedId, theme, onSelect, onC
               onSelect={onSelect}
               onContextMenu={onContextMenu}
               onDropToFolder={onDropToFolder}
+              onRenameFolder={onRenameFolder}
+              onDeleteFolder={onDeleteFolder}
+              onAddSubfolder={onAddSubfolder}
             />
           ))}
           {rootElements.map(el => (
@@ -618,7 +741,7 @@ function SubGroup({ label, elements, orphanIds, selectedId, theme, onSelect, onC
 }
 
 // LayerGroup kept as an alias for ArchiMate layers
-function LayerGroup({ layer, elements, orphanIds, selectedId, theme, onSelect, onContextMenu, onDropToFolder }: {
+function LayerGroup({ layer, elements, orphanIds, selectedId, theme, onSelect, onContextMenu, onDropToFolder, onRenameFolder, onDeleteFolder, onAddSubfolder }: {
   layer: string;
   elements: Element[];
   orphanIds: Set<string>;
@@ -627,6 +750,9 @@ function LayerGroup({ layer, elements, orphanIds, selectedId, theme, onSelect, o
   onSelect: (id: string) => void;
   onContextMenu: (e: React.MouseEvent, elementId: string) => void;
   onDropToFolder: (elementId: string, folderPath: string) => void;
+  onRenameFolder?: (oldPath: string, newName: string) => void;
+  onDeleteFolder?: (path: string) => void;
+  onAddSubfolder?: (parentPath: string, name: string) => void;
 }) {
   const label = LAYER_LABELS[layer] ?? layer;
   return (
@@ -639,6 +765,9 @@ function LayerGroup({ layer, elements, orphanIds, selectedId, theme, onSelect, o
       onSelect={onSelect}
       onContextMenu={onContextMenu}
       onDropToFolder={onDropToFolder}
+      onRenameFolder={onRenameFolder}
+      onDeleteFolder={onDeleteFolder}
+      onAddSubfolder={onAddSubfolder}
     />
   );
 }
@@ -870,6 +999,54 @@ export function ModelTree({ onClose }: ModelTreeProps) {
     });
   }, [updateElement]);
 
+  // Rename a folder: update all elements whose folder starts with the old path
+  const handleRenameFolder = useCallback((oldPath: string, newName: string) => {
+    // Compute new path: replace the last segment of oldPath with newName
+    const segments = oldPath.split('/');
+    segments[segments.length - 1] = newName;
+    const newPath = segments.join('/');
+    if (newPath === oldPath) return;
+
+    // Update all elements in this folder or sub-folders
+    for (const el of elements) {
+      if (!el.folder) continue;
+      if (el.folder === oldPath) {
+        updateElement(el.id, { folder: newPath });
+      } else if (el.folder.startsWith(oldPath + '/')) {
+        updateElement(el.id, { folder: newPath + el.folder.slice(oldPath.length) });
+      }
+    }
+  }, [elements, updateElement]);
+
+  // Delete a folder: move all its elements to root (clear folder)
+  const handleDeleteFolder = useCallback((path: string) => {
+    for (const el of elements) {
+      if (!el.folder) continue;
+      if (el.folder === path || el.folder.startsWith(path + '/')) {
+        updateElement(el.id, { folder: null });
+      }
+    }
+  }, [elements, updateElement]);
+
+  // Add a subfolder: create it by moving a placeholder — or just set an element's folder
+  // Since folders are derived from element.folder values, we create a subfolder by prompting
+  // the user to then drag elements into it. For now, just expand the parent.
+  const handleAddSubfolder = useCallback((parentPath: string, name: string) => {
+    // To "create" a folder we need at least one element in it.
+    // We'll use a convention: find the first root element in the parent folder's group
+    // and move it to the subfolder. If no elements, show a toast.
+    const newPath = parentPath + '/' + name;
+    // Find an element currently in the parent folder
+    const candidate = elements.find(el => el.folder === parentPath);
+    if (candidate) {
+      updateElement(candidate.id, { folder: newPath });
+    } else {
+      // Can't create empty folder — folders are derived from elements
+      // Just notify via console for now
+      console.info(`Subfolder "${newPath}" will appear when an element is moved into it.`);
+    }
+  }, [elements, updateElement]);
+
   const closeContextMenu = useCallback(() => {
     setContextMenu(null);
   }, []);
@@ -987,6 +1164,9 @@ export function ModelTree({ onClose }: ModelTreeProps) {
                 onSelect={handleSelect}
                 onContextMenu={handleContextMenu}
                 onDropToFolder={handleDropToFolder}
+                onRenameFolder={handleRenameFolder}
+                onDeleteFolder={handleDeleteFolder}
+                onAddSubfolder={handleAddSubfolder}
               />
             ))}
           </NotationSection>
@@ -1011,6 +1191,9 @@ export function ModelTree({ onClose }: ModelTreeProps) {
                 onSelect={handleSelect}
                 onContextMenu={handleContextMenu}
                 onDropToFolder={handleDropToFolder}
+                onRenameFolder={handleRenameFolder}
+                onDeleteFolder={handleDeleteFolder}
+                onAddSubfolder={handleAddSubfolder}
               />
             ))}
           </NotationSection>
@@ -1035,6 +1218,9 @@ export function ModelTree({ onClose }: ModelTreeProps) {
                 onSelect={handleSelect}
                 onContextMenu={handleContextMenu}
                 onDropToFolder={handleDropToFolder}
+                onRenameFolder={handleRenameFolder}
+                onDeleteFolder={handleDeleteFolder}
+                onAddSubfolder={handleAddSubfolder}
               />
             ))}
           </NotationSection>
