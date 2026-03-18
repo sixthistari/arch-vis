@@ -546,9 +546,24 @@ export function MenuBar({
     activateFormatPainter(overrides);
   }, [formatPainter.active, selectedId, viewElements, activateFormatPainter, deactivateFormatPainter]);
 
+  // ── Project actions ──
+
+  const handleNewProject = useCallback(() => {
+    window.dispatchEvent(new CustomEvent('arch-vis:new-project'));
+    closeAll();
+  }, [closeAll]);
+
+  const handleProjectSettings = useCallback(() => {
+    window.dispatchEvent(new CustomEvent('arch-vis:project-settings'));
+    closeAll();
+  }, [closeAll]);
+
   // ── Menu definitions ──
 
   const fileMenu: MenuEntry[] = [
+    { label: 'New Project\u2026', action: handleNewProject },
+    { label: 'Project Settings\u2026', action: handleProjectSettings },
+    'divider',
     { label: 'New Model', shortcut: 'Ctrl+N', action: handleNew },
     { label: 'Open Model\u2026', shortcut: 'Ctrl+O', action: handleOpen },
     { label: 'Save Model', shortcut: 'Ctrl+S', action: handleSave },

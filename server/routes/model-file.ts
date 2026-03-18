@@ -144,8 +144,6 @@ router.post('/import/model-full', (req: Request, res: Response) => {
       db.prepare('DELETE FROM relationships WHERE project_id = ?').run(projectId);
       db.prepare('DELETE FROM elements WHERE project_id = ?').run(projectId);
       // Domains are shared across projects — use INSERT OR IGNORE for imported domains
-      db.exec('DELETE FROM reasoning_summaries');
-      db.exec('DELETE FROM process_steps');
 
       // 1. Domains (merge — don't delete shared domains)
       if (body.domains && body.domains.length > 0) {
@@ -247,15 +245,18 @@ router.post('/model/reset', (req: Request, res: Response) => {
   const shouldSeed = seedParam !== 'false';
 
   try {
+    const projectId = (db.prepare("SELECT value FROM preferences WHERE key = 'current_project_id'").get() as { value: string })?.value || 'proj-default';
+
     db.transaction(() => {
-      db.exec('DELETE FROM view_relationships');
-      db.exec('DELETE FROM view_elements');
-      db.exec('DELETE FROM views');
-      db.exec('DELETE FROM relationships');
-      db.exec('DELETE FROM elements');
-      db.exec('DELETE FROM domains');
-      db.exec('DELETE FROM reasoning_summaries');
-      db.exec('DELETE FROM process_steps');
+      db.prepare(`DELETE FROM view_relationships WHERE view_id IN (SELECT id FROM views WHERE project_id = ?)`).run(projectId);
+      db.prepare(`DELETE FROM view_elements WHERE view_id IN (SELECT id FROM views WHERE project_id = ?)`).run(projectId);
+      db.prepare('DELETE FROM views WHERE project_id = ?').run(projectId);
+      db.prepare('DELETE FROM relationships WHERE project_id = ?').run(projectId);
+      db.prepare('DELETE FROM elements WHERE project_id = ?').run(projectId);
+      // Only delete domains not referenced by elements in other projects
+      db.prepare(`DELETE FROM domains WHERE id NOT IN (SELECT DISTINCT domain_id FROM elements WHERE domain_id IS NOT NULL)`).run();
+      db.prepare('DELETE FROM reasoning_summaries').run();
+      db.prepare('DELETE FROM process_steps').run();
     })();
 
     if (shouldSeed) {

@@ -283,20 +283,9 @@ export function ViewSwitcher(): React.ReactElement {
       '.view-duplicate-btn:hover { background: var(--bg-tertiary) !important; }',
     ),
 
-    React.createElement('div', {
-      style: {
-        fontSize: 10,
-        color: 'var(--text-muted)',
-        padding: '0 12px 4px',
-        textTransform: 'uppercase' as const,
-        letterSpacing: 1,
-        fontWeight: 700,
-      },
-    }, 'Views'),
-
     // ArchiMate Views (always show section if any views exist)
     (archimateViews.length > 0 || viewList.length === 0) && React.createElement(ViewSection, {
-      title: 'ArchiMate Views',
+      title: 'ArchiMate Model',
       views: archimateViews,
       currentViewId: currentView?.id,
       onSwitch: handleSwitchView,
@@ -307,7 +296,7 @@ export function ViewSwitcher(): React.ReactElement {
 
     // UML Diagrams
     umlViews.length > 0 && React.createElement(ViewSection, {
-      title: 'UML Diagrams',
+      title: 'UML Model',
       views: umlViews,
       currentViewId: currentView?.id,
       onSwitch: handleSwitchView,
@@ -318,7 +307,7 @@ export function ViewSwitcher(): React.ReactElement {
 
     // Wireframes
     wireframeViews.length > 0 && React.createElement(ViewSection, {
-      title: 'Wireframes',
+      title: 'Wireframe Model',
       views: wireframeViews,
       currentViewId: currentView?.id,
       onSwitch: handleSwitchView,
@@ -329,7 +318,7 @@ export function ViewSwitcher(): React.ReactElement {
 
     // Data Models
     dataViews.length > 0 && React.createElement(ViewSection, {
-      title: 'Data Models',
+      title: 'Data Model',
       views: dataViews,
       currentViewId: currentView?.id,
       onSwitch: handleSwitchView,
@@ -340,7 +329,7 @@ export function ViewSwitcher(): React.ReactElement {
 
     // Always show UML + Wireframe + Data create buttons even if no views exist yet
     umlViews.length === 0 && React.createElement(ViewSection, {
-      title: 'UML Diagrams',
+      title: 'UML Model',
       views: [],
       currentViewId: currentView?.id,
       onSwitch: handleSwitchView,
@@ -350,7 +339,7 @@ export function ViewSwitcher(): React.ReactElement {
     }),
 
     wireframeViews.length === 0 && React.createElement(ViewSection, {
-      title: 'Wireframes',
+      title: 'Wireframe Model',
       views: [],
       currentViewId: currentView?.id,
       onSwitch: handleSwitchView,
@@ -360,7 +349,7 @@ export function ViewSwitcher(): React.ReactElement {
     }),
 
     dataViews.length === 0 && React.createElement(ViewSection, {
-      title: 'Data Models',
+      title: 'Data Model',
       views: [],
       currentViewId: currentView?.id,
       onSwitch: handleSwitchView,

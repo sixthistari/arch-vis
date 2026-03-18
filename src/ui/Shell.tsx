@@ -25,6 +25,7 @@ import { HelpPanel } from './HelpPanel';
 import { ToastContainer } from './components/Toast';
 import { notifySuccess, notifyError } from '../store/notification';
 import { MenuBar } from './MenuBar';
+import { ProjectDetailsModal } from './ProjectDetailsModal';
 
 function UndoRedoKeyHandler() {
   const undo = useUndoRedoStore(s => s.undo);
@@ -99,14 +100,7 @@ function ProjectSelector(): React.ReactElement {
   const projects = useProjectStore(s => s.projects);
   const currentProjectId = useProjectStore(s => s.currentProjectId);
   const switchProject = useProjectStore(s => s.switchProject);
-  const createProject = useProjectStore(s => s.createProject);
-  const deleteProject = useProjectStore(s => s.deleteProject);
-  const updateProject = useProjectStore(s => s.updateProject);
   const [open, setOpen] = useState(false);
-  const [creating, setCreating] = useState(false);
-  const [newName, setNewName] = useState('');
-  const [renaming, setRenaming] = useState<string | null>(null);
-  const [renameName, setRenameName] = useState('');
   const menuRef = React.useRef<HTMLDivElement>(null);
 
   // Load projects on mount
@@ -120,23 +114,20 @@ function ProjectSelector(): React.ReactElement {
     const handler = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setOpen(false);
-        setCreating(false);
-        setRenaming(null);
       }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
-  const currentProject = projects.find(p => p.id === currentProjectId);
+  // Listen for arch-vis:open-project event to open dropdown
+  useEffect(() => {
+    const handler = () => setOpen(true);
+    window.addEventListener('arch-vis:open-project', handler);
+    return () => window.removeEventListener('arch-vis:open-project', handler);
+  }, []);
 
-  const handleCreate = async () => {
-    const name = newName.trim();
-    if (!name) { setCreating(false); return; }
-    await createProject({ name });
-    setNewName('');
-    setCreating(false);
-  };
+  const currentProject = projects.find(p => p.id === currentProjectId);
 
   const handleSwitch = async (id: string) => {
     if (id === currentProjectId) return;
@@ -144,23 +135,9 @@ function ProjectSelector(): React.ReactElement {
     await switchProject(id);
   };
 
-  const handleDelete = async (id: string) => {
-    const proj = projects.find(p => p.id === id);
-    if (!window.confirm(`Delete project "${proj?.name}"? All its elements, relationships, and views will be permanently deleted.`)) return;
-    await deleteProject(id);
-    setOpen(false);
-  };
-
-  const handleRename = async () => {
-    if (!renaming || !renameName.trim()) { setRenaming(null); return; }
-    await updateProject(renaming, { name: renameName.trim() });
-    setRenaming(null);
-  };
-
   const itemStyle: React.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'space-between',
     width: '100%',
     background: 'transparent',
     color: 'var(--text-primary)',
@@ -169,6 +146,12 @@ function ProjectSelector(): React.ReactElement {
     cursor: 'pointer',
     fontSize: 11,
     textAlign: 'left',
+  };
+
+  const actionBtnStyle: React.CSSProperties = {
+    ...itemStyle,
+    color: 'var(--text-muted)',
+    gap: 6,
   };
 
   return React.createElement('div', { ref: menuRef, style: { position: 'relative' } },
@@ -207,101 +190,39 @@ function ProjectSelector(): React.ReactElement {
     },
       // Project list
       ...projects.map(proj =>
-        renaming === proj.id
-          ? React.createElement('div', { key: proj.id, style: { padding: '4px 12px' } },
-              React.createElement('input', {
-                autoFocus: true,
-                value: renameName,
-                onChange: (e: React.ChangeEvent<HTMLInputElement>) => setRenameName(e.target.value),
-                onKeyDown: (e: React.KeyboardEvent) => {
-                  if (e.key === 'Enter') handleRename();
-                  if (e.key === 'Escape') setRenaming(null);
-                },
-                onBlur: handleRename,
-                style: {
-                  width: '100%',
-                  boxSizing: 'border-box',
-                  background: 'var(--bg-tertiary)',
-                  color: 'var(--text-primary)',
-                  border: '1px solid var(--highlight)',
-                  borderRadius: 3,
-                  padding: '3px 6px',
-                  fontSize: 11,
-                  outline: 'none',
-                },
-              }),
-            )
-          : React.createElement('div', {
-              key: proj.id,
-              style: {
-                ...itemStyle,
-                background: proj.id === currentProjectId ? 'var(--bg-tertiary)' : 'transparent',
-                fontWeight: proj.id === currentProjectId ? 600 : 400,
-              },
-            },
-              React.createElement('span', {
-                onClick: () => handleSwitch(proj.id),
-                style: { flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
-              },
-                proj.id === currentProjectId ? '\u2713 ' : '  ',
-                proj.name,
-              ),
-              React.createElement('span', { style: { display: 'flex', gap: 4, flexShrink: 0 } },
-                React.createElement('button', {
-                  onClick: (e: React.MouseEvent) => {
-                    e.stopPropagation();
-                    setRenaming(proj.id);
-                    setRenameName(proj.name);
-                  },
-                  title: 'Rename',
-                  style: { background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 10, padding: '0 2px' },
-                }, '\u270E'),
-                projects.length > 1 && React.createElement('button', {
-                  onClick: (e: React.MouseEvent) => { e.stopPropagation(); handleDelete(proj.id); },
-                  title: 'Delete project',
-                  style: { background: 'none', border: 'none', color: '#e05252', cursor: 'pointer', fontSize: 10, padding: '0 2px' },
-                }, '\u2716'),
-              ),
-            ),
+        React.createElement('button', {
+          key: proj.id,
+          onClick: () => handleSwitch(proj.id),
+          style: {
+            ...itemStyle,
+            background: proj.id === currentProjectId ? 'var(--bg-tertiary)' : 'transparent',
+            fontWeight: proj.id === currentProjectId ? 600 : 400,
+          },
+        },
+          proj.id === currentProjectId ? '\u2713 ' : '  ',
+          proj.name,
+        ),
       ),
       // Separator
       React.createElement('div', {
         style: { height: 1, background: 'var(--border-primary)', margin: '2px 0' },
       }),
-      // Create new project
-      creating
-        ? React.createElement('div', { style: { padding: '6px 12px' } },
-            React.createElement('input', {
-              autoFocus: true,
-              value: newName,
-              onChange: (e: React.ChangeEvent<HTMLInputElement>) => setNewName(e.target.value),
-              onKeyDown: (e: React.KeyboardEvent) => {
-                if (e.key === 'Enter') handleCreate();
-                if (e.key === 'Escape') { setCreating(false); setNewName(''); }
-              },
-              onBlur: handleCreate,
-              placeholder: 'Project name\u2026',
-              style: {
-                width: '100%',
-                boxSizing: 'border-box',
-                background: 'var(--bg-tertiary)',
-                color: 'var(--text-primary)',
-                border: '1px solid var(--highlight)',
-                borderRadius: 3,
-                padding: '3px 6px',
-                fontSize: 11,
-                outline: 'none',
-              },
-            }),
-          )
-        : React.createElement('button', {
-            onClick: () => setCreating(true),
-            style: {
-              ...itemStyle,
-              color: 'var(--text-muted)',
-              fontStyle: 'italic',
-            },
-          }, '+ New Project'),
+      // New Project button
+      React.createElement('button', {
+        onClick: () => {
+          setOpen(false);
+          window.dispatchEvent(new CustomEvent('arch-vis:new-project'));
+        },
+        style: actionBtnStyle,
+      }, '+ New Project'),
+      // Project Details button
+      React.createElement('button', {
+        onClick: () => {
+          setOpen(false);
+          window.dispatchEvent(new CustomEvent('arch-vis:project-settings'));
+        },
+        style: actionBtnStyle,
+      }, 'Project Details\u2026'),
     ),
   );
 }
@@ -322,11 +243,20 @@ export function Shell(): React.ReactElement {
   const toggleBottomPanel = usePanelStore(s => s.toggleBottomPanel);
   const fullScreen = usePanelStore(s => s.fullScreen);
   const openTabs = usePanelStore(s => s.openTabs);
+  const modelTreeCollapsed = usePanelStore(s => s.modelTreeCollapsed);
+  const viewsCollapsed = usePanelStore(s => s.viewsCollapsed);
+  const leftPanelSplit = usePanelStore(s => s.leftPanelSplit);
+  const toggleModelTree = usePanelStore(s => s.toggleModelTree);
+  const toggleViews = usePanelStore(s => s.toggleViews);
+  const setLeftPanelSplit = usePanelStore(s => s.setLeftPanelSplit);
+  const leftPanelRef = React.useRef<HTMLDivElement>(null);
   const [findReplaceOpen, setFindReplaceOpen] = useState(false);
   const [validationOpen, setValidationOpen] = useState(false);
   const [matrixOpen, setMatrixOpen] = useState(false);
   const [specsManagerOpen, setSpecsManagerOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [projectModalOpen, setProjectModalOpen] = useState(false);
+  const [projectModalMode, setProjectModalMode] = useState<'new' | 'edit'>('new');
   const shellTheme = useThemeStore(s => s.theme);
 
   // Ctrl+H toggle via custom event from UndoRedoKeyHandler
@@ -341,6 +271,24 @@ export function Shell(): React.ReactElement {
     const handler = () => setHelpOpen(o => !o);
     document.addEventListener('arch-vis:toggle-help', handler);
     return () => document.removeEventListener('arch-vis:toggle-help', handler);
+  }, []);
+
+  // Project modal via custom events
+  useEffect(() => {
+    const handleNewProject = () => {
+      setProjectModalMode('new');
+      setProjectModalOpen(true);
+    };
+    const handleProjectSettings = () => {
+      setProjectModalMode('edit');
+      setProjectModalOpen(true);
+    };
+    window.addEventListener('arch-vis:new-project', handleNewProject);
+    window.addEventListener('arch-vis:project-settings', handleProjectSettings);
+    return () => {
+      window.removeEventListener('arch-vis:new-project', handleNewProject);
+      window.removeEventListener('arch-vis:project-settings', handleProjectSettings);
+    };
   }, []);
 
   // File operation keyboard shortcuts via custom events
@@ -476,6 +424,10 @@ export function Shell(): React.ReactElement {
     helpOpen && React.createElement(HelpPanel, {
       onClose: () => setHelpOpen(false),
     }),
+    projectModalOpen && React.createElement(ProjectDetailsModal, {
+      mode: projectModalMode,
+      onClose: () => setProjectModalOpen(false),
+    }),
 
     // ── Menu Bar ──
     React.createElement(MenuBar, {
@@ -542,6 +494,7 @@ export function Shell(): React.ReactElement {
       // Left panel (220px)
       !fullScreen && leftPanelOpen && React.createElement('div', {
         'data-panel': 'left',
+        ref: leftPanelRef,
         style: {
           width: 220,
           flexShrink: 0,
@@ -552,19 +505,123 @@ export function Shell(): React.ReactElement {
           overflow: 'hidden',
         },
       },
-        // Model tree (~60%)
-        React.createElement('div', {
-          style: { flex: 3, overflow: 'hidden', display: 'flex', flexDirection: 'column' },
+        // Model tree collapsed header (when collapsed)
+        modelTreeCollapsed && React.createElement('div', {
+          style: {
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '4px 8px',
+            flexShrink: 0,
+            borderBottom: '1px solid var(--border-primary)',
+            cursor: 'pointer',
+            userSelect: 'none',
+          },
+          onClick: toggleModelTree,
         },
-          React.createElement(ModelTree, { onClose: toggleLeftPanel }),
+          React.createElement('span', {
+            style: { fontSize: 11, fontWeight: 600, color: 'var(--text-primary)' },
+          }, 'Model'),
+          React.createElement('span', {
+            style: { fontSize: 10, color: 'var(--text-muted)' },
+          }, '▸'),
         ),
-        // Divider
+        // Model tree section (when expanded)
         React.createElement('div', {
-          style: { height: 1, flexShrink: 0, background: 'var(--border-primary)' },
-        }),
-        // View switcher (~40%)
+          style: {
+            flex: viewsCollapsed ? 1 : (modelTreeCollapsed ? 0 : leftPanelSplit),
+            overflow: 'hidden',
+            display: modelTreeCollapsed ? 'none' : 'flex',
+            flexDirection: 'column',
+            minHeight: modelTreeCollapsed ? 0 : 60,
+          },
+        },
+          !modelTreeCollapsed && React.createElement(ModelTree, { onClose: toggleLeftPanel, onCollapse: toggleModelTree }),
+        ),
+        // Resize handle between Model tree and Views
         React.createElement('div', {
-          style: { flex: 2, overflow: 'auto' },
+          'data-resize': 'left-split',
+          style: {
+            height: (modelTreeCollapsed || viewsCollapsed) ? 1 : 5,
+            flexShrink: 0,
+            background: 'var(--border-primary)',
+            cursor: (modelTreeCollapsed || viewsCollapsed) ? 'default' : 'row-resize',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            position: 'relative',
+          },
+          onMouseDown: (modelTreeCollapsed || viewsCollapsed) ? undefined : (e: React.MouseEvent) => {
+            e.preventDefault();
+            const panel = leftPanelRef.current;
+            if (!panel) return;
+            const startY = e.clientY;
+            const panelRect = panel.getBoundingClientRect();
+            const panelHeight = panelRect.height;
+            const startSplit = leftPanelSplit;
+            const onMove = (me: MouseEvent) => {
+              const delta = me.clientY - startY;
+              const newSplit = startSplit + delta / panelHeight;
+              setLeftPanelSplit(newSplit);
+            };
+            const onUp = () => {
+              document.removeEventListener('mousemove', onMove);
+              document.removeEventListener('mouseup', onUp);
+              document.body.style.cursor = '';
+              document.body.style.userSelect = '';
+            };
+            document.body.style.cursor = 'row-resize';
+            document.body.style.userSelect = 'none';
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+          },
+        },
+          // Grip dots (only when both sections visible)
+          !(modelTreeCollapsed || viewsCollapsed) && React.createElement('div', {
+            style: {
+              width: 20,
+              height: 3,
+              borderTop: '1px dotted var(--text-muted)',
+              borderBottom: '1px dotted var(--text-muted)',
+              opacity: 0.5,
+            },
+          }),
+        ),
+        // Views header bar (always visible — acts as collapse/expand toggle)
+        React.createElement('div', {
+          style: {
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '4px 8px',
+            flexShrink: 0,
+            borderBottom: viewsCollapsed ? 'none' : '1px solid var(--border-primary)',
+            cursor: 'pointer',
+            userSelect: 'none',
+          },
+          onClick: toggleViews,
+        },
+          React.createElement('span', {
+            style: {
+              fontSize: 10,
+              color: 'var(--text-muted)',
+              textTransform: 'uppercase',
+              letterSpacing: 1,
+              fontWeight: 700,
+            },
+          }, 'Views'),
+          React.createElement('span', {
+            style: { fontSize: 10, color: 'var(--text-muted)' },
+          }, viewsCollapsed ? '▸' : '▾'),
+        ),
+        // View switcher content
+        React.createElement('div', {
+          style: {
+            flex: modelTreeCollapsed ? 1 : (viewsCollapsed ? 0 : (1 - leftPanelSplit)),
+            overflow: viewsCollapsed ? 'hidden' : 'auto',
+            minHeight: viewsCollapsed ? 0 : 40,
+            display: viewsCollapsed ? 'none' : 'block',
+          },
         },
           React.createElement(ViewSwitcher, null),
         ),

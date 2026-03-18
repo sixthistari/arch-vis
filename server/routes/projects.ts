@@ -118,6 +118,11 @@ router.put('/projects/:id', (req: Request, res: Response) => {
 router.delete('/projects/:id', (req: Request, res: Response) => {
   const { id } = req.params;
 
+  if (id === 'proj-default') {
+    res.status(400).json({ error: 'Cannot delete the default project' });
+    return;
+  }
+
   // Prevent deleting the last project
   const count = (db.prepare('SELECT COUNT(*) AS cnt FROM projects').get() as { cnt: number }).cnt;
   if (count <= 1) {
@@ -151,8 +156,10 @@ router.delete('/projects/:id', (req: Request, res: Response) => {
     // If current_project_id pointed to this project, switch to another
     const pref = db.prepare("SELECT value FROM preferences WHERE key = 'current_project_id'").get() as { value: string } | undefined;
     if (pref?.value === id) {
-      const other = db.prepare('SELECT id FROM projects LIMIT 1').get() as { id: string };
-      db.prepare("UPDATE preferences SET value = ? WHERE key = 'current_project_id'").run(other.id);
+      const other = db.prepare('SELECT id FROM projects LIMIT 1').get() as { id: string } | undefined;
+      if (other) {
+        db.prepare("UPDATE preferences SET value = ? WHERE key = 'current_project_id'").run(other.id);
+      }
     }
   });
 
