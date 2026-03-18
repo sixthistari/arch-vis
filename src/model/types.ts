@@ -856,6 +856,7 @@ export const ProjectSchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string().nullable(),
+  connection_string: z.string().nullable().optional(),
   created_at: z.string().nullable(),
   updated_at: z.string().nullable(),
 });
@@ -865,6 +866,7 @@ export type Project = z.infer<typeof ProjectSchema>;
 export const CreateProjectSchema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
+  connection_string: z.string().optional(),
 });
 
 export type CreateProjectInput = z.infer<typeof CreateProjectSchema>;
@@ -872,6 +874,7 @@ export type CreateProjectInput = z.infer<typeof CreateProjectSchema>;
 export const UpdateProjectSchema = z.object({
   name: z.string().min(1).optional(),
   description: z.string().nullable().optional(),
+  connection_string: z.string().nullable().optional(),
 });
 
 export type UpdateProjectInput = z.infer<typeof UpdateProjectSchema>;

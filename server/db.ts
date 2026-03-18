@@ -357,6 +357,16 @@ const versionedMigrations: MigrationEntry[] = [
       ALTER TABLE views_new RENAME TO views;
     `);
   }],
+
+  // Version 10: add connection_string column to projects
+  [10, () => {
+    try {
+      db.exec("ALTER TABLE projects ADD COLUMN connection_string TEXT DEFAULT 'sqlite:data/arch-vis.db'");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!msg.includes('duplicate column')) throw err;
+    }
+  }],
 ];
 
 for (const [version, migrate] of versionedMigrations) {

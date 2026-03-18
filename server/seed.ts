@@ -104,8 +104,8 @@ export default function seed(): void {
   const insertAll = db.transaction(() => {
     // 0. Ensure default project exists
     db.prepare(`
-      INSERT OR IGNORE INTO projects (id, name, description)
-      VALUES ('proj-default', 'Default Project', 'Auto-created default project')
+      INSERT OR IGNORE INTO projects (id, name, description, connection_string)
+      VALUES ('proj-default', 'Default Project', 'Auto-created default project', 'sqlite:data/arch-vis.db')
     `).run();
 
     // 1. Domains

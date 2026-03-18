@@ -28,11 +28,43 @@ export function ProjectDetailsModal({ mode, onClose }: ProjectDetailsModalProps)
   const [pgPassword, setPgPassword] = useState('');
   const [pgSslMode, setPgSslMode] = useState<'disable' | 'require' | 'verify-ca' | 'verify-full'>('disable');
 
+  // Compose the connection string from individual fields
+  const composedConnectionString = dbType === 'sqlite'
+    ? `sqlite:${sqlitePath}`
+    : `postgresql://${pgUsername}${pgPassword ? ':' + pgPassword : ''}@${pgHost || 'localhost'}:${pgPort || '5432'}/${pgDatabase}?sslmode=${pgSslMode}`;
+
+  // Parse a connection_string back into individual fields
+  const parseConnectionString = (cs: string) => {
+    if (cs.startsWith('sqlite:')) {
+      setDbType('sqlite');
+      setSqlitePath(cs.slice('sqlite:'.length));
+    } else if (cs.startsWith('postgresql://') || cs.startsWith('postgres://')) {
+      setDbType('postgresql');
+      try {
+        const url = new URL(cs);
+        setPgHost(url.hostname);
+        setPgPort(url.port || '5432');
+        setPgDatabase(url.pathname.replace(/^\//, ''));
+        setPgUsername(decodeURIComponent(url.username));
+        setPgPassword(decodeURIComponent(url.password));
+        const sslParam = url.searchParams.get('sslmode');
+        if (sslParam && ['disable', 'require', 'verify-ca', 'verify-full'].includes(sslParam)) {
+          setPgSslMode(sslParam as 'disable' | 'require' | 'verify-ca' | 'verify-full');
+        }
+      } catch {
+        // If URL parsing fails, leave defaults
+      }
+    }
+  };
+
   // Update fields if project changes while open
   useEffect(() => {
     if (mode === 'edit' && currentProject) {
       setName(currentProject.name);
       setDescription(currentProject.description ?? '');
+      if (currentProject.connection_string) {
+        parseConnectionString(currentProject.connection_string);
+      }
     }
   }, [mode, currentProject]);
 
@@ -47,12 +79,14 @@ export function ProjectDetailsModal({ mode, onClose }: ProjectDetailsModalProps)
         const proj = await createProject({
           name: trimmedName,
           description: description.trim() || undefined,
+          connection_string: composedConnectionString,
         });
         await switchProject(proj.id);
       } else if (currentProjectId) {
         await updateProject(currentProjectId, {
           name: trimmedName,
           description: description.trim() || null,
+          connection_string: composedConnectionString,
         });
       }
       onClose();
@@ -302,6 +336,16 @@ export function ProjectDetailsModal({ mode, onClose }: ProjectDetailsModalProps)
               </div>
             </>
           )}
+
+          {/* Composed connection string (read-only) */}
+          <div>
+            <label style={labelStyle}>Connection String</label>
+            <input
+              value={composedConnectionString}
+              readOnly
+              style={{ ...inputStyle, opacity: 0.7, cursor: 'default', fontFamily: 'monospace', fontSize: 11 }}
+            />
+          </div>
         </div>
 
         {/* Footer */}

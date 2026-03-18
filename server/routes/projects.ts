@@ -7,6 +7,7 @@ interface ProjectRow {
   id: string;
   name: string;
   description: string | null;
+  connection_string: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -27,12 +28,12 @@ router.post('/projects', (req: Request, res: Response) => {
     return;
   }
 
-  const { name, description } = parsed.data;
+  const { name, description, connection_string } = parsed.data;
   const id = `proj-${crypto.randomUUID()}`;
 
   db.prepare(`
-    INSERT INTO projects (id, name, description) VALUES (?, ?, ?)
-  `).run(id, name, description ?? null);
+    INSERT INTO projects (id, name, description, connection_string) VALUES (?, ?, ?, ?)
+  `).run(id, name, description ?? null, connection_string ?? 'sqlite:data/arch-vis.db');
 
   const created = db.prepare('SELECT * FROM projects WHERE id = ?').get(id) as ProjectRow;
   res.status(201).json(created);
@@ -98,6 +99,10 @@ router.put('/projects/:id', (req: Request, res: Response) => {
   if (body.description !== undefined) {
     fields.push('description = ?');
     params.push(body.description);
+  }
+  if (body.connection_string !== undefined) {
+    fields.push('connection_string = ?');
+    params.push(body.connection_string);
   }
 
   if (fields.length === 0) {
